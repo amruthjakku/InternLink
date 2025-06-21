@@ -1,371 +1,626 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+import { useState, useEffect, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import * as d3 from 'd3';
 
 export function TaskManagementTab() {
   const [tasks, setTasks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [dependencies, setDependencies] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showDependencyView, setShowDependencyView] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showDependencyModal, setShowDependencyModal] = useState(false);
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'dependencies'
+  const [filterAssignee, setFilterAssignee] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const svgRef = useRef();
+
+  // Mock data
+  const interns = [
+    { id: 1, name: 'Alex Chen', email: 'alex.chen@college.edu' },
+    { id: 2, name: 'Sarah Johnson', email: 'sarah.johnson@university.edu' },
+    { id: 3, name: 'Mike Rodriguez', email: 'mike.rodriguez@tech.edu' },
+    { id: 4, name: 'Emily Davis', email: 'emily.davis@institute.edu' }
+  ];
 
   useEffect(() => {
-    setTasks(mockData.tasks);
-    setCategories(mockData.categories);
-    setInterns(mockData.interns);
+    // Generate mock tasks
+    const generateTasks = () => [
+      {
+        id: 1,
+        title: 'Setup Development Environment',
+        description: 'Install and configure development tools, IDE, and project dependencies',
+        status: 'done',
+        priority: 'high',
+        assigneeId: 1,
+        assigneeName: 'Alex Chen',
+        category: 'Setup',
+        dueDate: '2024-01-15',
+        createdDate: '2024-01-01',
+        estimatedHours: 4,
+        actualHours: 3.5,
+        progress: 100,
+        tags: ['setup', 'environment'],
+        dependencies: []
+      },
+      {
+        id: 2,
+        title: 'Database Schema Design',
+        description: 'Design and implement the database schema for the user management system',
+        status: 'in_progress',
+        priority: 'high',
+        assigneeId: 2,
+        assigneeName: 'Sarah Johnson',
+        category: 'Backend',
+        dueDate: '2024-01-20',
+        createdDate: '2024-01-05',
+        estimatedHours: 8,
+        actualHours: 5,
+        progress: 60,
+        tags: ['database', 'schema'],
+        dependencies: [1]
+      },
+      {
+        id: 3,
+        title: 'User Authentication API',
+        description: 'Implement JWT-based authentication system with login/logout endpoints',
+        status: 'not_started',
+        priority: 'high',
+        assigneeId: 1,
+        assigneeName: 'Alex Chen',
+        category: 'Backend',
+        dueDate: '2024-01-25',
+        createdDate: '2024-01-08',
+        estimatedHours: 12,
+        actualHours: 0,
+        progress: 0,
+        tags: ['auth', 'api', 'jwt'],
+        dependencies: [2]
+      },
+      {
+        id: 4,
+        title: 'Frontend Login Component',
+        description: 'Create responsive login form with validation and error handling',
+        status: 'not_started',
+        priority: 'medium',
+        assigneeId: 3,
+        assigneeName: 'Mike Rodriguez',
+        category: 'Frontend',
+        dueDate: '2024-01-30',
+        createdDate: '2024-01-10',
+        estimatedHours: 6,
+        actualHours: 0,
+        progress: 0,
+        tags: ['frontend', 'react', 'form'],
+        dependencies: [3]
+      },
+      {
+        id: 5,
+        title: 'User Dashboard UI',
+        description: 'Design and implement the main user dashboard with navigation',
+        status: 'in_progress',
+        priority: 'medium',
+        assigneeId: 4,
+        assigneeName: 'Emily Davis',
+        category: 'Frontend',
+        dueDate: '2024-02-05',
+        createdDate: '2024-01-12',
+        estimatedHours: 10,
+        actualHours: 3,
+        progress: 30,
+        tags: ['frontend', 'dashboard', 'ui'],
+        dependencies: [4]
+      },
+      {
+        id: 6,
+        title: 'API Documentation',
+        description: 'Create comprehensive API documentation using Swagger/OpenAPI',
+        status: 'not_started',
+        priority: 'low',
+        assigneeId: 2,
+        assigneeName: 'Sarah Johnson',
+        category: 'Documentation',
+        dueDate: '2024-02-10',
+        createdDate: '2024-01-15',
+        estimatedHours: 4,
+        actualHours: 0,
+        progress: 0,
+        tags: ['documentation', 'api', 'swagger'],
+        dependencies: [3]
+      },
+      {
+        id: 7,
+        title: 'Unit Tests',
+        description: 'Write comprehensive unit tests for all API endpoints',
+        status: 'review',
+        priority: 'medium',
+        assigneeId: 1,
+        assigneeName: 'Alex Chen',
+        category: 'Testing',
+        dueDate: '2024-02-15',
+        createdDate: '2024-01-18',
+        estimatedHours: 8,
+        actualHours: 7,
+        progress: 90,
+        tags: ['testing', 'unit-tests', 'jest'],
+        dependencies: [3]
+      }
+    ];
+
+    // Generate dependencies
+    const generateDependencies = () => [
+      { prerequisite: 1, dependent: 2 },
+      { prerequisite: 2, dependent: 3 },
+      { prerequisite: 3, dependent: 4 },
+      { prerequisite: 4, dependent: 5 },
+      { prerequisite: 3, dependent: 6 },
+      { prerequisite: 3, dependent: 7 }
+    ];
+
+    setTasks(generateTasks());
+    setDependencies(generateDependencies());
   }, []);
 
-  const TaskCreationForm = () => {
-    if (!showCreateForm) return null;
+  // Filter tasks
+  const filteredTasks = tasks.filter(task => {
+    if (filterAssignee !== 'all' && task.assigneeId !== parseInt(filterAssignee)) return false;
+    if (filterStatus !== 'all' && task.status !== filterStatus) return false;
+    if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+    return true;
+  });
+
+  // Task columns for Kanban
+  const taskColumns = {
+    'not_started': { 
+      title: 'To Do', 
+      tasks: filteredTasks.filter(t => t.status === 'not_started'),
+      color: 'bg-gray-100'
+    },
+    'in_progress': { 
+      title: 'In Progress', 
+      tasks: filteredTasks.filter(t => t.status === 'in_progress'),
+      color: 'bg-blue-100'
+    },
+    'review': { 
+      title: 'Review', 
+      tasks: filteredTasks.filter(t => t.status === 'review'),
+      color: 'bg-yellow-100'
+    },
+    'done': { 
+      title: 'Done', 
+      tasks: filteredTasks.filter(t => t.status === 'done'),
+      color: 'bg-green-100'
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const { source, destination, draggableId } = result;
+    
+    if (source.droppableId !== destination.droppableId) {
+      const taskId = parseInt(draggableId);
+      const newStatus = destination.droppableId;
+      
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, status: newStatus }
+            : task
+        )
+      );
+    }
+  };
+
+  // Priority colors
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Status colors
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'done': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'review': return 'bg-yellow-100 text-yellow-800';
+      case 'not_started': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Task Card Component
+  const TaskCard = ({ task, index }) => (
+    <Draggable draggableId={task.id.toString()} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-3 cursor-pointer hover:shadow-md transition-shadow ${
+            snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
+          }`}
+          onClick={() => {
+            setSelectedTask(task);
+            setShowTaskModal(true);
+          }}
+        >
+          {/* Task Header */}
+          <div className="flex items-start justify-between mb-2">
+            <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+              {task.title}
+            </h4>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+              {task.priority}
+            </span>
+          </div>
+
+          {/* Assignee */}
+          <div className="flex items-center mb-2">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2">
+              {task.assigneeName.charAt(0)}
+            </div>
+            <span className="text-xs text-gray-600">{task.assigneeName}</span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs text-gray-500">Progress</span>
+              <span className="text-xs font-medium text-gray-700">{task.progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${task.progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Task Footer */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center space-x-2">
+              <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
+              <span>⏱️ {task.estimatedHours}h</span>
+            </div>
+            {task.dependencies.length > 0 && (
+              <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                {task.dependencies.length} deps
+              </span>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {task.tags.slice(0, 2).map(tag => (
+              <span key={tag} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                {tag}
+              </span>
+            ))}
+            {task.tags.length > 2 && (
+              <span className="text-xs text-gray-500">+{task.tags.length - 2}</span>
+            )}
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+
+  // Dependency Graph Component
+  const DependencyGraph = () => {
+    useEffect(() => {
+      if (!tasks.length || viewMode !== 'dependencies') return;
+
+      const svg = d3.select(svgRef.current);
+      svg.selectAll("*").remove();
+
+      const width = 800;
+      const height = 600;
+
+      // Create nodes and links
+      const nodes = tasks.map(task => ({
+        id: task.id,
+        name: task.title.substring(0, 20) + (task.title.length > 20 ? '...' : ''),
+        status: task.status,
+        priority: task.priority,
+        assignee: task.assigneeName,
+        x: Math.random() * width,
+        y: Math.random() * height
+      }));
+
+      const links = dependencies.map(dep => ({
+        source: dep.prerequisite,
+        target: dep.dependent
+      }));
+
+      // Color mapping for status
+      const statusColors = {
+        'done': '#10B981',
+        'in_progress': '#3B82F6',
+        'review': '#F59E0B',
+        'not_started': '#6B7280'
+      };
+
+      // Create force simulation
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(30));
+
+      // Add arrow marker
+      svg.append("defs").append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 25)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "#999");
+
+      // Draw links
+      const link = svg.append("g")
+        .selectAll("line")
+        .data(links)
+        .enter().append("line")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.6)
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrowhead)");
+
+      // Draw nodes
+      const node = svg.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .enter().append("circle")
+        .attr("r", 20)
+        .attr("fill", d => statusColors[d.status] || '#6B7280')
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 2)
+        .style("cursor", "pointer")
+        .call(d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended))
+        .on("click", (event, d) => {
+          const task = tasks.find(t => t.id === d.id);
+          setSelectedTask(task);
+          setShowTaskModal(true);
+        });
+
+      // Add labels
+      const labels = svg.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .enter().append("text")
+        .text(d => d.name)
+        .attr("font-size", "10px")
+        .attr("text-anchor", "middle")
+        .attr("dy", 35)
+        .style("pointer-events", "none");
+
+      // Update positions on simulation tick
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+
+        node
+          .attr("cx", d => d.x)
+          .attr("cy", d => d.y);
+
+        labels
+          .attr("x", d => d.x)
+          .attr("y", d => d.y);
+      });
+
+      // Drag functions
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+
+    }, [tasks, dependencies, viewMode]);
 
     return (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div className="relative top-10 mx-auto p-5 border max-w-2xl shadow-lg rounded-md bg-white">
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Create New Task</h3>
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">🔗 Task Dependencies</h3>
+          <button
+            onClick={() => setShowDependencyModal(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Manage Dependencies
+          </button>
+        </div>
+        
+        <div className="border rounded-lg overflow-hidden">
+          <svg ref={svgRef} width="800" height="600" className="w-full">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#999" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        
+        {/* Legend */}
+        <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+            <span>Done</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+            <span>In Progress</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+            <span>Review</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+            <span>Not Started</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Task Modal Component
+  const TaskModal = () => {
+    if (!selectedTask) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Modal Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  {selectedTask.title}
+                </h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(selectedTask.priority)}`}>
+                    {selectedTask.priority} priority
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTask.status)}`}>
+                    {selectedTask.status.replace('_', ' ')}
+                  </span>
+                  <span>📂 {selectedTask.category}</span>
+                </div>
+              </div>
               <button
-                onClick={() => setShowCreateForm(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowTaskModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
               >
-                ✕
+                ×
               </button>
             </div>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Task Title</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="Enter task title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
-                  <select className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="">Select Category</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+          </div>
 
+          {/* Modal Content */}
+          <div className="p-6 space-y-6">
+            {/* Description */}
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Description</h3>
+              <p className="text-gray-600">{selectedTask.description}</p>
+            </div>
+
+            {/* Assignment & Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  rows={3}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Describe the task requirements..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Priority</label>
-                  <select className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Difficulty</label>
-                  <select className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Estimated Hours</label>
-                  <input
-                    type="number"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="20"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Assign to Interns</label>
-                <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                  {interns.map(intern => (
-                    <label key={intern.id} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">{intern.name} - {intern.college_name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">GitLab Project</label>
-                <input
-                  type="text"
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="project-name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Resources</label>
+                <h3 className="font-medium text-gray-900 mb-2">Assignment</h3>
                 <div className="space-y-2">
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Resource title"
-                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
-                    <input
-                      type="url"
-                      placeholder="https://..."
-                      className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
-                    <button
-                      type="button"
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      ➕
-                    </button>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {selectedTask.assigneeName.charAt(0)}
+                    </div>
+                    <span className="text-sm text-gray-700">{selectedTask.assigneeName}</span>
                   </div>
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Create Task
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const TaskList = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Task Management</h3>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => setShowDependencyView(!showDependencyView)}
-            className={`inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-              showDependencyView 
-                ? 'text-blue-700 bg-blue-50 border-blue-300' 
-                : 'text-gray-700 bg-white hover:bg-gray-50'
-            }`}
-          >
-            <span className="mr-2">🔗</span>
-            Dependencies
-          </button>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <span className="mr-2">➕</span>
-            Create Task
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {tasks.map(task => (
-          <div
-            key={task.id}
-            onClick={() => setSelectedTask(task)}
-            className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-              selectedTask?.id === task.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h4 className="text-sm font-medium text-gray-900">{task.title}</h4>
-                  <span
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: categories.find(c => c.id === task.category_id)?.color + '20', color: categories.find(c => c.id === task.category_id)?.color }}
-                  >
-                    {task.category_name}
-                  </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    task.priority === 'high' 
-                      ? 'bg-red-100 text-red-800'
-                      : task.priority === 'medium'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {task.priority}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                <div className="flex items-center space-x-4 text-xs text-gray-500">
-                  <span>👥 {task.assigned_interns.length} interns</span>
-                  <span>⏱️ {task.estimated_hours}h estimated</span>
-                  <span>📊 {task.completion_rate.toFixed(0)}% complete</span>
-                  {task.gitlab_project && <span>🦊 {task.gitlab_project}</span>}
-                </div>
-              </div>
-              <div className="flex-shrink-0 ml-4">
-                <div className="w-16 h-2 bg-gray-200 rounded-full">
-                  <div
-                    className="h-2 bg-blue-500 rounded-full"
-                    style={{ width: `${task.completion_rate}%` }}
-                  />
-                </div>
-                <div className="text-xs text-gray-500 text-center mt-1">
-                  {task.completion_rate.toFixed(0)}%
+              
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Timeline</h3>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <div>Created: {new Date(selectedTask.createdDate).toLocaleDateString()}</div>
+                  <div>Due: {new Date(selectedTask.dueDate).toLocaleDateString()}</div>
+                  <div>Estimated: {selectedTask.estimatedHours}h</div>
+                  <div>Actual: {selectedTask.actualHours}h</div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
-  const TaskDetails = () => {
-    if (!selectedTask) {
-      return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-          <div className="text-gray-400 text-4xl mb-4">📝</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Task</h3>
-          <p className="text-gray-500">Choose a task from the list above to view detailed information</p>
-        </div>
-      );
-    }
-
-    const assignedInternDetails = interns.filter(intern => 
-      selectedTask.assigned_interns.includes(intern.id)
-    );
-
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex-1">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">{selectedTask.title}</h3>
-            <p className="text-gray-600 mb-4">{selectedTask.description}</p>
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <span className="flex items-center">
-                <span className="mr-1">📅</span>
-                Due: {new Date(selectedTask.due_date).toLocaleDateString()}
-              </span>
-              <span className="flex items-center">
-                <span className="mr-1">⏱️</span>
-                {selectedTask.estimated_hours} hours
-              </span>
-              <span className="flex items-center">
-                <span className="mr-1">🎯</span>
-                {selectedTask.difficulty}
-              </span>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-blue-600">{selectedTask.completion_rate.toFixed(0)}%</div>
-            <div className="text-sm text-gray-500">Complete</div>
-          </div>
-        </div>
-
-        {/* Assigned Interns */}
-        <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Assigned Interns</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {assignedInternDetails.map(intern => (
-              <div key={intern.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">
-                    {intern.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+            {/* Progress */}
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Progress</h3>
+              <div className="flex items-center space-x-4">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{intern.name}</p>
-                  <p className="text-xs text-gray-500">{intern.college_name}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                      style={{ width: `${selectedTask.progress}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {intern.completion_rate.toFixed(0)}% avg
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedTask.progress}%
+                </span>
+              </div>
+            </div>
+
+            {/* Dependencies */}
+            {selectedTask.dependencies.length > 0 && (
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Dependencies</h3>
+                <div className="space-y-2">
+                  {selectedTask.dependencies.map(depId => {
+                    const depTask = tasks.find(t => t.id === depId);
+                    return depTask ? (
+                      <div key={depId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm text-gray-700">{depTask.title}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(depTask.status)}`}>
+                          {depTask.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    ) : null;
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* Resources */}
-        {selectedTask.resources && selectedTask.resources.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Resources</h4>
-            <div className="space-y-2">
-              {selectedTask.resources.map((resource, index) => (
-                <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                  <span className="text-sm">
-                    {resource.type === 'documentation' ? '📚' : 
-                     resource.type === 'tutorial' ? '🎓' : 
-                     resource.type === 'dataset' ? '📊' : '🔗'}
+            {/* Tags */}
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedTask.tags.map(tag => (
+                  <span key={tag} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                    {tag}
                   </span>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-500"
-                  >
-                    {resource.title}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* GitLab Integration */}
-        {selectedTask.gitlab_project && (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">GitLab Integration</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Project:</span>
-                <span className="ml-2 text-gray-900">{selectedTask.gitlab_project}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Issues:</span>
-                <span className="ml-2 text-gray-900">{selectedTask.gitlab_issues?.join(', ')}</span>
+                ))}
               </div>
             </div>
           </div>
-        )}
-      </div>
-    );
-  };
 
-  const DependencyView = () => {
-    if (!showDependencyView) return null;
-
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Dependencies</h3>
-        <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-4">🔗</div>
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Dependency Graph</h4>
-          <p className="text-gray-500 mb-4">Visual representation of task dependencies would appear here</p>
-          <div className="bg-gray-100 p-8 rounded-lg">
-            <p className="text-sm text-gray-600">Interactive dependency graph using D3.js or similar visualization library</p>
+          {/* Modal Actions */}
+          <div className="p-6 border-t border-gray-200">
+            <div className="flex space-x-3">
+              <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                Edit Task
+              </button>
+              <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                Message Assignee
+              </button>
+              <button className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                View History
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -374,10 +629,245 @@ export function TaskManagementTab() {
 
   return (
     <div className="space-y-6">
-      <TaskList />
-      {showDependencyView && <DependencyView />}
-      <TaskDetails />
-      <TaskCreationForm />
+      {/* Header Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div className="flex items-center space-x-4">
+          <h2 className="text-xl font-semibold text-gray-900">Task Management</h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'kanban' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📋 Kanban
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'list' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📝 List
+            </button>
+            <button
+              onClick={() => setViewMode('dependencies')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'dependencies' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🔗 Dependencies
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center space-x-3">
+          <select
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Assignees</option>
+            {interns.map(intern => (
+              <option key={intern.id} value={intern.id}>{intern.name}</option>
+            ))}
+          </select>
+          
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="not_started">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="review">Review</option>
+            <option value="done">Done</option>
+          </select>
+          
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+
+          <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+            + New Task
+          </button>
+        </div>
+      </div>
+
+      {/* Task Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="text-2xl font-bold text-blue-600">{tasks.length}</div>
+          <div className="text-sm text-gray-600">Total Tasks</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="text-2xl font-bold text-green-600">
+            {tasks.filter(t => t.status === 'done').length}
+          </div>
+          <div className="text-sm text-gray-600">Completed</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="text-2xl font-bold text-orange-600">
+            {tasks.filter(t => t.status === 'in_progress').length}
+          </div>
+          <div className="text-sm text-gray-600">In Progress</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="text-2xl font-bold text-red-600">
+            {tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'done').length}
+          </div>
+          <div className="text-sm text-gray-600">Overdue</div>
+        </div>
+      </div>
+
+      {/* Content based on view mode */}
+      {viewMode === 'dependencies' && <DependencyGraph />}
+
+      {viewMode === 'kanban' && (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {Object.entries(taskColumns).map(([columnId, column]) => (
+              <div key={columnId} className={`${column.color} p-4 rounded-lg`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900">{column.title}</h3>
+                  <span className="bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600">
+                    {column.tasks.length}
+                  </span>
+                </div>
+                
+                <Droppable droppableId={columnId}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`min-h-[400px] ${
+                        snapshot.isDraggingOver ? 'bg-blue-50 bg-opacity-50' : ''
+                      }`}
+                    >
+                      {column.tasks.map((task, index) => (
+                        <TaskCard key={task.id} task={task} index={index} />
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      )}
+
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Task
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assignee
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progress
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                        <div className="text-sm text-gray-500">{task.category}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2">
+                          {task.assigneeName.charAt(0)}
+                        </div>
+                        <span className="text-sm text-gray-900">{task.assigneeName}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                        {task.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-1 mr-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{ width: `${task.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-sm text-gray-900">{task.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(task.dueDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowTaskModal(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        View
+                      </button>
+                      <button className="text-green-600 hover:text-green-900">
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Task Modal */}
+      {showTaskModal && <TaskModal />}
     </div>
   );
 }

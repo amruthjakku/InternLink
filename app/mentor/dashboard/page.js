@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import TeamActivity from '../../../components/dashboard/TeamActivity.js';
+import { AdvancedTaskManagement } from '../../../components/mentor/AdvancedTaskManagement';
+import { InternManagementTab } from '../../../components/mentor/InternManagementTab';
+import { MetricCard } from '../../../components/Charts';
 
 export default function MentorDashboard() {
   const { data: session, status } = useSession();
@@ -207,6 +210,8 @@ export default function MentorDashboard() {
           <nav className="flex space-x-8">
             {[
               { id: 'overview', name: 'Overview', icon: '📊' },
+              { id: 'task-management', name: 'Task Management', icon: '📋' },
+              { id: 'intern-management', name: 'Intern Management', icon: '👥' },
               { id: 'colleges', name: 'My Colleges', icon: '🏫' },
               { id: 'requests', name: `Join Requests ${pendingRequests.length > 0 ? `(${pendingRequests.length})` : ''}`, icon: '📝' },
               { id: 'analytics', name: 'Analytics', icon: '📈' }
@@ -232,59 +237,36 @@ export default function MentorDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* Stats Cards */}
+            {/* Enhanced Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">🏫</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Colleges</p>
-                    <p className="text-2xl font-semibold text-gray-900">{colleges.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">👥</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Active Cohorts</p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {colleges.reduce((total, college) => total + (college.cohorts?.length || 0), 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">📝</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Pending Requests</p>
-                    <p className="text-2xl font-semibold text-gray-900">{pendingRequests.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">👨‍🎓</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Interns</p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {joinRequests.filter(req => req.status === 'approved').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <MetricCard
+                title="Total Colleges"
+                value={colleges.length}
+                change={5.2}
+                icon="🏫"
+                color="blue"
+              />
+              <MetricCard
+                title="Active Cohorts"
+                value={colleges.reduce((total, college) => total + (college.cohorts?.length || 0), 0)}
+             change={12.5}
+                icon="👥"
+                color="green"
+                 />
+              <MetricCard
+                title="Pending Requests"
+                value={pendingRequests.length}
+                change={-8.3}
+                icon="📝"
+                color="orange"
+              />
+              <MetricCard
+                title="Total Interns"
+                value={joinRequests.filter(req => req.status === 'approved').length}
+                change={15.7}
+                icon="👨‍🎓"
+                color="purple"
+              />
             </div>
 
             {/* Recent Activity */}
@@ -322,6 +304,12 @@ export default function MentorDashboard() {
             </div>
           </div>
         )}
+
+        {/* Task Management Tab */}
+        {activeTab === 'task-management' && <AdvancedTaskManagement />}
+
+        {/* Intern Management Tab */}
+        {activeTab === 'intern-management' && <InternManagementTab />}
 
         {activeTab === 'colleges' && (
           <div className="space-y-6">

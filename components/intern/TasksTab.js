@@ -1,372 +1,764 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { MetricCard } from '../Charts';
+import { format, addDays, subDays } from 'date-fns';
 
-export function TasksTab({ user, tasks, updateTask, loading }) {
-  const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('due_date');
+export function TasksTab({ user, loading }) {
+  const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [submissionLink, setSubmissionLink] = useState('');
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar'
 
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'all') return true;
-    return task.status === filter;
-  });
+  useEffect(() => {
+    // Generate comprehensive task data for intern
+    const generateTasks = () => [
+      {
+        id: 1,
+        title: 'Setup Development Environment',
+        description: 'Install and configure development tools, IDE, and project dependencies. This includes Node.js, Git, VS Code, and all necessary extensions.',
+        status: 'done',
+        priority: 'high',
+        category: 'Setup',
+        dueDate: '2024-01-15',
+        createdDate: '2024-01-01',
+        completedDate: '2024-01-14',
+        estimatedHours: 4,
+        actualHours: 3.5,
+        progress: 100,
+        tags: ['setup', 'environment', 'tools'],
+        mentor: 'Dr. Smith',
+        subtasks: [
+          { id: 11, title: 'Install Node.js and npm', completed: true },
+          { id: 12, title: 'Setup Git repository', completed: true },
+          { id: 13, title: 'Configure VS Code', completed: true },
+          { id: 14, title: 'Install project dependencies', completed: true }
+        ],
+        comments: [
+          { id: 1, author: 'Dr. Smith', text: 'Great job setting up the environment!', timestamp: '2024-01-14T10:30:00Z' },
+          { id: 2, author: 'You', text: 'Environment setup completed successfully', timestamp: '2024-01-14T11:00:00Z' }
+        ],
+        attachments: [
+          { id: 1, name: 'setup-guide.pdf', size: '2.3 MB', type: 'pdf' }
+        ],
+        timeTracking: [
+          { date: '2024-01-01', hours: 2, description: 'Initial setup research' },
+          { date: '2024-01-02', hours: 1.5, description: 'Node.js and Git installation' }
+        ]
+      },
+      {
+        id: 2,
+        title: 'Learn React Fundamentals',
+        description: 'Complete React tutorial covering components, props, state, and hooks. Build a simple todo application to practice concepts.',
+        status: 'in_progress',
+        priority: 'high',
+        category: 'Learning',
+        dueDate: '2024-01-20',
+        createdDate: '2024-01-05',
+        estimatedHours: 12,
+        actualHours: 8,
+        progress: 75,
+        tags: ['react', 'frontend', 'learning'],
+        mentor: 'Dr. Smith',
+        subtasks: [
+          { id: 21, title: 'Complete React tutorial', completed: true },
+          { id: 22, title: 'Build todo app', completed: true },
+          { id: 23, title: 'Implement hooks', completed: false },
+          { id: 24, title: 'Add styling', completed: false }
+        ],
+        comments: [
+          { id: 3, author: 'Dr. Smith', text: 'Good progress on React basics. Focus on hooks next.', timestamp: '2024-01-16T14:20:00Z' },
+          { id: 4, author: 'You', text: 'Working on useEffect and useState hooks', timestamp: '2024-01-16T15:00:00Z' }
+        ],
+        attachments: [
+          { id: 2, name: 'react-notes.md', size: '1.2 MB', type: 'markdown' },
+          { id: 3, name: 'todo-app-screenshot.png', size: '0.8 MB', type: 'image' }
+        ],
+        timeTracking: [
+          { date: '2024-01-05', hours: 3, description: 'React tutorial - components' },
+          { date: '2024-01-06', hours: 2.5, description: 'Props and state' },
+          { date: '2024-01-08', hours: 2.5, description: 'Todo app development' }
+        ]
+      },
+      {
+        id: 3,
+        title: 'Database Design Project',
+        description: 'Design and implement a database schema for a library management system. Include tables for books, users, and transactions.',
+        status: 'todo',
+        priority: 'medium',
+        category: 'Backend',
+        dueDate: '2024-01-25',
+        createdDate: '2024-01-10',
+        estimatedHours: 8,
+        actualHours: 0,
+        progress: 0,
+        tags: ['database', 'sql', 'design'],
+        mentor: 'Dr. Johnson',
+        subtasks: [
+          { id: 31, title: 'Research database design principles', completed: false },
+          { id: 32, title: 'Create ER diagram', completed: false },
+          { id: 33, title: 'Write SQL schema', completed: false },
+          { id: 34, title: 'Populate with sample data', completed: false }
+        ],
+        comments: [],
+        attachments: [
+          { id: 4, name: 'database-requirements.pdf', size: '1.5 MB', type: 'pdf' }
+        ],
+        timeTracking: []
+      },
+      {
+        id: 4,
+        title: 'API Integration Task',
+        description: 'Integrate with a REST API to fetch and display user data. Implement error handling and loading states.',
+        status: 'todo',
+        priority: 'high',
+        category: 'Frontend',
+        dueDate: '2024-01-30',
+        createdDate: '2024-01-12',
+        estimatedHours: 6,
+        actualHours: 0,
+        progress: 0,
+        tags: ['api', 'integration', 'frontend'],
+        mentor: 'Dr. Smith',
+        subtasks: [
+          { id: 41, title: 'Study API documentation', completed: false },
+          { id: 42, title: 'Implement API calls', completed: false },
+          { id: 43, title: 'Add error handling', completed: false },
+          { id: 44, title: 'Create loading states', completed: false }
+        ],
+        comments: [
+          { id: 5, author: 'Dr. Smith', text: 'Start with the API documentation review', timestamp: '2024-01-12T09:00:00Z' }
+        ],
+        attachments: [
+          { id: 5, name: 'api-documentation.pdf', size: '3.1 MB', type: 'pdf' }
+        ],
+        timeTracking: []
+      },
+      {
+        id: 5,
+        title: 'Code Review Practice',
+        description: 'Review code submissions from peer interns and provide constructive feedback. Focus on code quality and best practices.',
+        status: 'blocked',
+        priority: 'low',
+        category: 'Review',
+        dueDate: '2024-02-05',
+        createdDate: '2024-01-15',
+        estimatedHours: 4,
+        actualHours: 0,
+        progress: 0,
+        tags: ['review', 'collaboration', 'quality'],
+        mentor: 'Dr. Smith',
+        subtasks: [
+          { id: 51, title: 'Review peer code submissions', completed: false },
+          { id: 52, title: 'Provide feedback', completed: false },
+          { id: 53, title: 'Discuss improvements', completed: false }
+        ],
+        comments: [
+          { id: 6, author: 'Dr. Smith', text: 'Waiting for peer submissions to be ready', timestamp: '2024-01-15T10:00:00Z' }
+        ],
+        attachments: [],
+        timeTracking: []
+      }
+    ];
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (sortBy) {
-      case 'due_date':
-        return new Date(a.due_date) - new Date(b.due_date);
-      case 'priority':
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
-      case 'progress':
-        return b.progress - a.progress;
-      default:
-        return 0;
+    setTasks(generateTasks());
+  }, []);
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const { source, destination } = result;
+    
+    if (source.droppableId !== destination.droppableId) {
+      const newStatus = destination.droppableId;
+      const taskId = parseInt(result.draggableId);
+      
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, status: newStatus }
+            : task
+        )
+      );
     }
-  });
-
-  const handleStatusChange = (taskId, newStatus) => {
-    const progress = newStatus === 'done' ? 100 : newStatus === 'in_progress' ? 50 : 0;
-    updateTask(taskId, { status: newStatus, progress });
   };
 
-  const handleSubmissionSubmit = (taskId) => {
-    if (submissionLink.trim()) {
-      updateTask(taskId, { 
-        submission_link: submissionLink,
-        status: 'done',
-        progress: 100
-      });
-      setSubmissionLink('');
-      setSelectedTask(null);
+  const filteredTasks = tasks.filter(task => {
+    if (filterStatus !== 'all' && task.status !== filterStatus) return false;
+    if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+    return true;
+  });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'done': return 'bg-green-100 border-green-300';
+      case 'in_progress': return 'bg-blue-100 border-blue-300';
+      case 'blocked': return 'bg-red-100 border-red-300';
+      default: return 'bg-gray-100 border-gray-300';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'text-red-600';
+      case 'medium': return 'text-yellow-600';
+      case 'low': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'done': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'not_started': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'high': return '🔴';
+      case 'medium': return '🟡';
+      case 'low': return '🟢';
+      default: return '⚪';
     }
   };
 
-  const getDaysUntilDue = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  // Calculate metrics
+  const completedTasks = tasks.filter(t => t.status === 'done').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+  const blockedTasks = tasks.filter(t => t.status === 'blocked').length;
+  const overdueTasks = tasks.filter(t => 
+    new Date(t.dueDate) < new Date() && t.status !== 'done'
+  ).length;
+
+  const TaskModal = () => {
+    if (!selectedTask) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Modal Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  {selectedTask.title}
+                </h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span>📅 Due: {format(new Date(selectedTask.dueDate), 'MMM dd, yyyy')}</span>
+                  <span>👨‍🏫 Mentor: {selectedTask.mentor}</span>
+                  <span className={`font-medium ${getPriorityColor(selectedTask.priority)}`}>
+                    {getPriorityIcon(selectedTask.priority)} {selectedTask.priority} priority
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTaskModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Description */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+                  <p className="text-gray-700">{selectedTask.description}</p>
+                </div>
+
+                {/* Subtasks */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Subtasks</h3>
+                  <div className="space-y-2">
+                    {selectedTask.subtasks.map(subtask => (
+                      <div key={subtask.id} className="flex items-center space-x-3 p-2 border rounded">
+                        <input 
+                          type="checkbox" 
+                          checked={subtask.completed}
+                          className="rounded"
+                          readOnly
+                        />
+                        <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
+                          {subtask.title}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Comments</h3>
+                  <div className="space-y-3">
+                    {selectedTask.comments.map(comment => (
+                      <div key={comment.id} className="border rounded-lg p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium text-sm">{comment.author}</span>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(comment.timestamp), 'MMM dd, HH:mm')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700">{comment.text}</p>
+                      </div>
+                    ))}
+                    
+                    {/* Add Comment */}
+                    <div className="border-t pt-3">
+                      <textarea
+                        placeholder="Add a comment..."
+                        className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows="3"
+                      />
+                      <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        Add Comment
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Progress */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Progress</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>Completion</span>
+                      <span>{selectedTask.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${selectedTask.progress}%` }}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between text-sm">
+                      <span>Time Spent</span>
+                      <span>{selectedTask.actualHours}h / {selectedTask.estimatedHours}h</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          selectedTask.actualHours > selectedTask.estimatedHours ? 'bg-red-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${Math.min((selectedTask.actualHours / selectedTask.estimatedHours) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTask.tags.map(tag => (
+                      <span key={tag} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Attachments */}
+                {selectedTask.attachments.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Attachments</h3>
+                    <div className="space-y-2">
+                      {selectedTask.attachments.map(attachment => (
+                        <div key={attachment.id} className="flex items-center space-x-3 p-2 border rounded">
+                          <div className="text-blue-500">📎</div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{attachment.name}</div>
+                            <div className="text-xs text-gray-500">{attachment.size}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Time Tracking */}
+                {selectedTask.timeTracking.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Time Tracking</h3>
+                    <div className="space-y-2">
+                      {selectedTask.timeTracking.map((entry, index) => (
+                        <div key={index} className="text-sm">
+                          <div className="flex justify-between">
+                            <span>{format(new Date(entry.date), 'MMM dd')}</span>
+                            <span className="font-medium">{entry.hours}h</span>
+                          </div>
+                          <div className="text-xs text-gray-500">{entry.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex space-x-3">
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  Update Progress
+                </button>
+                <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                  Mark Complete
+                </button>
+                <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                  Request Help
+                </button>
+                <button className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                  Log Time
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
-          <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
-        </div>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="flex space-x-2">
-              <div className="h-6 bg-gray-200 rounded w-16"></div>
-              <div className="h-6 bg-gray-200 rounded w-20"></div>
+      <div className="space-y-6">
+        {/* Loading skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white p-6 rounded-xl shadow-sm animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm animate-pulse">
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Filters and Controls */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Filter:</label>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[140px]"
-              >
-                <option value="all">All Tasks</option>
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Completed</option>
-              </select>
-            </div>
+    <div className="space-y-6">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <MetricCard
+          title="Completed"
+          value={completedTasks}
+          icon="✅"
+          color="green"
+        />
+        <MetricCard
+          title="In Progress"
+          value={inProgressTasks}
+          icon="⏳"
+          color="blue"
+        />
+        <MetricCard
+          title="Blocked"
+          value={blockedTasks}
+          icon="🚫"
+          color="red"
+        />
+        <MetricCard
+          title="Overdue"
+          value={overdueTasks}
+          icon="⚠️"
+          color="orange"
+        />
+      </div>
 
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Sort:</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[160px]"
+      {/* Header with View Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {/* View Mode Selector */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            {[
+              { id: 'kanban', label: 'Kanban', icon: '📋' },
+              { id: 'list', label: 'List', icon: '📝' },
+              { id: 'calendar', label: 'Calendar', icon: '📅' }
+            ].map(mode => (
+              <button
+                key={mode.id}
+                onClick={() => setViewMode(mode.id)}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === mode.id
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                <option value="due_date">Sort by Due Date</option>
-                <option value="priority">Sort by Priority</option>
-                <option value="progress">Sort by Progress</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              <span className="font-medium">{filteredTasks.length}</span> of <span className="font-medium">{tasks.length}</span> tasks
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-gray-500">Completed</span>
-              <div className="w-3 h-3 bg-blue-500 rounded-full ml-3"></div>
-              <span className="text-xs text-gray-500">In Progress</span>
-              <div className="w-3 h-3 bg-gray-400 rounded-full ml-3"></div>
-              <span className="text-xs text-gray-500">Not Started</span>
-            </div>
+                <span className="mr-1">{mode.icon}</span>
+                {mode.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Task List */}
-      <div className="space-y-4">
-        {sortedTasks.map((task) => {
-          const daysUntilDue = getDaysUntilDue(task.due_date);
-          const isOverdue = daysUntilDue < 0;
-          const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0;
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Status</option>
+          <option value="todo">To Do</option>
+          <option value="in_progress">In Progress</option>
+          <option value="done">Done</option>
+          <option value="blocked">Blocked</option>
+        </select>
 
-          return (
-            <div key={task.id} className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-200">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-                <div className="flex-1 lg:mr-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">{task.title}</h3>
-                    <div className="flex-shrink-0">
-                      <div className={`w-3 h-3 rounded-full ${
-                        task.status === 'done' ? 'bg-green-500' : 
-                        task.status === 'in_progress' ? 'bg-blue-500' : 'bg-gray-400'
-                      }`}></div>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{task.description}</p>
-                  
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                      {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'} {task.priority} priority
-                    </span>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                      {task.status === 'done' ? '✅' : task.status === 'in_progress' ? '🔄' : '⏸️'} {task.status.replace('_', ' ')}
-                    </span>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      📂 {task.category}
-                    </span>
-                    {isOverdue && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        ⚠️ Overdue
-                      </span>
-                    )}
-                    {isDueSoon && !isOverdue && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        ⏰ Due Soon
-                      </span>
-                    )}
-                  </div>
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Priorities</option>
+          <option value="high">High Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <span className="mr-2">📅</span>
-                      <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+      {/* Kanban View */}
+      {viewMode === 'kanban' && (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {['todo', 'in_progress', 'done', 'blocked'].map(status => (
+              <div key={status} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4 capitalize">
+                  {status.replace('_', ' ')} ({filteredTasks.filter(t => t.status === status).length})
+                </h3>
+                
+                <Droppable droppableId={status}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[200px] ${
+                        snapshot.isDraggingOver ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      {filteredTasks
+                        .filter(task => task.status === status)
+                        .map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`bg-white p-4 rounded-lg shadow-sm border-l-4 cursor-pointer transition-shadow hover:shadow-md ${
+                                  getStatusColor(task.status)
+                                } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
+                                onClick={() => {
+                                  setSelectedTask(task);
+                                  setShowTaskModal(true);
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
+                                  <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                    {getPriorityIcon(task.priority)}
+                                  </span>
+                                </div>
+                                
+                                <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                                  {task.description}
+                                </p>
+                                
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-500">
+                                    Due: {format(new Date(task.dueDate), 'MMM dd')}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {task.mentor}
+                                  </span>
+                                </div>
+                                
+                                {task.progress > 0 && (
+                                  <div className="mb-2">
+                                    <div className="w-full bg-gray-200 rounded-full h-1">
+                                      <div 
+                                        className="bg-blue-600 h-1 rounded-full"
+                                        style={{ width: `${task.progress}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between">
+                                  <div className="flex space-x-1">
+                                    {task.tags.slice(0, 2).map(tag => (
+                                      <span key={tag} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                  
+                                  {task.subtasks.length > 0 && (
+                                    <span className="text-xs text-gray-500">
+                                      {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                      {provided.placeholder}
                     </div>
-                    <div className="flex items-center">
-                      <span className="mr-2">⏱️</span>
-                      <span>Time: {task.time_spent}h</span>
-                    </div>
-                    {task.submission_link && (
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Task
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progress
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mentor
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTasks.map((task) => (
+                  <tr 
+                    key={task.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setShowTaskModal(true);
+                    }}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                        <div className="text-sm text-gray-500">{task.category}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        task.status === 'done' ? 'bg-green-100 text-green-800' :
+                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        task.status === 'blocked' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {task.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
+                        {getPriorityIcon(task.priority)} {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <span className="mr-2">🔗</span>
-                        <a 
-                          href={task.submission_link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          View Submission
-                        </a>
+                        <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${task.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-900">{task.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {task.mentor}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold mb-4">📅 Task Calendar</h3>
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="p-2 text-center font-medium text-gray-500 text-sm">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: 35 }, (_, i) => {
+              const date = addDays(subDays(new Date(), new Date().getDay()), i - 7);
+              const dayTasks = tasks.filter(task => 
+                format(new Date(task.dueDate), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+              );
+              
+              return (
+                <div key={i} className="min-h-[100px] p-2 border border-gray-200 rounded">
+                  <div className="text-sm font-medium text-gray-900 mb-1">
+                    {format(date, 'd')}
+                  </div>
+                  <div className="space-y-1">
+                    {dayTasks.slice(0, 2).map(task => (
+                      <div 
+                        key={task.id}
+                        className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status)}`}
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowTaskModal(true);
+                        }}
+                      >
+                        {task.title.substring(0, 15)}...
+                      </div>
+                    ))}
+                    {dayTasks.length > 2 && (
+                      <div className="text-xs text-gray-500">
+                        +{dayTasks.length - 2} more
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Progress Section */}
-                <div className="lg:ml-6 flex flex-col items-center lg:items-end space-y-3">
-                  <div className="text-center lg:text-right">
-                    <div className="text-2xl font-bold text-gray-900 mb-1">{task.progress}%</div>
-                    <div className="text-xs text-gray-500 mb-2">Progress</div>
-                    <div className="w-32 bg-gray-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          task.status === 'done' ? 'bg-gradient-to-r from-green-400 to-green-600' : 
-                          task.status === 'in_progress' ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gray-400'
-                        }`}
-                        style={{ width: `${task.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {/* Quick Actions */}
-                  <div className="flex flex-col space-y-2">
-                    {task.status === 'not_started' && (
-                      <button
-                        onClick={() => handleStatusChange(task.id, 'in_progress')}
-                        className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
-                      >
-                        <span>▶️</span>
-                        <span>Start Task</span>
-                      </button>
-                    )}
-                    {task.status === 'in_progress' && (
-                      <>
-                        <button
-                          onClick={() => setSelectedTask(task.id)}
-                          className="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
-                        >
-                          <span>✅</span>
-                          <span>Submit</span>
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(task.id, 'not_started')}
-                          className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2"
-                        >
-                          <span>⏸️</span>
-                          <span>Pause</span>
-                        </button>
-                      </>
-                    )}
-                    {task.status === 'done' && (
-                      <button
-                        onClick={() => handleStatusChange(task.id, 'in_progress')}
-                        className="px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2"
-                      >
-                        <span>🔄</span>
-                        <span>Reopen</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Dependencies */}
-              {task.dependencies && task.dependencies.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span>🔗</span>
-                    <span>Depends on:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {task.dependencies.map(depId => {
-                        const depTask = tasks.find(t => t.id === depId);
-                        return (
-                          <span key={depId} className="px-2 py-1 bg-gray-100 rounded text-xs">
-                            {depTask ? depTask.title : `Task ${depId}`}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Submission Modal */}
-              {selectedTask === task.id && (
-                <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
-                  <div className="flex items-center mb-4">
-                    <span className="text-2xl mr-3">🚀</span>
-                    <h4 className="font-semibold text-gray-900">Submit Your Work</h4>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Submission Link
-                      </label>
-                      <input
-                        type="url"
-                        placeholder="https://github.com/username/repo or https://drive.google.com/..."
-                        value={submissionLink}
-                        onChange={(e) => setSubmissionLink(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Share your GitHub repository, Google Drive link, or any other submission URL
-                      </p>
-                    </div>
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => handleSubmissionSubmit(task.id)}
-                        disabled={!submissionLink.trim()}
-                        className="px-6 py-3 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                      >
-                        <span>✅</span>
-                        <span>Submit Task</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedTask(null);
-                          setSubmissionLink('');
-                        }}
-                        className="px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2"
-                      >
-                        <span>❌</span>
-                        <span>Cancel</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {sortedTasks.length === 0 && (
-        <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
-          <div className="text-gray-400 text-8xl mb-6">
-            {filter === 'all' ? '📝' : 
-             filter === 'done' ? '✅' : 
-             filter === 'in_progress' ? '🔄' : '⏸️'}
+              );
+            })}
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            {filter === 'all' ? 'No tasks assigned yet' : `No ${filter.replace('_', ' ')} tasks`}
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto leading-relaxed">
-            {filter === 'all' 
-              ? "Your mentor will assign tasks soon. Check back later or reach out if you have questions!" 
-              : `You don't have any tasks with "${filter.replace('_', ' ')}" status. Try changing the filter to see other tasks.`
-            }
-          </p>
-          {filter !== 'all' && (
-            <button
-              onClick={() => setFilter('all')}
-              className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors inline-flex items-center space-x-2"
-            >
-              <span>👀</span>
-              <span>View All Tasks</span>
-            </button>
-          )}
         </div>
       )}
+
+      {/* Task Modal */}
+      {showTaskModal && <TaskModal />}
     </div>
   );
 }

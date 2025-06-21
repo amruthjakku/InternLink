@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import GitLabIntegration from '../../../components/dashboard/GitLabIntegration.js';
+import { ProgressTab } from '../../../components/intern/ProgressTab';
+import { TasksTab } from '../../../components/intern/TasksTab';
+import { PerformanceTab } from '../../../components/intern/PerformanceTab';
+import { MetricCard } from '../../../components/Charts';
 
 export default function InternDashboard() {
   const { data: session, status } = useSession();
@@ -137,6 +141,7 @@ export default function InternDashboard() {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'progress', name: 'My Progress', icon: '📈' },
               { id: 'tasks', name: 'Tasks', icon: '✅' },
+              { id: 'performance', name: 'Performance', icon: '🎯' },
               { id: 'gitlab', name: 'GitLab', icon: '🦊' }
             ].map((tab) => (
               <button
@@ -168,55 +173,36 @@ export default function InternDashboard() {
               </p>
             </div>
 
-            {/* Stats Cards */}
+            {/* Enhanced Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">📝</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Join Requests</p>
-                    <p className="text-2xl font-semibold text-gray-900">{joinRequests.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">✅</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Approved</p>
-                    <p className="text-2xl font-semibold text-gray-900">{approvedRequests.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">⏳</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Pending</p>
-                    <p className="text-2xl font-semibold text-gray-900">{pendingRequests.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <span className="text-2xl">🔥</span>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Streak Days</p>
-                    <p className="text-2xl font-semibold text-gray-900">0</p>
-                  </div>
-                </div>
-              </div>
+              <MetricCard
+                title="Join Requests"
+                value={joinRequests.length}
+                change={8.2}
+                icon="📝"
+                color="blue"
+              />
+              <MetricCard
+                title="Approved"
+                value={approvedRequests.length}
+               change={15.3}
+                icon="✅"
+                color="green"
+               />
+              <MetricCard
+                title="Pending"
+                value={pendingRequests.length}
+                change={-5.1}
+                icon="⏳"
+          color="orange"
+              />
+              <MetricCard
+                title="Streak Days"
+                      value={7}
+                change={12.5}
+                icon="🔥"
+                color="red"
+              />
             </div>
 
             {/* Join Request Status */}
@@ -343,6 +329,31 @@ export default function InternDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Progress Tab */}
+        {activeTab === 'progress' && (
+          <ProgressTab 
+            user={session?.user} 
+            tasks={[]} 
+            loading={loading} 
+          />
+        )}
+
+        {/* Tasks Tab */}
+        {activeTab === 'tasks' && (
+          <TasksTab 
+            user={session?.user} 
+            loading={loading} 
+          />
+        )}
+
+        {/* Performance Tab */}
+        {activeTab === 'performance' && (
+          <PerformanceTab 
+            user={session?.user} 
+            loading={loading} 
+          />
         )}
 
         {activeTab === 'gitlab' && (
