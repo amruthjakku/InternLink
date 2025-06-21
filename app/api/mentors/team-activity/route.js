@@ -5,6 +5,9 @@ import { getUserByGitLabId, getCohortsByMentor, connectToDatabase } from '../../
 import ActivityTracking from '../../../../models/ActivityTracking.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/mentors/team-activity
  * Get team activity overview for mentors

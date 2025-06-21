@@ -5,6 +5,9 @@ import { connectToDatabase } from '../../../../utils/database.js';
 import { GitLabSyncService } from '../../../../utils/gitlab-sync.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/gitlab/analytics
  * Get comprehensive GitLab analytics for the user

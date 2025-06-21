@@ -7,6 +7,9 @@ import { GitLabAPI } from '../../../../utils/gitlab-api.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 import ActivityTracking from '../../../../models/ActivityTracking.js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/gitlab/commits
  * Get user commits with optional date filtering

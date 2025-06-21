@@ -5,6 +5,9 @@ import { connectToDatabase } from '../../../../utils/database.js';
 import User from '../../../../models/User.js';
 import College from '../../../../models/College.js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);

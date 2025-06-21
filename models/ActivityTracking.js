@@ -181,11 +181,9 @@ ActivityTrackingSchema.pre('save', function(next) {
 });
 
 // Compound indexes for efficient queries
-ActivityTrackingSchema.index({ userId: 1, type: 1 });
-ActivityTrackingSchema.index({ userId: 1, activityCreatedAt: -1 });
+ActivityTrackingSchema.index({ userId: 1, type: 1, activityCreatedAt: -1 });
 ActivityTrackingSchema.index({ projectId: 1, type: 1 });
 ActivityTrackingSchema.index({ gitlabId: 1, type: 1 }, { unique: true });
-ActivityTrackingSchema.index({ userId: 1, type: 1, activityCreatedAt: -1 });
 
 // Static methods for analytics
 ActivityTrackingSchema.statics.getUserStats = async function(userId, dateRange = {}) {
