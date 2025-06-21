@@ -7,6 +7,9 @@ import { signOut } from 'next-auth/react';
 import TeamActivity from '../../../components/dashboard/TeamActivity.js';
 import { AdvancedTaskManagement } from '../../../components/mentor/AdvancedTaskManagement';
 import { InternManagementTab } from '../../../components/mentor/InternManagementTab';
+import { AttendanceMarker } from '../../../components/AttendanceMarker';
+import { AttendanceWidget } from '../../../components/AttendanceWidget';
+import { AttendanceHistory } from '../../../components/AttendanceHistory';
 import { MetricCard } from '../../../components/Charts';
 
 export default function MentorDashboard() {
@@ -212,6 +215,7 @@ export default function MentorDashboard() {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'task-management', name: 'Task Management', icon: '📋' },
               { id: 'intern-management', name: 'Intern Management', icon: '👥' },
+              { id: 'attendance', name: 'My Attendance', icon: '📍' },
               { id: 'colleges', name: 'My Colleges', icon: '🏫' },
               { id: 'requests', name: `Join Requests ${pendingRequests.length > 0 ? `(${pendingRequests.length})` : ''}`, icon: '📝' },
               { id: 'analytics', name: 'Analytics', icon: '📈' }
@@ -269,6 +273,9 @@ export default function MentorDashboard() {
               />
             </div>
 
+            {/* Attendance Widget */}
+            <AttendanceWidget />
+
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -310,6 +317,9 @@ export default function MentorDashboard() {
 
         {/* Intern Management Tab */}
         {activeTab === 'intern-management' && <InternManagementTab />}
+
+        {/* Attendance Tab */}
+        {activeTab === 'attendance' && <AttendanceHistory />}
 
         {activeTab === 'colleges' && (
           <div className="space-y-6">

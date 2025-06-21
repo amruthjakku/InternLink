@@ -8,6 +8,9 @@ import GitLabIntegration from '../../../components/dashboard/GitLabIntegration.j
 import { ProgressTab } from '../../../components/intern/ProgressTab';
 import { TasksTab } from '../../../components/intern/TasksTab';
 import { PerformanceTab } from '../../../components/intern/PerformanceTab';
+import { AttendanceMarker } from '../../../components/AttendanceMarker';
+import { AttendanceWidget } from '../../../components/AttendanceWidget';
+import { AttendanceHistory } from '../../../components/AttendanceHistory';
 import { MetricCard } from '../../../components/Charts';
 
 export default function InternDashboard() {
@@ -16,30 +19,7 @@ export default function InternDashboard() {
   const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [demoMode, setDemoMode] = useState(false);
-
   useEffect(() => {
-    // Check if this is demo mode from URL or localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    const isDemoMode = urlParams.get('demo') === 'true' || localStorage.getItem('demoMode') === 'true';
-    setDemoMode(isDemoMode);
-
-    if (isDemoMode) {
-      // Load demo data
-      setJoinRequests([
-        {
-          _id: 'demo_request_1',
-          collegeName: 'Sreenidhi Institute of Science and Technology',
-          cohortName: 'Summer 2025 Batch',
-          message: 'I am excited to join this internship program!',
-          status: 'approved',
-          createdAt: new Date()
-        }
-      ]);
-      setLoading(false);
-      return;
-    }
-
     if (status === 'loading') return;
 
     if (!session) {
@@ -142,6 +122,7 @@ export default function InternDashboard() {
               { id: 'progress', name: 'My Progress', icon: '📈' },
               { id: 'tasks', name: 'Tasks', icon: '✅' },
               { id: 'performance', name: 'Performance', icon: '🎯' },
+              { id: 'attendance', name: 'Attendance', icon: '📍' },
               { id: 'gitlab', name: 'GitLab', icon: '🦊' }
             ].map((tab) => (
               <button
@@ -204,6 +185,9 @@ export default function InternDashboard() {
                 color="red"
               />
             </div>
+
+            {/* Attendance Widget */}
+            <AttendanceWidget />
 
             {/* Join Request Status */}
             <div className="bg-white rounded-lg shadow">
@@ -354,6 +338,11 @@ export default function InternDashboard() {
             user={session?.user} 
             loading={loading} 
           />
+        )}
+
+        {/* Attendance Tab */}
+        {activeTab === 'attendance' && (
+          <AttendanceHistory />
         )}
 
         {activeTab === 'gitlab' && (

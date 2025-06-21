@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
 import { AdvancedSystemAnalytics } from '../../../components/admin/AdvancedSystemAnalytics';
+import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
+import { IPManagement } from '../../../components/admin/IPManagement';
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
@@ -415,6 +417,8 @@ export default function AdminDashboard() {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️' },
               { id: 'advanced-analytics', name: 'Advanced Analytics', icon: '🔬' },
+              { id: 'attendance-analytics', name: 'Attendance Analytics', icon: '📍' },
+              { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦' },
@@ -555,6 +559,12 @@ export default function AdminDashboard() {
 
         {/* Advanced Analytics Tab */}
         {activeTab === 'advanced-analytics' && <AdvancedSystemAnalytics />}
+
+        {/* Attendance Analytics Tab */}
+        {activeTab === 'attendance-analytics' && <AttendanceAnalytics />}
+
+        {/* IP Management Tab */}
+        {activeTab === 'ip-management' && <IPManagement />}
 
         {/* User Management Tab */}
         {activeTab === 'user-management' && <AdvancedUserManagement />}
