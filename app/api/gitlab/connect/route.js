@@ -10,6 +10,10 @@ import { GitLabAPI } from '../../../../utils/gitlab-api.js';
  * POST /api/gitlab/connect
  * Connect GitLab account and store OAuth tokens
  */
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);

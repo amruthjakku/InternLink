@@ -7,6 +7,10 @@ import {
   getCollegeById
 } from "../../../utils/database";
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const session = await getServerSession();
