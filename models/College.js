@@ -51,7 +51,7 @@ const collegeSchema = new mongoose.Schema({
 });
 
 // Indexes
-collegeSchema.index({ name: 1 });
+// Note: name already has unique index from schema definition
 collegeSchema.index({ mentorUsername: 1 });
 collegeSchema.index({ isActive: 1 });
 

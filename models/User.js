@@ -67,8 +67,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-userSchema.index({ gitlabUsername: 1 });
-userSchema.index({ gitlabId: 1 });
+// Note: gitlabUsername and gitlabId already have unique indexes from schema definition
 userSchema.index({ role: 1 });
 userSchema.index({ college: 1 });
 

@@ -136,7 +136,7 @@ GitLabIntegrationSchema.pre('save', function(next) {
 });
 
 // Indexes for better query performance
-GitLabIntegrationSchema.index({ userId: 1 });
+// Note: userId already has unique index from schema definition
 GitLabIntegrationSchema.index({ gitlabUserId: 1 });
 GitLabIntegrationSchema.index({ isActive: 1, tokenExpiresAt: 1 });
 GitLabIntegrationSchema.index({ 'repositories.projectId': 1 });

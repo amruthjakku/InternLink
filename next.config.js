@@ -1,6 +1,34 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuration options
+  experimental: {
+    serverComponentsExternalPackages: ['mongoose']
+  },
+  
+  // Disable static optimization for pages that use dynamic features
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+    ];
+  },
+
+  // Environment variables
+  env: {
+    MONGODB_URI: process.env.MONGODB_URI,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    GITLAB_CLIENT_ID: process.env.GITLAB_CLIENT_ID,
+    GITLAB_CLIENT_SECRET: process.env.GITLAB_CLIENT_SECRET,
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+  },
+
+  // Output configuration for deployment
+  output: 'standalone',
 }
 
 module.exports = nextConfig

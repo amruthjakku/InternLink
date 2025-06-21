@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route.js';
-import { getUserByGitLabId, getCohortsByMentor, connectToDatabase } from '../../../../utils/database.js';
+import { connectToDatabase } from '../../../../utils/database.js';
 import ActivityTracking from '../../../../models/ActivityTracking.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
+import User from '../../../../models/User.js';
+import College from '../../../../models/College.js';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -23,14 +25,13 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Verify user is a mentor
-    const user = await getUserByGitLabId(session.user.gitlabId);
+    const user = await User.findOne({ gitlabId: session.user.gitlabId });
     if (!user || user.role !== 'mentor') {
       return NextResponse.json({ error: 'Access denied - Mentor role required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d';
-    const cohortId = searchParams.get('cohortId');
 
     // Calculate date range
     const now = new Date();
@@ -44,11 +45,15 @@ export async function GET(request) {
     const days = periodDays[period] || 30;
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-    // Get mentor's cohorts
-    const cohorts = await getCohortsByMentor(user._id);
-    const cohortIds = cohortId ? [cohortId] : cohorts.map(c => c._id);
+    // Get mentor's college and interns
+    const mentorCollege = await College.findOne({ mentorUsername: user.gitlabUsername });
+    const interns = mentorCollege ? await User.find({ 
+      college: mentorCollege._id, 
+      role: 'intern', 
+      isActive: true 
+    }) : [];
 
-    if (cohorts.length === 0) {
+    if (interns.length === 0) {
       return NextResponse.json({
         analytics: {
           totalCommits: 0,
@@ -57,14 +62,18 @@ export async function GET(request) {
           mergeRequests: 0
         },
         internActivity: [],
-        cohorts: []
+        college: mentorCollege ? {
+          id: mentorCollege._id,
+          name: mentorCollege.name,
+          internCount: 0
+        } : null
       });
     }
 
-    // Get all interns in mentor's cohorts
-    // This would need to be implemented based on your user-cohort relationship
-    // For now, we'll get all GitLab integrations and filter by activity
+    // Get GitLab integrations for the mentor's interns
+    const internIds = interns.map(intern => intern._id);
     const allIntegrations = await GitLabIntegration.find({ 
+      userId: { $in: internIds },
       isActive: true 
     }).populate('userId');
 
@@ -184,12 +193,12 @@ export async function GET(request) {
     return NextResponse.json({
       analytics,
       internActivity: validInternActivity,
-      cohorts: cohorts.map(c => ({
-        id: c._id,
-        name: c.name,
-        description: c.description,
-        internCount: c.currentInterns || 0
-      })),
+      college: mentorCollege ? {
+        id: mentorCollege._id,
+        name: mentorCollege.name,
+        description: mentorCollege.description,
+        internCount: interns.length
+      } : null,
       dailyTrend,
       period: {
         type: period,
