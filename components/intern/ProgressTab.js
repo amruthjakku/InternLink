@@ -13,134 +13,53 @@ export function ProgressTab({ user, tasks, loading }) {
   const [milestones, setMilestones] = useState([]);
 
   useEffect(() => {
-    // Generate mock progress data
-    const generateProgressData = () => {
-      const days = eachDayOfInterval({
-        start: subDays(new Date(), 30),
-        end: new Date()
-      });
-
-      return days.map((day, index) => ({
-        date: day,
-        tasksCompleted: Math.floor(Math.random() * 5) + 1,
-        cumulativeProgress: Math.min(index * 2 + Math.random() * 10, 100),
-        timeSpent: Math.floor(Math.random() * 8) + 1
-      }));
-    };
-
-    // Generate mock skill data
-    const generateSkillData = () => [
-      { name: 'Frontend', currentLevel: 7, targetLevel: 10, recentActivity: 'Completed React project' },
-      { name: 'Backend', currentLevel: 5, targetLevel: 8, recentActivity: 'Learning Node.js' },
-      { name: 'Database', currentLevel: 6, targetLevel: 9, recentActivity: 'MongoDB practice' },
-      { name: 'DevOps', currentLevel: 3, targetLevel: 7, recentActivity: 'Docker basics' },
-      { name: 'Testing', currentLevel: 4, targetLevel: 8, recentActivity: 'Jest unit tests' },
-      { name: 'UI/UX', currentLevel: 6, targetLevel: 8, recentActivity: 'Figma designs' }
-    ];
-
-    // Generate mock activity data
-    const generateActivityData = () => {
-      const days = eachDayOfInterval({
-        start: subDays(new Date(), 365),
-        end: new Date()
-      });
-
-      return days.map(day => ({
-        date: day,
-        count: Math.floor(Math.random() * 5)
-      }));
-    };
-
-    // Generate mock streak data
-    const generateStreakData = () => {
-      const history = Array.from({ length: 30 }, (_, i) => ({
-        date: format(subDays(new Date(), 29 - i), 'yyyy-MM-dd'),
-        active: Math.random() > 0.3
-      }));
-
-      let currentStreak = 0;
-      let longestStreak = 0;
-      let tempStreak = 0;
-
-      // Calculate streaks from the end (most recent)
-      for (let i = history.length - 1; i >= 0; i--) {
-        if (history[i].active) {
-          tempStreak++;
-          if (i === history.length - 1 || history[i + 1].active) {
-            currentStreak = tempStreak;
-          }
-        } else {
-          longestStreak = Math.max(longestStreak, tempStreak);
-          tempStreak = 0;
-        }
-      }
-      longestStreak = Math.max(longestStreak, tempStreak);
-
-      return {
-        current: currentStreak,
-        longest: longestStreak,
-        history
-      };
-    };
-
-    // Generate mock milestones
-    const generateMilestones = () => [
-      {
-        id: 1,
-        title: 'First Steps',
-        description: 'Complete your first 5 tasks',
-        icon: '🎯',
-        progress: 100,
-        current: 5,
-        target: 5,
-        unit: 'tasks',
-        completed: true,
-        reward: 'Achievement Badge'
-      },
-      {
-        id: 2,
-        title: 'Consistency Champion',
-        description: 'Maintain a 7-day streak',
-        icon: '🔥',
-        progress: 85,
-        current: 6,
-        target: 7,
-        unit: 'days',
-        completed: false,
-        reward: 'Streak Master Badge'
-      },
-      {
-        id: 3,
-        title: 'Skill Builder',
-        description: 'Reach level 8 in any skill',
-        icon: '📚',
-        progress: 62,
-        current: 7,
-        target: 8,
-        unit: 'level',
-        completed: false,
-        reward: 'Expert Badge'
-      },
-      {
-        id: 4,
-        title: 'Team Player',
-        description: 'Complete 3 collaborative tasks',
-        icon: '🤝',
-        progress: 33,
-        current: 1,
-        target: 3,
-        unit: 'tasks',
-        completed: false,
-        reward: 'Collaboration Badge'
-      }
-    ];
-
-    setProgressData(generateProgressData());
-    setSkillData(generateSkillData());
-    setActivityData(generateActivityData());
-    setStreakData(generateStreakData());
-    setMilestones(generateMilestones());
+    fetchProgressData();
   }, []);
+
+  const fetchProgressData = async () => {
+    try {
+      const [progressRes, skillsRes, activityRes, streakRes, milestonesRes] = await Promise.all([
+        fetch('/api/analytics/progress'),
+        fetch('/api/analytics/skills'),
+        fetch('/api/analytics/activity'),
+        fetch('/api/analytics/streak'),
+        fetch('/api/analytics/milestones')
+      ]);
+
+      if (progressRes.ok) {
+        const data = await progressRes.json();
+        setProgressData(data.progress || []);
+      }
+
+      if (skillsRes.ok) {
+        const data = await skillsRes.json();
+        setSkillData(data.skills || []);
+      }
+
+      if (activityRes.ok) {
+        const data = await activityRes.json();
+        setActivityData(data.activity || []);
+      }
+
+      if (streakRes.ok) {
+        const data = await streakRes.json();
+        setStreakData(data.streak || { current: 0, longest: 0, history: [] });
+      }
+
+      if (milestonesRes.ok) {
+        const data = await milestonesRes.json();
+        setMilestones(data.milestones || []);
+      }
+    } catch (error) {
+      console.error('Error fetching progress data:', error);
+      // Set empty defaults on error
+      setProgressData([]);
+      setSkillData([]);
+      setActivityData([]);
+      setStreakData({ current: 0, longest: 0, history: [] });
+      setMilestones([]);
+    }
+  };
 
   if (loading) {
     return (

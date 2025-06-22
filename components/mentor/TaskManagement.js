@@ -8,10 +8,18 @@ export function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [interns, setInterns] = useState([]);
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    assignedTo: '',
+    dueDate: ''
+  });
 
   useEffect(() => {
     if (session) {
       fetchTasks();
+      fetchInterns();
     }
   }, [session]);
 
@@ -26,6 +34,42 @@ export function TaskManagement() {
       console.error('Error fetching tasks:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/mentor/interns');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.interns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+    }
+  };
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/mentor/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskForm),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(prev => [...prev, data.task]);
+        setTaskForm({ title: '', description: '', assignedTo: '', dueDate: '' });
+        setShowCreateForm(false);
+      } else {
+        console.error('Failed to create task');
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
     }
   };
 
@@ -64,15 +108,18 @@ export function TaskManagement() {
       {showCreateForm && (
         <div className="bg-white rounded-lg shadow p-6">
           <h4 className="text-lg font-medium text-gray-900 mb-4">Create New Task</h4>
-          <form className="space-y-4">
+          <form onSubmit={handleCreateTask} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Task Title
               </label>
               <input
                 type="text"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter task title"
+                required
               />
             </div>
             <div>
@@ -81,6 +128,8 @@ export function TaskManagement() {
               </label>
               <textarea
                 rows={3}
+                value={taskForm.description}
+                onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter task description"
               />
@@ -90,8 +139,18 @@ export function TaskManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Assign to Intern
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select 
+                  value={taskForm.assignedTo}
+                  onChange={(e) => setTaskForm(prev => ({ ...prev, assignedTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
                   <option value="">Select intern</option>
+                  {interns.map(intern => (
+                    <option key={intern.id} value={intern.id}>
+                      {intern.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -100,7 +159,10 @@ export function TaskManagement() {
                 </label>
                 <input
                   type="date"
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 />
               </div>
             </div>

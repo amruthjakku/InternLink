@@ -8,20 +8,35 @@ export function AIAssistant() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // Simulate loading initial conversation
-    setTimeout(() => {
-      setMessages([
-        {
-          id: 1,
-          sender: 'AI Assistant',
-          message: 'Hello! I\'m your AI assistant. I can help you with coding questions, project guidance, and learning resources. How can I assist you today?',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isOwn: false,
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchConversation();
   }, []);
+
+  const fetchConversation = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/ai/conversation');
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      } else {
+        // Set welcome message if no conversation exists
+        setMessages([
+          {
+            id: 1,
+            sender: 'AI Assistant',
+            message: 'Hello! I\'m your AI assistant. I can help you with coding questions, project guidance, and learning resources. How can I assist you today?',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: false,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -31,25 +46,14 @@ export function AIAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const simulateAIResponse = (userMessage) => {
-    const responses = [
-      "That's a great question! Let me help you with that. For React components, you'll want to focus on proper state management and component lifecycle.",
-      "I understand you're working on that. Here are some best practices you should consider...",
-      "Based on your question, I'd recommend checking out the official documentation. Also, here's a helpful approach...",
-      "That's a common challenge! Here's how you can solve it step by step...",
-      "Great progress! To improve your code further, consider these optimization techniques...",
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim()) {
+      const messageText = newMessage;
       const userMessage = {
-        id: messages.length + 1,
+        id: Date.now(),
         sender: 'You',
-        message: newMessage,
+        message: messageText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isOwn: true,
       };
@@ -58,18 +62,54 @@ export function AIAssistant() {
       setNewMessage('');
       setIsTyping(true);
 
-      // Simulate AI response delay
-      setTimeout(() => {
-        const aiResponse = {
-          id: messages.length + 2,
+      try {
+        const response = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: messageText,
+            conversationHistory: messages,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiResponse = {
+            id: Date.now() + 1,
+            sender: 'AI Assistant',
+            message: data.response,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: false,
+          };
+          setMessages(prev => [...prev, aiResponse]);
+        } else {
+          console.error('Failed to get AI response');
+          // Fallback message
+          const fallbackResponse = {
+            id: Date.now() + 1,
+            sender: 'AI Assistant',
+            message: 'I apologize, but I\'m having trouble processing your request right now. Please try again later.',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: false,
+          };
+          setMessages(prev => [...prev, fallbackResponse]);
+        }
+      } catch (error) {
+        console.error('Error getting AI response:', error);
+        // Fallback message
+        const errorResponse = {
+          id: Date.now() + 1,
           sender: 'AI Assistant',
-          message: simulateAIResponse(newMessage),
+          message: 'I apologize, but I\'m having trouble connecting right now. Please try again later.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isOwn: false,
         };
-        setMessages(prev => [...prev, aiResponse]);
+        setMessages(prev => [...prev, errorResponse]);
+      } finally {
         setIsTyping(false);
-      }, 2000);
+      }
     }
   };
 

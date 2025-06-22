@@ -43,47 +43,65 @@ export function AttendanceTab({ user, loading }) {
     }
   };
 
-  const handleCheckIn = () => {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateString = now.toISOString().split('T')[0];
+  const handleCheckIn = async () => {
+    try {
+      const response = await fetch('/api/attendance/checkin-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'checkin',
+          clientIP: currentLocation?.ip || 'unknown',
+          location: currentLocation?.location || 'Unknown',
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language
+          }
+        }),
+      });
 
-    const newRecord = {
-      date: dateString,
-      checkIn: timeString,
-      checkOut: null,
-      totalHours: 0,
-      status: 'present',
-      location: currentLocation?.location || 'Unknown',
-      tasksCompleted: 0
-    };
-
-    setTodayAttendance(newRecord);
-    setAttendanceData(prev => [newRecord, ...prev.filter(record => record.date !== dateString)]);
+      if (response.ok) {
+        const data = await response.json();
+        setTodayAttendance(data.attendance);
+        fetchAttendanceData(); // Refresh the data
+      } else {
+        console.error('Failed to check in');
+      }
+    } catch (error) {
+      console.error('Error checking in:', error);
+    }
   };
 
-  const handleCheckOut = () => {
-    if (todayAttendance && todayAttendance.checkIn) {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      // Calculate hours (simplified)
-      const checkInTime = new Date(`${todayAttendance.date} ${todayAttendance.checkIn}`);
-      const checkOutTime = now;
-      const diffHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+  const handleCheckOut = async () => {
+    try {
+      const response = await fetch('/api/attendance/checkin-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'checkout',
+          clientIP: currentLocation?.ip || 'unknown',
+          location: currentLocation?.location || 'Unknown',
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language
+          }
+        }),
+      });
 
-      const updatedRecord = {
-        ...todayAttendance,
-        checkOut: timeString,
-        totalHours: Math.round(diffHours * 100) / 100
-      };
-
-      setTodayAttendance(updatedRecord);
-      setAttendanceData(prev => 
-        prev.map(record => 
-          record.date === updatedRecord.date ? updatedRecord : record
-        )
-      );
+      if (response.ok) {
+        const data = await response.json();
+        setTodayAttendance(data.attendance);
+        fetchAttendanceData(); // Refresh the data
+      } else {
+        console.error('Failed to check out');
+      }
+    } catch (error) {
+      console.error('Error checking out:', error);
     }
   };
 

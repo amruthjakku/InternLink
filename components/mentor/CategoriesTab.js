@@ -50,6 +50,72 @@ export function CategoriesTab() {
     }
   };
 
+  const handleCreateCategory = async (formData) => {
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(prev => [...prev, data.category]);
+        setShowCreateForm(false);
+      } else {
+        console.error('Failed to create category');
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
+  };
+
+  const handleUpdateCategory = async (categoryId, formData) => {
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(prev => prev.map(cat => 
+          cat.id === categoryId ? data.category : cat
+        ));
+        setEditingCategory(null);
+      } else {
+        console.error('Failed to update category');
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      } else {
+        console.error('Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+  };
+
   const getCategoryStats = (categoryId) => {
     const categoryTasks = tasks.filter(task => task.category_id === categoryId);
     const completedTasks = categoryTasks.filter(task => task.status === 'completed').length;
@@ -68,7 +134,16 @@ export function CategoriesTab() {
     if (!showCreateForm && !editingCategory) return null;
 
     const isEditing = !!editingCategory;
-    const formData = editingCategory || { name: '', description: '', color: selectedColor };
+    const [formData, setFormData] = useState(editingCategory || { name: '', description: '', color: selectedColor });
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (isEditing) {
+        await handleUpdateCategory(editingCategory.id, formData);
+      } else {
+        await handleCreateCategory(formData);
+      }
+    };
 
     return (
       <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -88,14 +163,16 @@ export function CategoriesTab() {
                 ✕
               </button>
             </div>
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Category Name</label>
                 <input
                   type="text"
-                  defaultValue={formData.name}
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="e.g., Frontend Development"
+                  required
                 />
               </div>
 
@@ -103,7 +180,8 @@ export function CategoriesTab() {
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   rows={3}
-                  defaultValue={formData.description}
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Describe what this category covers..."
                 />
@@ -198,7 +276,10 @@ export function CategoriesTab() {
                   >
                     ✏️
                   </button>
-                  <button className="text-gray-400 hover:text-red-600">
+                  <button 
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="text-gray-400 hover:text-red-600"
+                  >
                     🗑️
                   </button>
                 </div>

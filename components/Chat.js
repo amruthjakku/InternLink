@@ -7,17 +7,26 @@ export function Chat() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // Simulate loading initial messages
-    setTimeout(() => {
-      setMessages([
-        { id: 1, sender: 'John Doe', message: 'Hey, can someone help me with the React component?', timestamp: '10:30 AM', isOwn: false },
-        { id: 2, sender: 'You', message: 'Sure! What specific issue are you facing?', timestamp: '10:32 AM', isOwn: true },
-        { id: 3, sender: 'John Doe', message: 'I\'m having trouble with state management in my component.', timestamp: '10:35 AM', isOwn: false },
-        { id: 4, sender: 'Mentor Sarah', message: 'Try using useState hook. Here\'s a quick example...', timestamp: '10:40 AM', isOwn: false },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchMessages();
   }, []);
+
+  const fetchMessages = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/chat/messages');
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      } else {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -27,18 +36,34 @@ export function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim()) {
-      const message = {
-        id: messages.length + 1,
-        sender: 'You',
-        message: newMessage,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isOwn: true,
-      };
-      setMessages([...messages, message]);
+      const messageText = newMessage;
       setNewMessage('');
+      
+      try {
+        const response = await fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: messageText,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(prev => [...prev, data.message]);
+        } else {
+          console.error('Failed to send message');
+          // Optionally show error to user
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        // Optionally show error to user
+      }
     }
   };
 

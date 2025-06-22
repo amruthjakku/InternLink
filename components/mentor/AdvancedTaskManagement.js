@@ -23,217 +23,163 @@ export function AdvancedTaskManagement() {
   const svgRef = useRef();
   const timelineRef = useRef();
 
-  // Mock data
-  const interns = [
-    { id: 1, name: 'Alex Chen', email: 'alex.chen@college.edu', avatar: 'AC', color: 'bg-blue-500' },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah.johnson@university.edu', avatar: 'SJ', color: 'bg-green-500' },
-    { id: 3, name: 'Mike Rodriguez', email: 'mike.rodriguez@tech.edu', avatar: 'MR', color: 'bg-purple-500' },
-    { id: 4, name: 'Emily Davis', email: 'emily.davis@institute.edu', avatar: 'ED', color: 'bg-pink-500' }
-  ];
+  const [interns, setInterns] = useState([]);
 
   useEffect(() => {
-    // Generate comprehensive mock tasks
-    const generateTasks = () => [
-      {
-        id: 1,
-        title: 'Setup Development Environment',
-        description: 'Install and configure development tools, IDE, and project dependencies',
-        status: 'done',
-        priority: 'high',
-        assigneeId: 1,
-        assigneeName: 'Alex Chen',
-        category: 'Setup',
-        dueDate: '2024-01-15',
-        createdDate: '2024-01-01',
-        completedDate: '2024-01-14',
-        estimatedHours: 4,
-        actualHours: 3.5,
-        progress: 100,
-        tags: ['setup', 'environment'],
-        dependencies: [],
-        subtasks: [
-          { id: 11, title: 'Install Node.js', completed: true },
-          { id: 12, title: 'Setup Git repository', completed: true },
-          { id: 13, title: 'Configure IDE', completed: true }
-        ],
-        comments: [
-          { id: 1, author: 'Alex Chen', text: 'Environment setup completed successfully', timestamp: '2024-01-14T10:30:00Z' }
-        ],
-        timeTracking: [
-          { date: '2024-01-01', hours: 2 },
-          { date: '2024-01-02', hours: 1.5 }
-        ]
-      },
-      {
-        id: 2,
-        title: 'Database Schema Design',
-        description: 'Design and implement the database schema for the user management system',
-        status: 'in_progress',
-        priority: 'high',
-        assigneeId: 2,
-        assigneeName: 'Sarah Johnson',
-        category: 'Backend',
-        dueDate: '2024-01-20',
-        createdDate: '2024-01-05',
-        estimatedHours: 8,
-        actualHours: 5,
-        progress: 65,
-        tags: ['database', 'schema', 'backend'],
-        dependencies: [1],
-        subtasks: [
-          { id: 21, title: 'Design user table', completed: true },
-          { id: 22, title: 'Design task table', completed: true },
-          { id: 23, title: 'Create relationships', completed: false },
-          { id: 24, title: 'Add indexes', completed: false }
-        ],
-        comments: [
-          { id: 2, author: 'Sarah Johnson', text: 'Working on table relationships', timestamp: '2024-01-16T14:20:00Z' }
-        ],
-        timeTracking: [
-          { date: '2024-01-05', hours: 3 },
-          { date: '2024-01-06', hours: 2 }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Frontend Component Library',
-        description: 'Create reusable React components for the application',
-        status: 'todo',
-        priority: 'medium',
-        assigneeId: 3,
-        assigneeName: 'Mike Rodriguez',
-        category: 'Frontend',
-        dueDate: '2024-01-25',
-        createdDate: '2024-01-10',
-        estimatedHours: 12,
-        actualHours: 0,
-        progress: 0,
-        tags: ['react', 'components', 'frontend'],
-        dependencies: [2],
-        subtasks: [
-          { id: 31, title: 'Button component', completed: false },
-          { id: 32, title: 'Form components', completed: false },
-          { id: 33, title: 'Layout components', completed: false }
-        ],
-        comments: [],
-        timeTracking: []
-      },
-      {
-        id: 4,
-        title: 'API Integration',
-        description: 'Integrate frontend with backend APIs',
-        status: 'todo',
-        priority: 'high',
-        assigneeId: 4,
-        assigneeName: 'Emily Davis',
-        category: 'Integration',
-        dueDate: '2024-01-30',
-        createdDate: '2024-01-12',
-        estimatedHours: 10,
-        actualHours: 0,
-        progress: 0,
-        tags: ['api', 'integration'],
-        dependencies: [2, 3],
-        subtasks: [
-          { id: 41, title: 'User authentication API', completed: false },
-          { id: 42, title: 'Task management API', completed: false },
-          { id: 43, title: 'Error handling', completed: false }
-        ],
-        comments: [],
-        timeTracking: []
-      },
-      {
-        id: 5,
-        title: 'Testing & Documentation',
-        description: 'Write unit tests and documentation',
-        status: 'blocked',
-        priority: 'medium',
-        assigneeId: 1,
-        assigneeName: 'Alex Chen',
-        category: 'Quality',
-        dueDate: '2024-02-05',
-        createdDate: '2024-01-15',
-        estimatedHours: 6,
-        actualHours: 0,
-        progress: 0,
-        tags: ['testing', 'documentation'],
-        dependencies: [4],
-        subtasks: [
-          { id: 51, title: 'Unit tests', completed: false },
-          { id: 52, title: 'Integration tests', completed: false },
-          { id: 53, title: 'API documentation', completed: false }
-        ],
-        comments: [
-          { id: 3, author: 'Mentor', text: 'Blocked until API integration is complete', timestamp: '2024-01-16T09:00:00Z' }
-        ],
-        timeTracking: []
+    fetchTasks();
+    fetchInterns();
+    fetchTaskAnalytics();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks/advanced');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+        setDependencies(data.dependencies || []);
+      } else {
+        setTasks([]);
+        setDependencies([]);
       }
-    ];
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+      setDependencies([]);
+    }
+  };
 
-    // Generate task analytics
-    const generateTaskAnalytics = () => {
-      const completedTasks = tasks.filter(t => t.status === 'done').length;
-      const totalTasks = tasks.length;
-      const overdueTasks = tasks.filter(t => 
-        new Date(t.dueDate) < new Date() && t.status !== 'done'
-      ).length;
-      
-      return {
-        completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
-        averageCompletionTime: 5.2, // days
-        onTimeDelivery: 85, // percentage
-        overdueTasks,
-        totalEstimatedHours: tasks.reduce((sum, task) => sum + task.estimatedHours, 0),
-        totalActualHours: tasks.reduce((sum, task) => sum + task.actualHours, 0),
-        productivityScore: 92
-      };
-    };
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
 
-    // Generate team performance data
-    const generateTeamPerformance = () => {
-      const days = eachDayOfInterval({
-        start: subDays(new Date(), 30),
-        end: new Date()
+  const fetchTaskAnalytics = async () => {
+    try {
+      const [analyticsRes, performanceRes, workloadRes] = await Promise.all([
+        fetch('/api/analytics/tasks'),
+        fetch('/api/analytics/team-performance'),
+        fetch('/api/analytics/workload-distribution')
+      ]);
+
+      if (analyticsRes.ok) {
+        const data = await analyticsRes.json();
+        setTaskAnalytics(data.analytics || {});
+      }
+
+      if (performanceRes.ok) {
+        const data = await performanceRes.json();
+        setTeamPerformance(data.performance || []);
+      }
+
+      if (workloadRes.ok) {
+        const data = await workloadRes.json();
+        setWorkloadDistribution(data.workload || []);
+      }
+    } catch (error) {
+      console.error('Error fetching task analytics:', error);
+      setTaskAnalytics({});
+      setTeamPerformance([]);
+      setWorkloadDistribution([]);
+    }
+  };
+
+  const handleCreateTask = async (taskData) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
       });
 
-      return days.map(date => ({
-        date,
-        tasksCompleted: Math.floor(Math.random() * 5) + 1,
-        hoursWorked: Math.floor(Math.random() * 8) + 4,
-        productivity: Math.floor(Math.random() * 30) + 70
-      }));
-    };
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(prev => [...prev, data.task]);
+        setShowTaskModal(false);
+      } else {
+        console.error('Failed to create task');
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
+  };
 
-    // Generate workload distribution
-    const generateWorkloadDistribution = () => 
-      interns.map(intern => ({
-        ...intern,
-        assignedTasks: tasks.filter(t => t.assigneeId === intern.id).length,
-        completedTasks: tasks.filter(t => t.assigneeId === intern.id && t.status === 'done').length,
-        totalHours: tasks
-          .filter(t => t.assigneeId === intern.id)
-          .reduce((sum, task) => sum + task.estimatedHours, 0),
-        completionRate: tasks.filter(t => t.assigneeId === intern.id).length > 0 
-          ? Math.round((tasks.filter(t => t.assigneeId === intern.id && t.status === 'done').length / 
-              tasks.filter(t => t.assigneeId === intern.id).length) * 100)
-          : 0
-      }));
+  const handleUpdateTask = async (taskId, updates) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
 
-    const mockTasks = generateTasks();
-    setTasks(mockTasks);
-    setTaskAnalytics(generateTaskAnalytics());
-    setTeamPerformance(generateTeamPerformance());
-    setWorkloadDistribution(generateWorkloadDistribution());
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? data.task : task
+        ));
+        setShowTaskModal(false);
+        setSelectedTask(null);
+      } else {
+        console.error('Failed to update task');
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
 
-    // Generate dependencies
-    setDependencies([
-      { from: 1, to: 2 },
-      { from: 2, to: 3 },
-      { from: 2, to: 4 },
-      { from: 3, to: 4 },
-      { from: 4, to: 5 }
-    ]);
-  }, []);
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setTasks(prev => prev.filter(task => task.id !== taskId));
+      } else {
+        console.error('Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const handleCreateDependency = async (fromTaskId, toTaskId) => {
+    try {
+      const response = await fetch('/api/tasks/dependencies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from: fromTaskId, to: toTaskId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDependencies(prev => [...prev, data.dependency]);
+        setShowDependencyModal(false);
+      } else {
+        console.error('Failed to create dependency');
+      }
+    } catch (error) {
+      console.error('Error creating dependency:', error);
+    }
+  };
 
   // Render dependency graph
   useEffect(() => {
@@ -953,7 +899,10 @@ export function AdvancedTaskManagement() {
                       >
                         Edit
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      <button 
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
                         Delete
                       </button>
                     </td>

@@ -37,88 +37,26 @@ export function InternDashboard() {
   ];
 
   useEffect(() => {
-    // Simulate loading user data and tasks
-    setTimeout(() => {
-      setTasks([
-        {
-          id: 1,
-          title: 'Complete React Tutorial',
-          description: 'Learn React fundamentals including components, state, and props',
-          status: 'in_progress',
-          progress: 75,
-          category: 'Frontend Development',
-          priority: 'high',
-          due_date: '2024-01-20',
-          time_spent: 8,
-          submission_link: '',
-          dependencies: [],
-          created_at: '2024-01-10',
-          updated_at: '2024-01-15'
-        },
-        {
-          id: 2,
-          title: 'Build Todo App',
-          description: 'Create a full-stack todo application with CRUD operations',
-          status: 'done',
-          progress: 100,
-          category: 'Full Stack Development',
-          priority: 'medium',
-          due_date: '2024-01-15',
-          time_spent: 12,
-          submission_link: 'https://github.com/user/todo-app',
-          dependencies: [1],
-          created_at: '2024-01-08',
-          updated_at: '2024-01-14'
-        },
-        {
-          id: 3,
-          title: 'Learn Next.js',
-          description: 'Understand Next.js framework, routing, and server-side rendering',
-          status: 'not_started',
-          progress: 0,
-          category: 'Frontend Development',
-          priority: 'medium',
-          due_date: '2024-01-25',
-          time_spent: 0,
-          submission_link: '',
-          dependencies: [1],
-          created_at: '2024-01-12',
-          updated_at: '2024-01-12'
-        },
-        {
-          id: 4,
-          title: 'Database Design Project',
-          description: 'Design and implement a database schema for an e-commerce application',
-          status: 'in_progress',
-          progress: 30,
-          category: 'Backend Development',
-          priority: 'high',
-          due_date: '2024-01-30',
-          time_spent: 5,
-          submission_link: '',
-          dependencies: [],
-          created_at: '2024-01-13',
-          updated_at: '2024-01-16'
-        },
-        {
-          id: 5,
-          title: 'API Integration',
-          description: 'Integrate third-party APIs and handle authentication',
-          status: 'not_started',
-          progress: 0,
-          category: 'Backend Development',
-          priority: 'low',
-          due_date: '2024-02-05',
-          time_spent: 0,
-          submission_link: '',
-          dependencies: [4],
-          created_at: '2024-01-14',
-          updated_at: '2024-01-14'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchTasks();
   }, []);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+      } else {
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateTask = (taskId, updates) => {
     setTasks(prevTasks => 

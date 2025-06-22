@@ -12,162 +12,29 @@ export function TasksTab({ user, loading }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar'
+  const [newComment, setNewComment] = useState('');
+  const [addingComment, setAddingComment] = useState(false);
 
   useEffect(() => {
-    // Generate comprehensive task data for intern
-    const generateTasks = () => [
-      {
-        id: 1,
-        title: 'Setup Development Environment',
-        description: 'Install and configure development tools, IDE, and project dependencies. This includes Node.js, Git, VS Code, and all necessary extensions.',
-        status: 'done',
-        priority: 'high',
-        category: 'Setup',
-        dueDate: '2024-01-15',
-        createdDate: '2024-01-01',
-        completedDate: '2024-01-14',
-        estimatedHours: 4,
-        actualHours: 3.5,
-        progress: 100,
-        tags: ['setup', 'environment', 'tools'],
-        mentor: 'Dr. Smith',
-        subtasks: [
-          { id: 11, title: 'Install Node.js and npm', completed: true },
-          { id: 12, title: 'Setup Git repository', completed: true },
-          { id: 13, title: 'Configure VS Code', completed: true },
-          { id: 14, title: 'Install project dependencies', completed: true }
-        ],
-        comments: [
-          { id: 1, author: 'Dr. Smith', text: 'Great job setting up the environment!', timestamp: '2024-01-14T10:30:00Z' },
-          { id: 2, author: 'You', text: 'Environment setup completed successfully', timestamp: '2024-01-14T11:00:00Z' }
-        ],
-        attachments: [
-          { id: 1, name: 'setup-guide.pdf', size: '2.3 MB', type: 'pdf' }
-        ],
-        timeTracking: [
-          { date: '2024-01-01', hours: 2, description: 'Initial setup research' },
-          { date: '2024-01-02', hours: 1.5, description: 'Node.js and Git installation' }
-        ]
-      },
-      {
-        id: 2,
-        title: 'Learn React Fundamentals',
-        description: 'Complete React tutorial covering components, props, state, and hooks. Build a simple todo application to practice concepts.',
-        status: 'in_progress',
-        priority: 'high',
-        category: 'Learning',
-        dueDate: '2024-01-20',
-        createdDate: '2024-01-05',
-        estimatedHours: 12,
-        actualHours: 8,
-        progress: 75,
-        tags: ['react', 'frontend', 'learning'],
-        mentor: 'Dr. Smith',
-        subtasks: [
-          { id: 21, title: 'Complete React tutorial', completed: true },
-          { id: 22, title: 'Build todo app', completed: true },
-          { id: 23, title: 'Implement hooks', completed: false },
-          { id: 24, title: 'Add styling', completed: false }
-        ],
-        comments: [
-          { id: 3, author: 'Dr. Smith', text: 'Good progress on React basics. Focus on hooks next.', timestamp: '2024-01-16T14:20:00Z' },
-          { id: 4, author: 'You', text: 'Working on useEffect and useState hooks', timestamp: '2024-01-16T15:00:00Z' }
-        ],
-        attachments: [
-          { id: 2, name: 'react-notes.md', size: '1.2 MB', type: 'markdown' },
-          { id: 3, name: 'todo-app-screenshot.png', size: '0.8 MB', type: 'image' }
-        ],
-        timeTracking: [
-          { date: '2024-01-05', hours: 3, description: 'React tutorial - components' },
-          { date: '2024-01-06', hours: 2.5, description: 'Props and state' },
-          { date: '2024-01-08', hours: 2.5, description: 'Todo app development' }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Database Design Project',
-        description: 'Design and implement a database schema for a library management system. Include tables for books, users, and transactions.',
-        status: 'todo',
-        priority: 'medium',
-        category: 'Backend',
-        dueDate: '2024-01-25',
-        createdDate: '2024-01-10',
-        estimatedHours: 8,
-        actualHours: 0,
-        progress: 0,
-        tags: ['database', 'sql', 'design'],
-        mentor: 'Dr. Johnson',
-        subtasks: [
-          { id: 31, title: 'Research database design principles', completed: false },
-          { id: 32, title: 'Create ER diagram', completed: false },
-          { id: 33, title: 'Write SQL schema', completed: false },
-          { id: 34, title: 'Populate with sample data', completed: false }
-        ],
-        comments: [],
-        attachments: [
-          { id: 4, name: 'database-requirements.pdf', size: '1.5 MB', type: 'pdf' }
-        ],
-        timeTracking: []
-      },
-      {
-        id: 4,
-        title: 'API Integration Task',
-        description: 'Integrate with a REST API to fetch and display user data. Implement error handling and loading states.',
-        status: 'todo',
-        priority: 'high',
-        category: 'Frontend',
-        dueDate: '2024-01-30',
-        createdDate: '2024-01-12',
-        estimatedHours: 6,
-        actualHours: 0,
-        progress: 0,
-        tags: ['api', 'integration', 'frontend'],
-        mentor: 'Dr. Smith',
-        subtasks: [
-          { id: 41, title: 'Study API documentation', completed: false },
-          { id: 42, title: 'Implement API calls', completed: false },
-          { id: 43, title: 'Add error handling', completed: false },
-          { id: 44, title: 'Create loading states', completed: false }
-        ],
-        comments: [
-          { id: 5, author: 'Dr. Smith', text: 'Start with the API documentation review', timestamp: '2024-01-12T09:00:00Z' }
-        ],
-        attachments: [
-          { id: 5, name: 'api-documentation.pdf', size: '3.1 MB', type: 'pdf' }
-        ],
-        timeTracking: []
-      },
-      {
-        id: 5,
-        title: 'Code Review Practice',
-        description: 'Review code submissions from peer interns and provide constructive feedback. Focus on code quality and best practices.',
-        status: 'blocked',
-        priority: 'low',
-        category: 'Review',
-        dueDate: '2024-02-05',
-        createdDate: '2024-01-15',
-        estimatedHours: 4,
-        actualHours: 0,
-        progress: 0,
-        tags: ['review', 'collaboration', 'quality'],
-        mentor: 'Dr. Smith',
-        subtasks: [
-          { id: 51, title: 'Review peer code submissions', completed: false },
-          { id: 52, title: 'Provide feedback', completed: false },
-          { id: 53, title: 'Discuss improvements', completed: false }
-        ],
-        comments: [
-          { id: 6, author: 'Dr. Smith', text: 'Waiting for peer submissions to be ready', timestamp: '2024-01-15T10:00:00Z' }
-        ],
-        attachments: [],
-        timeTracking: []
-      }
-    ];
-
-    setTasks(generateTasks());
+    fetchTasks();
   }, []);
 
-  const handleDragEnd = (result) => {
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+      } else {
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    }
+  };
+
+  const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -176,6 +43,7 @@ export function TasksTab({ user, loading }) {
       const newStatus = destination.droppableId;
       const taskId = parseInt(result.draggableId);
       
+      // Optimistically update UI
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === taskId 
@@ -183,6 +51,236 @@ export function TasksTab({ user, loading }) {
             : task
         )
       );
+
+      // Update on server
+      try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (!response.ok) {
+          // Revert on error
+          setTasks(prevTasks => 
+            prevTasks.map(task => 
+              task.id === taskId 
+                ? { ...task, status: source.droppableId }
+                : task
+            )
+          );
+          console.error('Failed to update task status');
+        }
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        // Revert on error
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId 
+              ? { ...task, status: source.droppableId }
+              : task
+          )
+        );
+      }
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedTask) return;
+
+    setAddingComment(true);
+    try {
+      const response = await fetch(`/api/tasks/${selectedTask.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: newComment.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update the selected task with the new comment
+        const updatedTask = {
+          ...selectedTask,
+          comments: [...selectedTask.comments, data.comment]
+        };
+        setSelectedTask(updatedTask);
+        
+        // Update the task in the tasks array
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === selectedTask.id 
+              ? updatedTask
+              : task
+          )
+        );
+        
+        setNewComment('');
+      } else {
+        console.error('Failed to add comment');
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    } finally {
+      setAddingComment(false);
+    }
+  };
+
+  const handleSubtaskToggle = async (subtaskId, completed) => {
+    if (!selectedTask) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${selectedTask.id}/subtasks/${subtaskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed }),
+      });
+
+      if (response.ok) {
+        // Update the selected task
+        const updatedTask = {
+          ...selectedTask,
+          subtasks: selectedTask.subtasks.map(subtask =>
+            subtask.id === subtaskId ? { ...subtask, completed } : subtask
+          )
+        };
+        setSelectedTask(updatedTask);
+        
+        // Update the task in the tasks array
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === selectedTask.id 
+              ? updatedTask
+              : task
+          )
+        );
+      } else {
+        console.error('Failed to update subtask');
+      }
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+    }
+  };
+
+  const handleUpdateProgress = async (taskId) => {
+    const progress = prompt('Enter progress percentage (0-100):');
+    if (progress === null) return;
+
+    const progressNum = parseInt(progress);
+    if (isNaN(progressNum) || progressNum < 0 || progressNum > 100) {
+      alert('Please enter a valid percentage between 0 and 100');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/progress`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ progress: progressNum }),
+      });
+
+      if (response.ok) {
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? { ...task, progress: progressNum } : task
+        ));
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(prev => ({ ...prev, progress: progressNum }));
+        }
+      } else {
+        alert('Failed to update progress');
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      alert('Error updating progress');
+    }
+  };
+
+  const handleMarkComplete = async (taskId) => {
+    if (!confirm('Are you sure you want to mark this task as complete?')) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/complete`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? { ...task, status: 'completed', progress: 100 } : task
+        ));
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(prev => ({ ...prev, status: 'completed', progress: 100 }));
+        }
+      } else {
+        alert('Failed to mark task as complete');
+      }
+    } catch (error) {
+      console.error('Error marking task complete:', error);
+      alert('Error marking task complete');
+    }
+  };
+
+  const handleRequestHelp = async (taskId) => {
+    const message = prompt('Describe what help you need:');
+    if (!message) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/help-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      if (response.ok) {
+        alert('Help request sent to your mentor');
+      } else {
+        alert('Failed to send help request');
+      }
+    } catch (error) {
+      console.error('Error requesting help:', error);
+      alert('Error requesting help');
+    }
+  };
+
+  const handleLogTime = async (taskId) => {
+    const hours = prompt('Enter hours worked (e.g., 2.5):');
+    if (hours === null) return;
+
+    const hoursNum = parseFloat(hours);
+    if (isNaN(hoursNum) || hoursNum <= 0) {
+      alert('Please enter a valid number of hours');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/time-log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ hours: hoursNum }),
+      });
+
+      if (response.ok) {
+        alert(`Logged ${hoursNum} hours for this task`);
+        // Optionally refresh task data to show updated time logs
+        fetchTasks();
+      } else {
+        alert('Failed to log time');
+      }
+    } catch (error) {
+      console.error('Error logging time:', error);
+      alert('Error logging time');
     }
   };
 
@@ -272,19 +370,19 @@ export function TasksTab({ user, loading }) {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Subtasks</h3>
                   <div className="space-y-2">
-                    {selectedTask.subtasks.map(subtask => (
+                    {selectedTask.subtasks?.map(subtask => (
                       <div key={subtask.id} className="flex items-center space-x-3 p-2 border rounded">
                         <input 
                           type="checkbox" 
                           checked={subtask.completed}
+                          onChange={(e) => handleSubtaskToggle(subtask.id, e.target.checked)}
                           className="rounded"
-                          readOnly
                         />
                         <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
                           {subtask.title}
                         </span>
                       </div>
-                    ))}
+                    )) || <p className="text-gray-500 text-sm">No subtasks</p>}
                   </div>
                 </div>
 
@@ -292,7 +390,7 @@ export function TasksTab({ user, loading }) {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Comments</h3>
                   <div className="space-y-3">
-                    {selectedTask.comments.map(comment => (
+                    {selectedTask.comments?.map(comment => (
                       <div key={comment.id} className="border rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium text-sm">{comment.author}</span>
@@ -302,17 +400,23 @@ export function TasksTab({ user, loading }) {
                         </div>
                         <p className="text-sm text-gray-700">{comment.text}</p>
                       </div>
-                    ))}
+                    )) || <p className="text-gray-500 text-sm">No comments yet</p>}
                     
                     {/* Add Comment */}
                     <div className="border-t pt-3">
                       <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Add a comment..."
                         className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         rows="3"
                       />
-                      <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                        Add Comment
+                      <button 
+                        onClick={handleAddComment}
+                        disabled={addingComment || !newComment.trim()}
+                        className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {addingComment ? 'Adding...' : 'Add Comment'}
                       </button>
                     </div>
                   </div>
@@ -404,16 +508,28 @@ export function TasksTab({ user, loading }) {
             {/* Action Buttons */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button 
+                  onClick={() => handleUpdateProgress(selectedTask.id)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
                   Update Progress
                 </button>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                <button 
+                  onClick={() => handleMarkComplete(selectedTask.id)}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
                   Mark Complete
                 </button>
-                <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                <button 
+                  onClick={() => handleRequestHelp(selectedTask.id)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
                   Request Help
                 </button>
-                <button className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                <button 
+                  onClick={() => handleLogTime(selectedTask.id)}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                >
                   Log Time
                 </button>
               </div>

@@ -3,45 +3,67 @@ import { useState, useEffect } from 'react';
 export function Meetings() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   useEffect(() => {
-    // Simulate loading meetings data
-    setTimeout(() => {
-      setMeetings([
-        {
-          id: 1,
-          title: 'Weekly Progress Review',
-          date: '2024-01-15',
-          time: '10:00 AM',
-          duration: '1 hour',
-          attendees: ['John Doe', 'Jane Smith', 'Mentor Sarah'],
-          status: 'upcoming',
-          type: 'Team Meeting'
-        },
-        {
-          id: 2,
-          title: 'One-on-One with Mentor',
-          date: '2024-01-12',
-          time: '2:00 PM',
-          duration: '30 minutes',
-          attendees: ['You', 'Mentor Sarah'],
-          status: 'completed',
-          type: '1:1 Meeting'
-        },
-        {
-          id: 3,
-          title: 'Project Presentation',
-          date: '2024-01-18',
-          time: '3:00 PM',
-          duration: '2 hours',
-          attendees: ['All Interns', 'Mentors', 'Management'],
-          status: 'upcoming',
-          type: 'Presentation'
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchMeetings();
   }, []);
+
+  const fetchMeetings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/meetings');
+      if (response.ok) {
+        const data = await response.json();
+        setMeetings(data.meetings || []);
+      } else {
+        setMeetings([]);
+      }
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      setMeetings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinMeeting = (meetingId) => {
+    // In a real app, this would open the meeting link or redirect to the meeting platform
+    window.open(`/meeting/${meetingId}`, '_blank');
+  };
+
+  const handleRescheduleMeeting = async (meetingId) => {
+    // This would open a modal to reschedule the meeting
+    console.log('Reschedule meeting:', meetingId);
+    // For now, just show an alert
+    alert('Reschedule functionality would open a modal here');
+  };
+
+  const handleScheduleNewMeeting = () => {
+    setShowScheduleModal(true);
+  };
+
+  const handleCreateMeeting = async (meetingData) => {
+    try {
+      const response = await fetch('/api/meetings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meetingData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMeetings(prev => [...prev, data.meeting]);
+        setShowScheduleModal(false);
+      } else {
+        console.error('Failed to create meeting');
+      }
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -94,10 +116,16 @@ export function Meetings() {
             </div>
             {meeting.status === 'upcoming' && (
               <div className="mt-3 flex space-x-2">
-                <button className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">
+                <button 
+                  onClick={() => handleJoinMeeting(meeting.id)}
+                  className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                >
                   Join Meeting
                 </button>
-                <button className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600">
+                <button 
+                  onClick={() => handleRescheduleMeeting(meeting.id)}
+                  className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                >
                   Reschedule
                 </button>
               </div>
@@ -106,7 +134,10 @@ export function Meetings() {
         ))}
       </div>
       <div className="mt-6">
-        <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+        <button 
+          onClick={handleScheduleNewMeeting}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
           Schedule New Meeting
         </button>
       </div>

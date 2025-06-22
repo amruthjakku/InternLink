@@ -81,6 +81,97 @@ export function CollegesTab() {
     };
   };
 
+  const handleCreateCollege = async (formData) => {
+    try {
+      const response = await fetch('/api/admin/colleges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(prev => [...prev, data.college]);
+        setShowCreateForm(false);
+      } else {
+        console.error('Failed to create college');
+      }
+    } catch (error) {
+      console.error('Error creating college:', error);
+    }
+  };
+
+  const handleUpdateCollege = async (collegeId, formData) => {
+    try {
+      const response = await fetch(`/api/admin/colleges/${collegeId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(prev => prev.map(college => 
+          college.id === collegeId ? data.college : college
+        ));
+        setEditingCollege(null);
+      } else {
+        console.error('Failed to update college');
+      }
+    } catch (error) {
+      console.error('Error updating college:', error);
+    }
+  };
+
+  const handleDeleteCollege = async (collegeId) => {
+    if (!confirm('Are you sure you want to delete this college? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/colleges/${collegeId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setColleges(prev => prev.filter(college => college.id !== collegeId));
+      } else {
+        console.error('Failed to delete college');
+      }
+    } catch (error) {
+      console.error('Error deleting college:', error);
+    }
+  };
+
+  const handleBulkImport = async (csvData) => {
+    try {
+      const response = await fetch('/api/admin/colleges/bulk-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ csvData }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(prev => [...prev, ...data.colleges]);
+        setShowBulkImport(false);
+        alert(`Successfully imported ${data.colleges.length} colleges`);
+      } else {
+        console.error('Failed to import colleges');
+        alert('Failed to import colleges');
+      }
+    } catch (error) {
+      console.error('Error importing colleges:', error);
+      alert('Error importing colleges');
+    }
+  };
+
   const CollegeLeaderboard = () => {
     const collegesWithStats = colleges.map(college => ({
       ...college,
@@ -187,7 +278,10 @@ export function CollegesTab() {
                   >
                     ✏️
                   </button>
-                  <button className="text-gray-400 hover:text-red-600">
+                  <button 
+                    onClick={() => handleDeleteCollege(college.id)}
+                    className="text-gray-400 hover:text-red-600"
+                  >
                     🗑️
                   </button>
                 </div>
@@ -226,7 +320,16 @@ export function CollegesTab() {
     if (!showCreateForm && !editingCollege) return null;
 
     const isEditing = !!editingCollege;
-    const formData = editingCollege || { name: '', description: '', location: '' };
+    const [formData, setFormData] = useState(editingCollege || { name: '', description: '', location: '' });
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (isEditing) {
+        await handleUpdateCollege(editingCollege.id, formData);
+      } else {
+        await handleCreateCollege(formData);
+      }
+    };
 
     return (
       <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -246,14 +349,16 @@ export function CollegesTab() {
                 ✕
               </button>
             </div>
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">College Name</label>
                 <input
                   type="text"
-                  defaultValue={formData.name}
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="e.g., Stanford University"
+                  required
                 />
               </div>
 
@@ -261,7 +366,8 @@ export function CollegesTab() {
                 <label className="block text-sm font-medium text-gray-700">Location</label>
                 <input
                   type="text"
-                  defaultValue={formData.location}
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="e.g., Stanford, CA, USA"
                 />
@@ -271,7 +377,8 @@ export function CollegesTab() {
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   rows={3}
-                  defaultValue={formData.description}
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Brief description of the institution..."
                 />

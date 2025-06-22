@@ -14,271 +14,60 @@ export function PerformanceTab({ user, loading }) {
   const [timeframe, setTimeframe] = useState('month'); // 'week', 'month', 'quarter'
 
   useEffect(() => {
-    // Generate comprehensive performance data
-    const generatePerformanceData = () => {
-      const days = eachDayOfInterval({
-        start: subDays(new Date(), 30),
-        end: new Date()
-      });
+    fetchPerformanceData();
+  }, [timeframe]);
 
-      const dailyPerformance = days.map(date => ({
-        date,
-        score: Math.floor(Math.random() * 30) + 70, // 70-100
-        tasksCompleted: Math.floor(Math.random() * 5) + 1,
-        hoursWorked: Math.floor(Math.random() * 6) + 2,
-        codeCommits: Math.floor(Math.random() * 8) + 1,
-        learningHours: Math.floor(Math.random() * 3) + 0.5
-      }));
+  const fetchPerformanceData = async () => {
+    try {
+      const [performanceRes, skillsRes, weeklyRes, achievementsRes, feedbackRes, goalsRes] = await Promise.all([
+        fetch(`/api/analytics/performance?timeframe=${timeframe}`),
+        fetch('/api/analytics/skills'),
+        fetch('/api/analytics/weekly-stats'),
+        fetch('/api/analytics/achievements'),
+        fetch('/api/analytics/feedback'),
+        fetch('/api/analytics/goals')
+      ]);
 
-      const currentScore = 87;
-      const previousScore = 82;
-      const improvement = currentScore - previousScore;
-      
-      return {
-        currentScore,
-        previousScore,
-        improvement,
-        dailyPerformance,
-        totalTasks: 45,
-        completedTasks: 38,
-        averageTaskTime: 2.3, // days
-        onTimeDelivery: 89, // percentage
-        codeQuality: 92,
-        collaboration: 85,
-        learning: 90
-      };
-    };
-
-    // Generate skill progress data
-    const generateSkillProgress = () => [
-      {
-        name: 'JavaScript',
-        currentLevel: 8,
-        previousLevel: 6,
-        targetLevel: 9,
-        progress: 88,
-        recentActivities: [
-          'Completed ES6 advanced features',
-          'Built async/await project',
-          'Mastered closures and prototypes'
-        ],
-        nextMilestone: 'Learn TypeScript basics',
-        timeToTarget: '2 weeks'
-      },
-      {
-        name: 'React',
-        currentLevel: 7,
-        previousLevel: 5,
-        targetLevel: 9,
-        progress: 77,
-        recentActivities: [
-          'Built component library',
-          'Implemented custom hooks',
-          'Optimized performance'
-        ],
-        nextMilestone: 'Learn React Testing Library',
-        timeToTarget: '3 weeks'
-      },
-      {
-        name: 'Node.js',
-        currentLevel: 6,
-        previousLevel: 4,
-        targetLevel: 8,
-        progress: 75,
-        recentActivities: [
-          'Built REST API',
-          'Implemented authentication',
-          'Database integration'
-        ],
-        nextMilestone: 'Learn GraphQL',
-        timeToTarget: '4 weeks'
-      },
-      {
-        name: 'Database Design',
-        currentLevel: 5,
-        previousLevel: 3,
-        targetLevel: 7,
-        progress: 71,
-        recentActivities: [
-          'Designed normalized schema',
-          'Optimized queries',
-          'Learned indexing'
-        ],
-        nextMilestone: 'Advanced query optimization',
-        timeToTarget: '5 weeks'
-      },
-      {
-        name: 'Git & Version Control',
-        currentLevel: 8,
-        previousLevel: 7,
-        targetLevel: 9,
-        progress: 88,
-        recentActivities: [
-          'Mastered branching strategies',
-          'Resolved merge conflicts',
-          'Code review best practices'
-        ],
-        nextMilestone: 'Advanced Git workflows',
-        timeToTarget: '2 weeks'
+      if (performanceRes.ok) {
+        const data = await performanceRes.json();
+        setPerformanceData(data.performance || {});
       }
-    ];
 
-    // Generate weekly statistics
-    const generateWeeklyStats = () => {
-      const weeks = eachWeekOfInterval({
-        start: subDays(new Date(), 84), // 12 weeks
-        end: new Date()
-      });
-
-      return weeks.map(weekStart => ({
-        week: format(weekStart, 'MMM dd'),
-        tasksCompleted: Math.floor(Math.random() * 8) + 3,
-        hoursWorked: Math.floor(Math.random() * 15) + 25,
-        performanceScore: Math.floor(Math.random() * 20) + 75,
-        learningHours: Math.floor(Math.random() * 8) + 2
-      }));
-    };
-
-    // Generate achievements
-    const generateAchievements = () => [
-      {
-        id: 1,
-        title: 'First Sprint Champion',
-        description: 'Completed all tasks in your first sprint',
-        icon: '🏆',
-        earnedDate: '2024-01-10',
-        category: 'milestone',
-        points: 100
-      },
-      {
-        id: 2,
-        title: 'Code Quality Master',
-        description: 'Maintained 95%+ code quality score for 2 weeks',
-        icon: '⭐',
-        earnedDate: '2024-01-15',
-        category: 'quality',
-        points: 150
-      },
-      {
-        id: 3,
-        title: 'Learning Enthusiast',
-        description: 'Completed 20+ hours of learning this month',
-        icon: '📚',
-        earnedDate: '2024-01-16',
-        category: 'learning',
-        points: 75
-      },
-      {
-        id: 4,
-        title: 'Team Player',
-        description: 'Helped 3 fellow interns with their tasks',
-        icon: '🤝',
-        earnedDate: '2024-01-12',
-        category: 'collaboration',
-        points: 125
-      },
-      {
-        id: 5,
-        title: 'Consistency King',
-        description: 'Maintained 7-day activity streak',
-        icon: '🔥',
-        earnedDate: '2024-01-14',
-        category: 'consistency',
-        points: 200
+      if (skillsRes.ok) {
+        const data = await skillsRes.json();
+        setSkillProgress(data.skills || []);
       }
-    ];
 
-    // Generate feedback data
-    const generateFeedback = () => [
-      {
-        id: 1,
-        mentor: 'Dr. Sarah Smith',
-        date: '2024-01-15',
-        rating: 4.5,
-        category: 'Technical Skills',
-        comment: 'Excellent progress on React components. Your code is clean and well-structured. Keep focusing on performance optimization.',
-        strengths: ['Clean Code', 'Problem Solving', 'Quick Learning'],
-        improvements: ['Performance Optimization', 'Testing']
-      },
-      {
-        id: 2,
-        mentor: 'Dr. Sarah Smith',
-        date: '2024-01-10',
-        rating: 4.2,
-        category: 'Collaboration',
-        comment: 'Great team player! You actively participate in discussions and help others. Work on presenting your ideas more confidently.',
-        strengths: ['Team Collaboration', 'Helping Others', 'Communication'],
-        improvements: ['Presentation Skills', 'Leadership']
-      },
-      {
-        id: 3,
-        mentor: 'Dr. Sarah Smith',
-        date: '2024-01-05',
-        rating: 4.0,
-        category: 'Project Management',
-        comment: 'Good progress on task completion. You meet most deadlines and deliver quality work. Focus on time estimation.',
-        strengths: ['Quality Delivery', 'Attention to Detail'],
-        improvements: ['Time Management', 'Estimation']
+      if (weeklyRes.ok) {
+        const data = await weeklyRes.json();
+        setWeeklyStats(data.stats || []);
       }
-    ];
 
-    // Generate goals
-    const generateGoals = () => [
-      {
-        id: 1,
-        title: 'Master React Advanced Patterns',
-        description: 'Learn and implement advanced React patterns like render props, HOCs, and compound components',
-        category: 'Technical',
-        priority: 'high',
-        progress: 65,
-        dueDate: '2024-02-15',
-        milestones: [
-          { id: 11, title: 'Learn render props pattern', completed: true },
-          { id: 12, title: 'Implement HOC examples', completed: true },
-          { id: 13, title: 'Build compound components', completed: false },
-          { id: 14, title: 'Create reusable component library', completed: false }
-        ]
-      },
-      {
-        id: 2,
-        title: 'Improve Code Review Skills',
-        description: 'Become proficient at giving and receiving code reviews',
-        category: 'Professional',
-        priority: 'medium',
-        progress: 40,
-        dueDate: '2024-02-28',
-        milestones: [
-          { id: 21, title: 'Review 10 pull requests', completed: true },
-          { id: 22, title: 'Learn code review best practices', completed: false },
-          { id: 23, title: 'Give constructive feedback', completed: false },
-          { id: 24, title: 'Lead code review session', completed: false }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Build Full-Stack Application',
-        description: 'Create a complete web application with frontend, backend, and database',
-        category: 'Project',
-        priority: 'high',
-        progress: 30,
-        dueDate: '2024-03-15',
-        milestones: [
-          { id: 31, title: 'Design application architecture', completed: true },
-          { id: 32, title: 'Setup development environment', completed: true },
-          { id: 33, title: 'Implement backend API', completed: false },
-          { id: 34, title: 'Build frontend interface', completed: false },
-          { id: 35, title: 'Deploy to production', completed: false }
-        ]
+      if (achievementsRes.ok) {
+        const data = await achievementsRes.json();
+        setAchievements(data.achievements || []);
       }
-    ];
 
-    setPerformanceData(generatePerformanceData());
-    setSkillProgress(generateSkillProgress());
-    setWeeklyStats(generateWeeklyStats());
-    setAchievements(generateAchievements());
-    setFeedback(generateFeedback());
-    setGoals(generateGoals());
-  }, []);
+      if (feedbackRes.ok) {
+        const data = await feedbackRes.json();
+        setFeedback(data.feedback || []);
+      }
+
+      if (goalsRes.ok) {
+        const data = await goalsRes.json();
+        setGoals(data.goals || []);
+      }
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+      // Set empty defaults on error
+      setPerformanceData({});
+      setSkillProgress([]);
+      setWeeklyStats([]);
+      setAchievements([]);
+      setFeedback([]);
+      setGoals([]);
+    }
+  };
 
   if (loading) {
     return (

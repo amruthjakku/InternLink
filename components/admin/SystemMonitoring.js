@@ -12,6 +12,40 @@ export function SystemMonitoring() {
   const [predictions, setPredictions] = useState({});
   const [alerts, setAlerts] = useState([]);
 
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      const response = await fetch(`/api/admin/alerts/${alertId}/acknowledge`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        setAlerts(prev => prev.map(alert => 
+          alert.id === alertId ? { ...alert, acknowledged: true } : alert
+        ));
+      } else {
+        console.error('Failed to acknowledge alert');
+      }
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+    }
+  };
+
+  const handleDismissAlert = async (alertId) => {
+    try {
+      const response = await fetch(`/api/admin/alerts/${alertId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+      } else {
+        console.error('Failed to dismiss alert');
+      }
+    } catch (error) {
+      console.error('Error dismissing alert:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSystemData();
     
@@ -452,10 +486,16 @@ export function SystemMonitoring() {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="text-xs px-2 py-1 bg-white bg-opacity-50 rounded hover:bg-opacity-75 transition-colors">
+                  <button 
+                    onClick={() => handleAcknowledgeAlert(alert.id)}
+                    className="text-xs px-2 py-1 bg-white bg-opacity-50 rounded hover:bg-opacity-75 transition-colors"
+                  >
                     Acknowledge
                   </button>
-                  <button className="text-xs px-2 py-1 bg-white bg-opacity-50 rounded hover:bg-opacity-75 transition-colors">
+                  <button 
+                    onClick={() => handleDismissAlert(alert.id)}
+                    className="text-xs px-2 py-1 bg-white bg-opacity-50 rounded hover:bg-opacity-75 transition-colors"
+                  >
                     Dismiss
                   </button>
                 </div>

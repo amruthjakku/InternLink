@@ -102,6 +102,101 @@ export function AdvancedUserManagement() {
     }
   };
 
+  const handleSendMessage = async (userId) => {
+    // This would open a messaging modal or redirect to messaging system
+    console.log('Send message to user:', userId);
+    alert('Messaging functionality would be implemented here');
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setShowUserModal(true);
+  };
+
+  const handleViewFullActivity = (userId) => {
+    // This would open a detailed activity view
+    console.log('View full activity for user:', userId);
+    alert('Full activity view would be implemented here');
+  };
+
+  const handleResetPassword = async (userId) => {
+    if (!confirm('Are you sure you want to reset this user\'s password?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        alert('Password reset email sent successfully');
+      } else {
+        alert('Failed to reset password');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      alert('Error resetting password');
+    }
+  };
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'activate' : 'deactivate';
+
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setUsers(prev => prev.map(user => 
+          user.id === userId ? { ...user, status: newStatus } : user
+        ));
+        if (selectedUser && selectedUser.id === userId) {
+          setSelectedUser(prev => ({ ...prev, status: newStatus }));
+        }
+      } else {
+        alert(`Failed to ${action} user`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing user:`, error);
+      alert(`Error ${action}ing user`);
+    }
+  };
+
+  const handleAddUser = () => {
+    setSelectedUser(null);
+    setShowUserModal(true);
+  };
+
+  const handleBulkAction = async (action, userIds) => {
+    try {
+      const response = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, userIds }),
+      });
+
+      if (response.ok) {
+        fetchUsers(); // Refresh the user list
+        setSelectedUsers([]);
+        setShowBulkModal(false);
+      } else {
+        alert('Failed to perform bulk action');
+      }
+    } catch (error) {
+      console.error('Error performing bulk action:', error);
+      alert('Error performing bulk action');
+    }
+  };
+
   // Filter users
   const filteredUsers = (users && Array.isArray(users)) ? users.filter(user => {
     if (filterRole !== 'all' && user.role !== filterRole) return false;
@@ -312,24 +407,42 @@ export function AdvancedUserManagement() {
             {/* Action Buttons */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button 
+                  onClick={() => handleSendMessage(selectedUser.id)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
                   Send Message
                 </button>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                <button 
+                  onClick={() => handleEditUser(selectedUser)}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
                   Edit User
                 </button>
-                <button className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                <button 
+                  onClick={() => handleViewFullActivity(selectedUser.id)}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                >
                   View Full Activity
                 </button>
-                <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                <button 
+                  onClick={() => handleResetPassword(selectedUser.id)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
                   Reset Password
                 </button>
                 {selectedUser.status === 'active' ? (
-                  <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                  <button 
+                    onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
                     Deactivate
                   </button>
                 ) : (
-                  <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                  <button 
+                    onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
                     Activate
                   </button>
                 )}
@@ -414,7 +527,10 @@ export function AdvancedUserManagement() {
               >
                 Bulk Actions
               </button>
-              <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+              <button 
+                onClick={handleAddUser}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
                 + Add User
               </button>
             </div>
@@ -588,7 +704,13 @@ export function AdvancedUserManagement() {
                   </div>
                 </div>
               </div>
-              <button className="text-xs text-blue-600 hover:text-blue-800">
+              <button 
+                onClick={() => {
+                  setSelectedUser(user);
+                  setShowUserModal(true);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
                 View Details
               </button>
             </div>

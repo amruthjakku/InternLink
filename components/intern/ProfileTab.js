@@ -23,16 +23,41 @@ export function ProfileTab() {
   });
 
   useEffect(() => {
-    // Load colleges and cohorts from localStorage
-    const storedColleges = JSON.parse(localStorage.getItem('colleges') || '[]');
-    setColleges(storedColleges);
-    
+    fetchColleges();
     if (profileData.college_id) {
-      const storedCohorts = JSON.parse(localStorage.getItem('cohorts') || '[]');
-      const filteredCohorts = storedCohorts.filter(cohort => cohort.college_id === parseInt(profileData.college_id));
-      setCohorts(filteredCohorts);
+      fetchCohorts(profileData.college_id);
     }
   }, [profileData.college_id]);
+
+  const fetchColleges = async () => {
+    try {
+      const response = await fetch('/api/colleges');
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(data.colleges || []);
+      } else {
+        setColleges([]);
+      }
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setColleges([]);
+    }
+  };
+
+  const fetchCohorts = async (collegeId) => {
+    try {
+      const response = await fetch(`/api/cohorts?college_id=${collegeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCohorts(data.cohorts || []);
+      } else {
+        setCohorts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching cohorts:', error);
+      setCohorts([]);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({
@@ -48,10 +73,12 @@ export function ProfileTab() {
       cohort_id: '' // Reset cohort when college changes
     }));
     
-    // Update cohorts for new college
-    const storedCohorts = JSON.parse(localStorage.getItem('cohorts') || '[]');
-    const filteredCohorts = storedCohorts.filter(cohort => cohort.college_id === parseInt(collegeId));
-    setCohorts(filteredCohorts);
+    // Fetch cohorts for new college
+    if (collegeId) {
+      fetchCohorts(collegeId);
+    } else {
+      setCohorts([]);
+    }
   };
 
   const handleSkillsChange = (skillsString) => {
@@ -65,24 +92,42 @@ export function ProfileTab() {
   const handleSave = async () => {
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const selectedCollege = colleges.find(c => c.id === parseInt(profileData.college_id));
-      const selectedCohort = cohorts.find(c => c.id === parseInt(profileData.cohort_id));
-      
-      const updatedUserData = {
-        ...user,
-        ...profileData,
-        college_name: selectedCollege?.name,
-        cohort_name: selectedCohort?.name
-      };
-      
-      // Update user data
-      completeOnboarding(updatedUserData);
-      
-      setIsEditing(false);
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const selectedCollege = colleges.find(c => c.id === parseInt(profileData.college_id));
+        const selectedCohort = cohorts.find(c => c.id === parseInt(profileData.cohort_id));
+        
+        const updatedUserData = {
+          ...user,
+          ...profileData,
+          college_name: selectedCollege?.name,
+          cohort_name: selectedCohort?.name
+        };
+        
+        // Update user data
+        completeOnboarding(updatedUserData);
+        
+        setIsEditing(false);
+        alert('Profile updated successfully!');
+      } else {
+        console.error('Failed to update profile');
+        alert('Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Error updating profile. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleCancel = () => {

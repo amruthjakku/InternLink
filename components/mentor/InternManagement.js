@@ -29,6 +29,20 @@ export function InternManagement() {
     }
   };
 
+  const handleViewProfile = (internId) => {
+    // This would open a detailed profile view or navigate to profile page
+    console.log('View profile for intern:', internId);
+    // In a real app, this might navigate to /intern/profile/${internId}
+    window.open(`/intern/profile/${internId}`, '_blank');
+  };
+
+  const handleSendMessage = (internId) => {
+    // This would open a messaging interface
+    console.log('Send message to intern:', internId);
+    // In a real app, this might open a chat modal or navigate to messaging
+    alert('Messaging functionality would be implemented here');
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -91,10 +105,16 @@ export function InternManagement() {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                  <button 
+                    onClick={() => handleViewProfile(intern.id)}
+                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                  >
                     View Profile
                   </button>
-                  <button className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                  <button 
+                    onClick={() => handleSendMessage(intern.id)}
+                    className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
+                  >
                     Message
                   </button>
                 </div>
