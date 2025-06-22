@@ -10,6 +10,7 @@ import { AttendanceTab } from './intern/AttendanceTab';
 import { ChatTab } from './intern/ChatTab';
 import { AIAssistantTab } from './intern/AIAssistantTab';
 import { ProfileTab } from './intern/ProfileTab';
+import { GitLabTab } from './intern/GitLabTab';
 
 export function InternDashboard() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export function InternDashboard() {
     { id: 'progress', name: 'Progress', icon: '📊' },
     { id: 'tasks', name: 'Tasks', icon: '📝' },
     { id: 'performance', name: 'Performance', icon: '📈' },
+    { id: 'gitlab', name: 'GitLab', icon: '🦊' },
     { id: 'profile', name: 'Profile', icon: '👤' },
     { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
     { id: 'attendance', name: 'Attendance', icon: '📍' },
@@ -132,6 +134,8 @@ export function InternDashboard() {
         return <TasksTab {...commonProps} />;
       case 'performance':
         return <PerformanceTab {...commonProps} />;
+      case 'gitlab':
+        return <GitLabTab {...commonProps} />;
       case 'profile':
         return <ProfileTab />;
       case 'leaderboard':

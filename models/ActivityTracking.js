@@ -34,11 +34,11 @@ const ActivityTrackingSchema = new mongoose.Schema({
   },
   projectUrl: {
     type: String,
-    required: true
+    required: false
   },
   projectPath: {
     type: String,
-    required: true
+    required: false
   },
 
   // Activity details
@@ -46,13 +46,17 @@ const ActivityTrackingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  message: {
+    type: String,
+    default: '' // Full commit message
+  },
   description: {
     type: String,
     default: ''
   },
   url: {
     type: String,
-    required: true
+    required: false
   },
 
   // Timestamps
@@ -72,11 +76,48 @@ const ActivityTrackingSchema = new mongoose.Schema({
       type: String,
       default: null
     },
+    shortId: {
+      type: String,
+      default: null
+    },
+    authorName: {
+      type: String,
+      default: null
+    },
+    authorEmail: {
+      type: String,
+      default: null
+    },
+    committerName: {
+      type: String,
+      default: null
+    },
+    committerEmail: {
+      type: String,
+      default: null
+    },
+    webUrl: {
+      type: String,
+      default: null
+    },
+    projectUrl: {
+      type: String,
+      default: null
+    },
+    projectVisibility: {
+      type: String,
+      enum: ['private', 'internal', 'public'],
+      default: null
+    },
     additions: {
       type: Number,
       default: 0
     },
     deletions: {
+      type: Number,
+      default: 0
+    },
+    total: {
       type: Number,
       default: 0
     },

@@ -22,21 +22,45 @@ const GitLabIntegrationSchema = new mongoose.Schema({
   },
   gitlabEmail: {
     type: String,
-    required: true
+    required: false
   },
 
-  // Encrypted OAuth tokens
+  // Token information (supports both OAuth and Personal Access Token)
   accessToken: {
     type: String,
     required: true
   },
   refreshToken: {
     type: String,
-    required: true
+    required: false // Not needed for Personal Access Tokens
+  },
+  tokenType: {
+    type: String,
+    enum: ['oauth', 'personal_access_token'],
+    default: 'oauth'
   },
   tokenExpiresAt: {
     type: Date,
-    required: true
+    required: false // Personal Access Tokens don't expire automatically
+  },
+
+  // For Personal Access Token connections
+  specificRepositories: [{
+    type: String // Repository names to track specifically
+  }],
+  
+  // User profile information from GitLab
+  userProfile: {
+    name: String,
+    email: String,
+    avatarUrl: String,
+    webUrl: String
+  },
+
+  // Connection timestamp
+  connectedAt: {
+    type: Date,
+    default: Date.now
   },
 
   // Repository tracking
@@ -49,17 +73,38 @@ const GitLabIntegrationSchema = new mongoose.Schema({
       type: String,
       required: true
     },
+    fullName: {
+      type: String, // path_with_namespace
+      required: false
+    },
     nameWithNamespace: {
       type: String,
-      required: true
+      required: false
     },
     url: {
       type: String,
       required: true
     },
+    description: {
+      type: String,
+      required: false
+    },
+    language: {
+      type: String,
+      required: false
+    },
+    visibility: {
+      type: String,
+      enum: ['private', 'internal', 'public'],
+      default: 'private'
+    },
     isTracked: {
       type: Boolean,
       default: true
+    },
+    lastActivity: {
+      type: Date,
+      required: false
     },
     addedAt: {
       type: Date,
@@ -81,9 +126,17 @@ const GitLabIntegrationSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
-    canManageIssues: {
+    canViewIssues: {
       type: Boolean,
       default: true
+    },
+    canViewMergeRequests: {
+      type: Boolean,
+      default: true
+    },
+    canManageIssues: {
+      type: Boolean,
+      default: false // Usually not needed for tracking
     },
     canViewAnalytics: {
       type: Boolean,
