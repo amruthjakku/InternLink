@@ -69,7 +69,7 @@ export function EnhancedLineChart({ data, options = {}, title, height = 300 }) {
       axis: 'x',
       intersect: false,
     },
-    ...options,
+    ...(options || {}),
   };
 
   return (
@@ -106,7 +106,7 @@ export function EnhancedBarChart({ data, options = {}, title, height = 300 }) {
         },
       },
     },
-    ...options,
+    ...(options || {}),
   };
 
   return (
@@ -145,7 +145,7 @@ export function SkillRadarChart({ data, options = {}, title, height = 300 }) {
         },
       },
     },
-    ...options,
+    ...(options || {}),
   };
 
   return (
@@ -169,7 +169,7 @@ export function EnhancedDoughnutChart({ data, options = {}, title, height = 300 
         text: title,
       },
     },
-    ...options,
+    ...(options || {}),
   };
 
   return (

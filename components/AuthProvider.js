@@ -25,10 +25,10 @@ export function AuthProvider({ children }) {
         try {
           const userData = JSON.parse(storedUserData);
           setUser({
-            ...session.user,
-            ...userData,
-            gitlabId: session.user.gitlabId,
-            gitlabUsername: session.user.gitlabUsername,
+            ...(session.user || {}),
+            ...(userData || {}),
+            gitlabId: session.user?.gitlabId,
+            gitlabUsername: session.user?.gitlabUsername,
             is_demo: false
           });
         } catch (error) {
@@ -39,9 +39,9 @@ export function AuthProvider({ children }) {
       } else {
         // User needs to complete onboarding
         setUser({
-          ...session.user,
-          gitlabId: session.user.gitlabId,
-          gitlabUsername: session.user.gitlabUsername,
+          ...(session.user || {}),
+          gitlabId: session.user?.gitlabId,
+          gitlabUsername: session.user?.gitlabUsername,
           needsOnboarding: true,
           is_demo: false
         });
@@ -74,8 +74,8 @@ export function AuthProvider({ children }) {
   const completeOnboarding = (onboardingData) => {
     if (session?.user) {
       const updatedUser = {
-        ...user,
-        ...onboardingData,
+        ...(user || {}),
+        ...(onboardingData || {}),
         needsOnboarding: false
       };
       setUser(updatedUser);
@@ -83,8 +83,8 @@ export function AuthProvider({ children }) {
     } else if (user?.is_demo) {
       // Handle demo user profile updates
       const updatedUser = {
-        ...user,
-        ...onboardingData
+        ...(user || {}),
+        ...(onboardingData || {}),
       };
       setUser(updatedUser);
       localStorage.setItem('demo_user', JSON.stringify(updatedUser));

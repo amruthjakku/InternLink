@@ -8,6 +8,11 @@ export function GitLabTab() {
   const { user } = useAuth();
   const [gitlabData, setGitlabData] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Debug logging (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('GitLabTab rendered with user:', user);
+  }
   const [error, setError] = useState(null);
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [tokenForm, setTokenForm] = useState({
@@ -18,6 +23,7 @@ export function GitLabTab() {
   const [isConnected, setIsConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [activeView, setActiveView] = useState('overview'); // overview, commits, analytics
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     checkGitLabConnection();
@@ -72,9 +78,13 @@ export function GitLabTab() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         setIsConnected(true);
         setShowTokenForm(false);
+        setSuccessMessage(`Successfully connected to GitLab as @${data.integration?.username}! Found ${data.integration?.repositoriesCount || 0} repositories.`);
         await fetchGitLabData();
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to connect GitLab');
@@ -89,21 +99,59 @@ export function GitLabTab() {
 
   const handleSync = async () => {
     setSyncing(true);
+    setError(null);
     try {
       const response = await fetch('/api/gitlab/sync-commits', {
         method: 'POST',
       });
       
       if (response.ok) {
+        const data = await response.json();
         await fetchGitLabData();
+        // Show success message with sync results
+        if (data.syncResults) {
+          setSuccessMessage(`Sync completed! Found ${data.syncResults.newCommits} new commits from ${data.syncResults.projectsScanned} projects.`);
+          setTimeout(() => setSuccessMessage(null), 5000);
+        }
       } else {
-        throw new Error('Sync failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Sync failed');
       }
     } catch (error) {
       console.error('Error syncing GitLab data:', error);
-      setError('Failed to sync GitLab data');
+      setError(`Failed to sync GitLab data: ${error.message}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm('Are you sure you want to disconnect your GitLab account? This will remove all stored data and analytics.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/gitlab/disconnect', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsConnected(false);
+        setGitlabData(null);
+        setError(null);
+        setSuccessMessage(`GitLab account disconnected successfully. Removed ${data.removedData?.activityRecords || 0} activity records.`);
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to disconnect GitLab account');
+      }
+    } catch (error) {
+      console.error('Error disconnecting GitLab:', error);
+      setError('Failed to disconnect GitLab account');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,13 +204,27 @@ export function GitLabTab() {
             
             {!showTokenForm ? (
               <button
-                onClick={() => setShowTokenForm(true)}
+                onClick={() => {
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Connect GitLab Account button clicked');
+                    console.log('Current state:', { showTokenForm, isConnected, loading });
+                  }
+                  setShowTokenForm(true);
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('showTokenForm set to true');
+                  }
+                }}
                 className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors font-medium"
               >
                 Connect GitLab Account
               </button>
             ) : (
               <div className="max-w-md mx-auto">
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                    Debug: Form is now visible (showTokenForm = {showTokenForm.toString()})
+                  </div>
+                )}
                 <form onSubmit={handleTokenSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -172,7 +234,7 @@ export function GitLabTab() {
                       type="text"
                       required
                       value={tokenForm.gitlabUsername}
-                      onChange={(e) => setTokenForm({...tokenForm, gitlabUsername: e.target.value})}
+                      onChange={(e) => setTokenForm({...(tokenForm || {}), gitlabUsername: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="your-gitlab-username"
                     />
@@ -186,7 +248,7 @@ export function GitLabTab() {
                       type="password"
                       required
                       value={tokenForm.personalAccessToken}
-                      onChange={(e) => setTokenForm({...tokenForm, personalAccessToken: e.target.value})}
+                      onChange={(e) => setTokenForm({...(tokenForm || {}), personalAccessToken: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
                     />
@@ -202,7 +264,7 @@ export function GitLabTab() {
                     <input
                       type="text"
                       value={tokenForm.repositories}
-                      onChange={(e) => setTokenForm({...tokenForm, repositories: e.target.value})}
+                      onChange={(e) => setTokenForm({...(tokenForm || {}), repositories: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="repo1, repo2, repo3 (leave empty for all repos)"
                     />
@@ -268,6 +330,13 @@ export function GitLabTab() {
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
             >
               {syncing ? 'Syncing...' : '🔄 Sync Now'}
+            </button>
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
+            >
+              🔌 Disconnect
             </button>
           </div>
         </div>
@@ -361,7 +430,7 @@ export function GitLabTab() {
 
       {activeView === 'commits' && (
         <div className="space-y-6">
-          <GitLabCommitTracker />
+          <GitLabCommitTracker gitlabData={gitlabData} />
 
           {/* Commit Activity Heatmap */}
           {gitlabData?.commitHeatmap && (
@@ -470,6 +539,18 @@ export function GitLabTab() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="text-green-400 text-xl mr-3">✅</div>
+            <div>
+              <h3 className="text-sm font-medium text-green-800">Success</h3>
+              <p className="text-sm text-green-700 mt-1">{successMessage}</p>
+            </div>
+          </div>
         </div>
       )}
 

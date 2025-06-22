@@ -62,14 +62,19 @@ export function InternDashboard() {
     setTasks(prevTasks => 
       prevTasks.map(task => 
         task.id === taskId 
-          ? { ...task, ...updates, updated_at: new Date().toISOString() }
+          ? { ...task, ...(updates || {}), updated_at: new Date().toISOString() }
           : task
       )
     );
   };
 
   const renderTabContent = () => {
-    const commonProps = { user, tasks, updateTask, loading };
+    const commonProps = { 
+      user: user || null, 
+      tasks: tasks || [], 
+      updateTask: updateTask || (() => {}), 
+      loading: loading || false 
+    };
 
     switch (activeTab) {
       case 'progress':

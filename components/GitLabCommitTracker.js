@@ -1,61 +1,15 @@
 import { useEffect, useState } from 'react';
 
-export function GitLabCommitTracker() {
+export function GitLabCommitTracker({ gitlabData }) {
   const [commits, setCommits] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchCommits = async () => {
-      try {
-        // Simulate GitLab API call with mock data for now
-        // In production, you would make an API call to your backend
-        // which would then call GitLab API using server-side credentials
-        
-        setTimeout(() => {
-          const mockCommits = [
-            {
-              id: '1a2b3c4d',
-              title: 'Add user authentication feature',
-              author_name: 'John Doe',
-              created_at: '2024-01-15T10:30:00Z',
-              message: 'Implemented OAuth login with GitLab'
-            },
-            {
-              id: '2b3c4d5e',
-              title: 'Fix dashboard layout issues',
-              author_name: 'Jane Smith',
-              created_at: '2024-01-14T15:45:00Z',
-              message: 'Resolved responsive design problems'
-            },
-            {
-              id: '3c4d5e6f',
-              title: 'Update task management system',
-              author_name: 'Mike Johnson',
-              created_at: '2024-01-13T09:20:00Z',
-              message: 'Added task priority and due date features'
-            },
-            {
-              id: '4d5e6f7g',
-              title: 'Implement real-time chat',
-              author_name: 'Sarah Wilson',
-              created_at: '2024-01-12T14:10:00Z',
-              message: 'Added WebSocket support for live messaging'
-            }
-          ];
-          
-          setCommits(mockCommits);
-          setLoading(false);
-        }, 1500);
-        
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchCommits();
-  }, []);
+    if (gitlabData?.recentCommits) {
+      setCommits(gitlabData.recentCommits);
+    }
+  }, [gitlabData]);
 
   if (loading) {
     return (
@@ -82,20 +36,75 @@ export function GitLabCommitTracker() {
     );
   }
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getCommitIcon = (message) => {
+    const lowerMessage = message.toLowerCase();
+    if (lowerMessage.includes('fix') || lowerMessage.includes('bug')) return '🐛';
+    if (lowerMessage.includes('feat') || lowerMessage.includes('add')) return '✨';
+    if (lowerMessage.includes('update') || lowerMessage.includes('improve')) return '⚡';
+    if (lowerMessage.includes('refactor')) return '♻️';
+    if (lowerMessage.includes('docs')) return '📚';
+    if (lowerMessage.includes('test')) return '🧪';
+    return '💾';
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">GitLab Commit Tracker</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Recent Commits</h2>
+        <span className="text-sm text-gray-500">{commits.length} commits</span>
+      </div>
       <div className="space-y-4">
         {commits.length === 0 ? (
-          <p className="text-gray-500">No commits found.</p>
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-2">💾</div>
+            <p>No recent commits found</p>
+            <p className="text-sm mt-1">Start coding to see your commit activity here!</p>
+          </div>
         ) : (
           commits.map((commit) => (
-            <div key={commit.id} className="border-b pb-3 last:border-b-0">
-              <p className="font-medium text-gray-900">{commit.title}</p>
-              <p className="text-sm text-gray-600 mt-1">{commit.message}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                {commit.author_name} - {new Date(commit.created_at).toLocaleString()}
-              </p>
+            <div key={commit.id} className="border-l-4 border-blue-500 pl-4 py-2 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-lg">{getCommitIcon(commit.title)}</span>
+                    <p className="font-medium text-gray-900 truncate">{commit.title}</p>
+                  </div>
+                  {commit.message && commit.message !== commit.title && (
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{commit.message}</p>
+                  )}
+                  <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                    <span>👤 {commit.author_name}</span>
+                    <span>📅 {formatDate(commit.created_at)}</span>
+                    {commit.project && <span>📁 {commit.project}</span>}
+                    {commit.stats && (
+                      <span className="flex items-center space-x-1">
+                        <span className="text-green-600">+{commit.stats.additions || 0}</span>
+                        <span className="text-red-600">-{commit.stats.deletions || 0}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {commit.web_url && (
+                  <a
+                    href={commit.web_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-4 text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    View →
+                  </a>
+                )}
+              </div>
             </div>
           ))
         )}

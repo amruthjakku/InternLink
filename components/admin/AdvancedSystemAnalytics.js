@@ -285,7 +285,7 @@ export function AdvancedSystemAnalytics() {
       },
       {
         label: 'Predicted Users',
-        data: [...Array(30).fill(null), ...predictions.predictedUsers] || [],
+        data: [...Array(30).fill(null), ...(predictions.predictedUsers || [])],
         borderColor: 'rgb(16, 185, 129)',
         borderDash: [5, 5],
         tension: 0.4
@@ -305,7 +305,7 @@ export function AdvancedSystemAnalytics() {
       },
       {
         label: 'Predicted Load',
-        data: [...Array(14).fill(null), ...predictions.predictedLoad] || [],
+        data: [...Array(14).fill(null), ...(predictions.predictedLoad || [])],
         borderColor: 'rgb(239, 68, 68)',
         borderDash: [5, 5],
         tension: 0.4
