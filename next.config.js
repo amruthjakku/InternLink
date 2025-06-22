@@ -48,8 +48,8 @@ const nextConfig = {
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
   },
 
-  // Output configuration for deployment
-  output: 'standalone',
+  // Output configuration for deployment (commented out for local dev)
+  // output: 'standalone',
 }
 
 module.exports = nextConfig

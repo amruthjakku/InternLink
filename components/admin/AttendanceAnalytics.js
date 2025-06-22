@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EnhancedLineChart, EnhancedBarChart, MetricCard } from '../Charts';
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
+import { getCollegeName } from '../../utils/helpers';
 
 export function AttendanceAnalytics() {
   const [analytics, setAnalytics] = useState(null);
@@ -409,7 +410,7 @@ export function AttendanceAnalytics() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.college || 'N/A'}
+                      {getCollegeName(user.college) || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.presentDays} / {user.totalDays}
@@ -473,7 +474,7 @@ export function AttendanceAnalytics() {
                     </div>
                     
                     <div className="text-sm text-gray-600 space-y-1">
-                      <div>College: {user.college || 'N/A'}</div>
+                      <div>College: {getCollegeName(user.college) || 'N/A'}</div>
                       <div>
                         Last Attendance: {
                           user.lastAttendance 

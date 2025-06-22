@@ -489,44 +489,52 @@ export function AdvancedTaskManagement() {
     }
   };
 
-  // Analytics data
+  // Analytics data with safety checks
   const teamPerformanceData = {
-    labels: teamPerformance.map(d => format(d.date, 'MMM dd')),
-    datasets: [
-      {
-        label: 'Tasks Completed',
-        data: teamPerformance.map(d => d.tasksCompleted),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        fill: true
-      },
-      {
-        label: 'Hours Worked',
-        data: teamPerformance.map(d => d.hoursWorked),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.4,
-        fill: true,
-        yAxisID: 'y1'
-      }
-    ]
+    labels: teamPerformance && teamPerformance.length > 0 
+      ? teamPerformance.map(d => format(d.date, 'MMM dd'))
+      : [],
+    datasets: teamPerformance && teamPerformance.length > 0 
+      ? [
+          {
+            label: 'Tasks Completed',
+            data: teamPerformance.map(d => d.tasksCompleted),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Hours Worked',
+            data: teamPerformance.map(d => d.hoursWorked),
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1'
+          }
+        ]
+      : []
   };
 
   const workloadData = {
-    labels: workloadDistribution.map(intern => intern.name),
-    datasets: [
-      {
-        label: 'Assigned Tasks',
-        data: workloadDistribution.map(intern => intern.assignedTasks),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)'
-      },
-      {
-        label: 'Completed Tasks',
-        data: workloadDistribution.map(intern => intern.completedTasks),
-        backgroundColor: 'rgba(16, 185, 129, 0.8)'
-      }
-    ]
+    labels: workloadDistribution && workloadDistribution.length > 0 
+      ? workloadDistribution.map(intern => intern.name)
+      : [],
+    datasets: workloadDistribution && workloadDistribution.length > 0 
+      ? [
+          {
+            label: 'Assigned Tasks',
+            data: workloadDistribution.map(intern => intern.assignedTasks),
+            backgroundColor: 'rgba(59, 130, 246, 0.8)'
+          },
+          {
+            label: 'Completed Tasks',
+            data: workloadDistribution.map(intern => intern.completedTasks),
+            backgroundColor: 'rgba(16, 185, 129, 0.8)'
+          }
+        ]
+      : []
   };
 
   return (
@@ -640,33 +648,51 @@ export function AdvancedTaskManagement() {
           {/* Team Performance Chart */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold mb-4">📈 Team Performance Trends</h3>
-            <EnhancedLineChart 
-              data={teamPerformanceData} 
-              height={300}
-              options={{
-                scales: {
-                  y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: { display: true, text: 'Tasks Completed' }
-                  },
-                  y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: { display: true, text: 'Hours Worked' },
-                    grid: { drawOnChartArea: false }
+            {teamPerformance && teamPerformance.length > 0 ? (
+              <EnhancedLineChart 
+                data={teamPerformanceData} 
+                height={300}
+                options={{
+                  scales: {
+                    y: {
+                      type: 'linear',
+                      display: true,
+                      position: 'left',
+                      title: { display: true, text: 'Tasks Completed' }
+                    },
+                    y1: {
+                      type: 'linear',
+                      display: true,
+                      position: 'right',
+                      title: { display: true, text: 'Hours Worked' },
+                      grid: { drawOnChartArea: false }
+                    }
                   }
-                }
-              }}
-            />
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p>Loading performance data...</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Workload Distribution */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold mb-4">👥 Workload Distribution</h3>
-            <EnhancedBarChart data={workloadData} height={300} />
+            {workloadDistribution && workloadDistribution.length > 0 ? (
+              <EnhancedBarChart data={workloadData} height={300} />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p>Loading workload data...</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Individual Performance */}

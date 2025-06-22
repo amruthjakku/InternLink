@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EnhancedBarChart, EnhancedLineChart, MetricCard, SkillRadarChart } from '../Charts';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { getCollegeName } from '../../utils/helpers';
 
 export function InternManagementTab() {
   const [interns, setInterns] = useState([]);
@@ -273,8 +274,8 @@ export function InternManagementTab() {
     if (!selectedIntern) return null;
 
     const skillRadarData = {
-      labels: selectedIntern.skills.map(skill => skill.name),
-      datasets: [{
+      labels: selectedIntern?.skills?.map(skill => skill.name) || [],
+      datasets: selectedIntern?.skills ? [{
         label: 'Current Level',
         data: selectedIntern.skills.map(skill => skill.level),
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
@@ -283,7 +284,7 @@ export function InternManagementTab() {
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgb(59, 130, 246)'
-      }]
+      }] : []
     };
 
     return (
@@ -299,7 +300,9 @@ export function InternManagementTab() {
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900">{selectedIntern.name}</h2>
                   <p className="text-gray-600">{selectedIntern.email}</p>
-                  <p className="text-sm text-gray-500">{selectedIntern.college}</p>
+                  <p className="text-sm text-gray-500">
+                    {getCollegeName(selectedIntern.college)}
+                  </p>
                   <div className="flex items-center space-x-2 mt-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedIntern.status)}`}>
                       {selectedIntern.status.replace('_', ' ')}
@@ -400,7 +403,15 @@ export function InternManagementTab() {
                 {/* Skill Radar Chart */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">📈 Skills Overview</h3>
-                  <SkillRadarChart data={skillRadarData} height={250} />
+                  {selectedIntern?.skills && selectedIntern.skills.length > 0 ? (
+                    <SkillRadarChart data={skillRadarData} height={250} />
+                  ) : (
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <p>No skills data available</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Strengths & Areas for Improvement */}
@@ -544,32 +555,50 @@ export function InternManagementTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold mb-4">📈 Performance Trends</h3>
-          <EnhancedLineChart 
-            data={performanceTrendData} 
-            height={250}
-            options={{
-              scales: {
-                y: {
-                  type: 'linear',
-                  display: true,
-                  position: 'left',
-                  title: { display: true, text: 'Performance Score' }
-                },
-                y1: {
-                  type: 'linear',
-                  display: true,
-                  position: 'right',
-                  title: { display: true, text: 'Tasks Completed' },
-                  grid: { drawOnChartArea: false }
+          {internAnalytics.performanceTrend && internAnalytics.performanceTrend.length > 0 ? (
+            <EnhancedLineChart 
+              data={performanceTrendData} 
+              height={250}
+              options={{
+                scales: {
+                  y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Performance Score' }
+                  },
+                  y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Tasks Completed' },
+                    grid: { drawOnChartArea: false }
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p>Loading performance trends...</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold mb-4">🎯 Skill Distribution</h3>
-          <EnhancedBarChart data={internAnalytics.skillDistribution || {}} height={250} />
+          {internAnalytics.skillDistribution && Object.keys(internAnalytics.skillDistribution).length > 0 ? (
+            <EnhancedBarChart data={internAnalytics.skillDistribution} height={250} />
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p>Loading skill distribution...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -660,7 +689,7 @@ export function InternManagementTab() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {intern.college}
+                    {getCollegeName(intern.college)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(intern.status)}`}>

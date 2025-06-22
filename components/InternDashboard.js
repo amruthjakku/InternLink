@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
+import { getCollegeName } from '../utils/helpers';
 import { TasksTab } from './intern/TasksTab';
 import { ProgressTab } from './intern/ProgressTab';
 import { PerformanceTab } from './intern/PerformanceTab';
@@ -175,7 +176,7 @@ export function InternDashboard() {
                   <p className="mt-1 text-sm text-gray-600">
                     <span className="inline-flex items-center">
                       <span className="mr-1">🏫</span>
-                      {user.college}
+                      {getCollegeName(user.college)}
                     </span>
                   </p>
                 )}

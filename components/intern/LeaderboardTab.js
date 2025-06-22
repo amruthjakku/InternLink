@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getCollegeName } from '../../utils/helpers';
 
 export function LeaderboardTab({ user }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -114,7 +115,9 @@ export function LeaderboardTab({ user }) {
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{intern.college}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {getCollegeName(intern.college)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-6">

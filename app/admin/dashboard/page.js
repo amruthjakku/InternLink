@@ -190,7 +190,10 @@ export default function AdminDashboard() {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify({
+          ...newUser,
+          assignedBy: session?.user?.gitlabUsername || 'admin'
+        })
       });
 
       if (response.ok) {
@@ -526,39 +529,89 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Recent Activity */}
+            {/* Recent Users */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Recent Users</h3>
+                <button
+                  onClick={() => setActiveTab('user-management')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View All
+                </button>
+              </div>
               <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    A
+                {users.slice(0, 5).map((user) => (
+                  <div key={user._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        user.role === 'mentor' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {user.role}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Alex Chen completed Task: React Components</p>
-                    <p className="text-xs text-gray-500">2 minutes ago</p>
+                ))}
+                {users.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No users found. Add some users to get started.
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    S
+                )}
+              </div>
+            </div>
+
+            {/* Recent Colleges */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Recent Colleges</h3>
+                <button
+                  onClick={() => setActiveTab('colleges')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="space-y-3">
+                {colleges.slice(0, 3).map((college) => (
+                  <div key={college._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        🏫
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{college.name}</p>
+                        <p className="text-xs text-gray-500">{college.location}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">
+                        Mentor: {college.mentorUsername || 'Unassigned'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {college.createdAt ? new Date(college.createdAt).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Sarah Johnson joined the platform</p>
-                    <p className="text-xs text-gray-500">1 hour ago</p>
+                ))}
+                {colleges.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No colleges found. Add some colleges to get started.
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    E
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Dr. Emily Rodriguez created new task assignment</p>
-                    <p className="text-xs text-gray-500">3 hours ago</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -770,8 +823,487 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Modals would go here - keeping the existing modal code */}
-      {/* Add User Modal, Add College Modal, etc. */}
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New User</h3>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  GitLab Username
+                </label>
+                <input
+                  type="text"
+                  value={newUser.gitlabUsername}
+                  onChange={(e) => setNewUser({...newUser, gitlabUsername: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="intern">Intern</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              
+              {(newUser.role === 'intern' || newUser.role === 'mentor') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    College
+                  </label>
+                  <select
+                    value={newUser.college}
+                    onChange={(e) => setNewUser({...newUser, college: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required={newUser.role === 'intern'}
+                  >
+                    <option value="">Select College</option>
+                    {colleges.map((college) => (
+                      <option key={college._id} value={college._id}>
+                        {college.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Add User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddUserModal(false);
+                    setNewUser({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '' });
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add College Modal */}
+      {showAddCollegeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New College</h3>
+            <form onSubmit={handleAddCollege} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  College Name
+                </label>
+                <input
+                  type="text"
+                  value={newCollege.name}
+                  onChange={(e) => setNewCollege({...newCollege, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newCollege.description}
+                  onChange={(e) => setNewCollege({...newCollege, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={newCollege.location}
+                  onChange={(e) => setNewCollege({...newCollege, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Website (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={newCollege.website}
+                  onChange={(e) => setNewCollege({...newCollege, website: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mentor Username (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newCollege.mentorUsername}
+                  onChange={(e) => setNewCollege({...newCollege, mentorUsername: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="GitLab username of assigned mentor"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Add College
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCollegeModal(false);
+                    setNewCollege({ name: '', description: '', location: '', website: '', mentorUsername: '' });
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit User</h3>
+            <form onSubmit={handleEditUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({...editingUser, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="intern">Intern</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              
+              {(editingUser.role === 'intern' || editingUser.role === 'mentor') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    College
+                  </label>
+                  <select
+                    value={editingUser.college}
+                    onChange={(e) => setEditingUser({...editingUser, college: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required={editingUser.role === 'intern'}
+                  >
+                    <option value="">Select College</option>
+                    {colleges.map((college) => (
+                      <option key={college._id} value={college._id}>
+                        {college.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Update User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditUserModal(false);
+                    setEditingUser(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit College Modal */}
+      {showEditCollegeModal && editingCollege && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit College</h3>
+            <form onSubmit={handleEditCollege} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  College Name
+                </label>
+                <input
+                  type="text"
+                  value={editingCollege.name}
+                  onChange={(e) => setEditingCollege({...editingCollege, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editingCollege.description}
+                  onChange={(e) => setEditingCollege({...editingCollege, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={editingCollege.location}
+                  onChange={(e) => setEditingCollege({...editingCollege, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={editingCollege.website}
+                  onChange={(e) => setEditingCollege({...editingCollege, website: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mentor Username
+                </label>
+                <input
+                  type="text"
+                  value={editingCollege.mentorUsername}
+                  onChange={(e) => setEditingCollege({...editingCollege, mentorUsername: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Update College
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditCollegeModal(false);
+                    setEditingCollege(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Bulk Import Data</h3>
+            <form onSubmit={handleBulkImport} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Import Type
+                </label>
+                <select
+                  value={bulkImportType}
+                  onChange={(e) => setBulkImportType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="users">Users</option>
+                  <option value="colleges">Colleges</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  JSON Data
+                </label>
+                <textarea
+                  value={bulkImportData}
+                  onChange={(e) => setBulkImportData(e.target.value)}
+                  rows={12}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  placeholder={bulkImportType === 'users' ? 
+                    `[
+  {
+    "gitlabUsername": "john.doe",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "intern",
+    "college": "University Name"
+  }
+]` : 
+                    `[
+  {
+    "name": "University Name",
+    "description": "A great university",
+    "location": "City, State",
+    "website": "https://university.edu",
+    "mentorUsername": "mentor.username"
+  }
+]`}
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Import Data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkImportModal(false);
+                    setBulkImportData('');
+                    setBulkImportResults(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+            
+            {bulkImportResults && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-md">
+                <h4 className="font-medium text-gray-900 mb-2">Import Results:</h4>
+                <div className="text-sm space-y-1">
+                  <p className="text-green-600">✅ Successful: {bulkImportResults.successful}</p>
+                  <p className="text-red-600">❌ Failed: {bulkImportResults.failed}</p>
+                  {bulkImportResults.errors && bulkImportResults.errors.length > 0 && (
+                    <div className="mt-2">
+                      <p className="font-medium text-gray-700">Errors:</p>
+                      <ul className="list-disc list-inside text-red-600 space-y-1">
+                        {bulkImportResults.errors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                      {bulkImportResults.totalErrors > bulkImportResults.errors.length && (
+                        <p className="text-gray-600 mt-1">
+                          ... and {bulkImportResults.totalErrors - bulkImportResults.errors.length} more errors
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

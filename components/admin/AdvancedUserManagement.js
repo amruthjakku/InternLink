@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EnhancedBarChart, ActivityHeatmap, MetricCard } from '../Charts';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { getCollegeName } from '../../utils/helpers';
 
 export function AdvancedUserManagement() {
   const [users, setUsers] = useState([]);
@@ -523,7 +524,7 @@ export function AdvancedUserManagement() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.college}
+                    {getCollegeName(user.college)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
