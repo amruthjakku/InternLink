@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
-import { connectToDatabase } from '../../../../utils/database.js';
-import User from '../../../../models/User.js';
-import College from '../../../../models/College.js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { connectToDatabase } from '../../../../utils/database';
+import User from '../../../../models/User';
 
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic';
-
-export async function GET(request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -18,10 +15,24 @@ export async function GET(request) {
     await connectToDatabase();
 
     const users = await User.find({ isActive: true })
-      .populate('college')
+      .populate('college', 'name')
+      .select('gitlabUsername name email role college isActive createdAt lastLoginAt')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json(users);
+    // Format users for frontend
+    const formattedUsers = users.map(user => ({
+      _id: user._id,
+      gitlabUsername: user.gitlabUsername,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      college: user.college?.name || 'N/A',
+      status: user.isActive ? 'active' : 'inactive',
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt
+    }));
+
+    return NextResponse.json({ users: formattedUsers });
 
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -34,77 +45,64 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
+    const { gitlabUsername, name, email, role, college, assignedBy } = await request.json();
 
-    const { gitlabUsername, name, email, role, college } = await request.json();
-
-    // Validate required fields
-    if (!gitlabUsername || !name || !email || !role) {
-      return NextResponse.json({ 
-        error: 'Missing required fields' 
-      }, { status: 400 });
+    if (!gitlabUsername || !name || !email || !role || !assignedBy) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    if ((role === 'intern' || role === 'mentor') && !college) {
+      return NextResponse.json({ error: 'College is required for interns and mentors' }, { status: 400 });
+    }
+
+    await connectToDatabase();
 
     // Check if user already exists
     const existingUser = await User.findOne({ 
-      gitlabUsername: gitlabUsername.toLowerCase() 
+      $or: [
+        { gitlabUsername: gitlabUsername.toLowerCase() },
+        { email: email.toLowerCase() }
+      ]
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        error: 'User with this GitLab username already exists' 
-      }, { status: 400 });
-    }
-
-    // Validate college for intern role (mentors can be created without college)
-    if (role === 'intern' && !college) {
-      return NextResponse.json({ 
-        error: 'College is required for intern role' 
-      }, { status: 400 });
-    }
-
-    // If adding a mentor, check if college already has a mentor
-    if (role === 'mentor' && college) {
-      const existingMentor = await User.findOne({ 
-        role: 'mentor', 
-        college: college, 
-        isActive: true 
-      });
-
-      if (existingMentor) {
-        return NextResponse.json({ 
-          error: 'This college already has a mentor assigned' 
-        }, { status: 400 });
-      }
-
-      // Update college with mentor username
-      await College.findByIdAndUpdate(college, {
-        mentorUsername: gitlabUsername.toLowerCase()
-      });
+      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
 
     // Create new user
-    const newUser = new User({
+    const userData = {
       gitlabUsername: gitlabUsername.toLowerCase(),
-      gitlabId: `pending_${gitlabUsername.toLowerCase()}`, // Will be updated on first login
+      gitlabId: `manual_${Date.now()}`, // Temporary ID for manually created users
       name,
       email: email.toLowerCase(),
       role,
-      college: (role === 'intern' || (role === 'mentor' && college)) ? college : undefined,
-      assignedBy: session.user.gitlabUsername,
+      assignedBy,
       isActive: true
-    });
+    };
 
+    if (college && (role === 'intern' || role === 'mentor')) {
+      userData.college = college;
+    }
+
+    const newUser = new User(userData);
     await newUser.save();
 
-    // Populate college info for response
-    await newUser.populate('college');
-
-    return NextResponse.json(newUser, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'User created successfully',
+      user: {
+        _id: newUser._id,
+        gitlabUsername: newUser.gitlabUsername,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
+      }
+    });
 
   } catch (error) {
     console.error('Error creating user:', error);

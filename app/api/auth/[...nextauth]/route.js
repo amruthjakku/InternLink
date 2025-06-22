@@ -51,15 +51,27 @@ export const authOptions = {
       if (account && profile) {
         try {
           await connectToDatabase();
-          const user = await User.findByGitLabUsername(profile.username).populate('college');
+          let user = await User.findByGitLabUsername(profile.username).populate('college');
           
           if (user) {
+            // Existing user - update their info and login time
             token.role = user.role;
             token.gitlabUsername = user.gitlabUsername;
             token.gitlabId = user.gitlabId;
             token.college = user.college;
             token.assignedBy = user.assignedBy;
             token.userId = user._id.toString();
+            
+            // Update last login
+            await user.updateLastLogin();
+            console.log(`Successful login: ${user.gitlabUsername} (${user.role})`);
+          } else {
+            // New user - mark as pending registration
+            token.role = 'pending';
+            token.gitlabUsername = profile.username;
+            token.gitlabId = profile.id.toString();
+            token.needsRegistration = true;
+            console.log(`New user login: ${profile.username} - needs registration`);
           }
         } catch (error) {
           console.error('Error in JWT callback:', error);
@@ -76,6 +88,7 @@ export const authOptions = {
       session.user.college = token.college;
       session.user.assignedBy = token.assignedBy;
       session.user.id = token.userId;
+      session.user.needsRegistration = token.needsRegistration;
       
       return session;
     }

@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
-import { connectToDatabase } from '../../../../utils/database.js';
-import College from '../../../../models/College.js';
-import User from '../../../../models/User.js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { connectToDatabase } from '../../../../utils/database';
+import College from '../../../../models/College';
+import User from '../../../../models/User';
 
-
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic';
-
-export async function GET(request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -19,26 +16,38 @@ export async function GET(request) {
     await connectToDatabase();
 
     const colleges = await College.find({ isActive: true })
-      .populate('mentor')
-      .sort({ createdAt: -1 });
+      .select('name description location website mentorUsername createdAt')
+      .sort({ name: 1 });
 
-    // Add intern count to each college
-    const collegesWithStats = await Promise.all(
+    // Get mentor names for each college
+    const collegesWithMentors = await Promise.all(
       colleges.map(async (college) => {
-        const internsCount = await User.countDocuments({
-          college: college._id,
-          role: 'intern',
-          isActive: true
-        });
-
+        let mentorName = 'N/A';
+        if (college.mentorUsername) {
+          const mentor = await User.findOne({ 
+            gitlabUsername: college.mentorUsername,
+            role: 'mentor',
+            isActive: true 
+          });
+          if (mentor) {
+            mentorName = mentor.name;
+          }
+        }
+        
         return {
-          ...college.toJSON(),
-          internsCount
+          _id: college._id,
+          name: college.name,
+          description: college.description,
+          location: college.location,
+          website: college.website,
+          mentorUsername: college.mentorUsername,
+          mentorName,
+          createdAt: college.createdAt
         };
       })
     );
 
-    return NextResponse.json(collegesWithStats);
+    return NextResponse.json({ colleges: collegesWithMentors });
 
   } catch (error) {
     console.error('Error fetching colleges:', error);
@@ -51,86 +60,63 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
     const { name, description, location, website, mentorUsername } = await request.json();
 
-    // Validate required fields
-    if (!name) {
-      return NextResponse.json({ 
-        error: 'College name is required' 
-      }, { status: 400 });
+    if (!name || !description || !location) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    await connectToDatabase();
 
     // Check if college already exists
     const existingCollege = await College.findOne({ 
-      name: name.trim(),
-      isActive: true 
+      name: { $regex: new RegExp(`^${name}$`, 'i') }
     });
 
     if (existingCollege) {
-      return NextResponse.json({ 
-        error: 'College with this name already exists' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'College already exists' }, { status: 400 });
     }
 
-    let mentor = null;
-    
-    // If mentor username is provided, validate it
-    if (mentorUsername && mentorUsername.trim()) {
-      // Check if mentor exists and is available
-      mentor = await User.findOne({ 
+    // Validate mentor if provided
+    if (mentorUsername) {
+      const mentor = await User.findOne({ 
         gitlabUsername: mentorUsername.toLowerCase(),
         role: 'mentor',
         isActive: true 
       });
-
+      
       if (!mentor) {
-        return NextResponse.json({ 
-          error: 'Mentor not found or not available' 
-        }, { status: 400 });
-      }
-
-      // Check if mentor is already assigned to another college
-      const existingAssignment = await College.findOne({ 
-        mentorUsername: mentorUsername.toLowerCase(),
-        isActive: true 
-      });
-
-      if (existingAssignment) {
-        return NextResponse.json({ 
-          error: 'This mentor is already assigned to another college' 
-        }, { status: 400 });
+        return NextResponse.json({ error: 'Mentor not found' }, { status: 400 });
       }
     }
 
     // Create new college
     const newCollege = new College({
-      name: name.trim(),
-      description: description?.trim() || '',
-      location: location?.trim() || '',
-      website: website?.trim() || '',
-      mentorUsername: mentorUsername ? mentorUsername.toLowerCase() : 'unassigned',
-      createdBy: session.user.gitlabUsername,
+      name,
+      description,
+      location,
+      website: website || '',
+      mentorUsername: mentorUsername ? mentorUsername.toLowerCase() : '',
       isActive: true
     });
 
     await newCollege.save();
 
-    // Update mentor's college assignment if mentor exists
-    if (mentor) {
-      mentor.college = newCollege._id;
-      await mentor.save();
-    }
-
-    // Populate mentor info for response
-    await newCollege.populate('mentor');
-
-    return NextResponse.json(newCollege, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'College created successfully',
+      college: {
+        _id: newCollege._id,
+        name: newCollege.name,
+        description: newCollege.description,
+        location: newCollege.location
+      }
+    });
 
   } catch (error) {
     console.error('Error creating college:', error);

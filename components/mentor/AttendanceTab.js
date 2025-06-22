@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function AttendanceTab() {
   const [attendance, setAttendance] = useState([]);
@@ -12,42 +12,39 @@ export function AttendanceTab() {
   const [allowedIPs, setAllowedIPs] = useState(['192.168.1.0/24', '10.0.0.0/8']);
 
   useEffect(() => {
-    // Generate more attendance data for demonstration
-    const generateAttendanceData = () => {
-      const attendanceData = [];
-      const today = new Date();
-      
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        mockData.interns.forEach(intern => {
-          const isPresent = Math.random() > 0.15; // 85% attendance rate
-          const checkIn = isPresent ? `0${8 + Math.floor(Math.random() * 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:00` : null;
-          const checkOut = isPresent ? `1${7 + Math.floor(Math.random() * 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:00` : null;
-          const hoursWorked = isPresent ? 8 + Math.random() * 2 : 0;
-          
-          attendanceData.push({
-            id: `${intern.id}-${dateStr}`,
-            intern_id: intern.id,
-            date: dateStr,
-            check_in: checkIn,
-            check_out: checkOut,
-            hours_worked: parseFloat(hoursWorked.toFixed(1)),
-            ip_address: isPresent ? `192.168.1.${100 + intern.id}` : null,
-            location: isPresent ? `${intern.college_name} Campus` : null,
-            status: isPresent ? 'present' : 'absent'
-          });
-        });
-      }
-      
-      return attendanceData;
-    };
-
-    setAttendance(generateAttendanceData());
-    setInterns(mockData.interns);
+    fetchAttendanceData();
+    fetchInterns();
   }, []);
+
+  const fetchAttendanceData = async () => {
+    try {
+      const response = await fetch('/api/attendance/summary');
+      if (response.ok) {
+        const data = await response.json();
+        setAttendance(data.attendance || []);
+      } else {
+        setAttendance([]);
+      }
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+      setAttendance([]);
+    }
+  };
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
 
   const getAttendanceForDate = (date) => {
     return attendance.filter(record => record.date === date);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function LeaderboardTab() {
   const [interns, setInterns] = useState([]);
@@ -11,10 +11,55 @@ export function LeaderboardTab() {
   const [selectedMetric, setSelectedMetric] = useState('performance');
 
   useEffect(() => {
-    setInterns(mockData.interns);
-    setColleges(mockData.colleges);
-    setCategories(mockData.categories);
+    fetchInterns();
+    fetchColleges();
+    fetchCategories();
   }, []);
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
+
+  const fetchColleges = async () => {
+    try {
+      const response = await fetch('/api/admin/colleges');
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(data.colleges || []);
+      } else {
+        setColleges([]);
+      }
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setColleges([]);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
+  };
 
   const getLeaderboardData = () => {
     let sortedInterns = [...interns];

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function AIAssistantTab() {
   const [aiConfig, setAiConfig] = useState({});
@@ -11,49 +11,24 @@ export function AIAssistantTab() {
   const [activeFeature, setActiveFeature] = useState('chat');
 
   useEffect(() => {
-    setAiConfig(mockData.aiConfig || {
-      model: 'gpt-4',
-      temperature: 0.7,
-      max_tokens: 2000,
-      system_prompt: 'You are a helpful AI assistant for internship management.',
-      custom_instructions: 'Focus on providing educational guidance and technical support.',
-      enabled_features: ['code_review', 'task_suggestions', 'progress_analysis'],
-      usage_stats: {
-        total_queries: 156,
-        successful_responses: 148,
-        average_response_time: 2.3,
-        most_common_topics: ['debugging', 'code_review', 'learning_resources']
-      }
-    });
-
-    // Mock chat history
-    setChatHistory([
-      {
-        id: 1,
-        type: 'user',
-        message: 'Can you help me analyze the performance of my interns?',
-        timestamp: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: 2,
-        type: 'assistant',
-        message: 'I\'d be happy to help you analyze intern performance! Based on the current data, I can see that Alice Johnson is performing exceptionally well with a 94.2% performance score, while Bob Smith might benefit from additional support with his 81.7% score. Would you like me to provide specific recommendations for improvement?',
-        timestamp: new Date(Date.now() - 3500000).toISOString()
-      },
-      {
-        id: 3,
-        type: 'user',
-        message: 'Yes, please provide recommendations for Bob.',
-        timestamp: new Date(Date.now() - 3400000).toISOString()
-      },
-      {
-        id: 4,
-        type: 'assistant',
-        message: 'For Bob Smith, I recommend:\n\n1. **Task Management**: He has 5 tasks in progress - consider helping him prioritize\n2. **Mentoring**: Schedule more frequent 1:1 sessions\n3. **Skill Development**: Focus on JavaScript and Node.js based on his current projects\n4. **Peer Learning**: Pair him with Alice for collaborative learning\n\nWould you like me to create a personalized development plan?',
-        timestamp: new Date(Date.now() - 3300000).toISOString()
-      }
-    ]);
+    fetchAIConfig();
+    fetchChatHistory();
   }, []);
+
+  const fetchChatHistory = async () => {
+    try {
+      const response = await fetch('/api/ai/chat-history');
+      if (response.ok) {
+        const data = await response.json();
+        setChatHistory(data.history || []);
+      } else {
+        setChatHistory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      setChatHistory([]);
+    }
+  };
 
   const sendMessage = async () => {
     if (!currentMessage.trim()) return;

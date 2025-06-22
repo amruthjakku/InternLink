@@ -4,19 +4,15 @@ import mongoose from 'mongoose';
 let client;
 let clientPromise;
 
-if (process.env.MONGODB_URI) {
-  client = new MongoClient(process.env.MONGODB_URI);
-  clientPromise = client.connect();
-} else {
-  // For demo mode, we'll use in-memory storage
-  console.warn('No MongoDB URI provided, using demo mode');
+if (!process.env.MONGODB_URI) {
+  throw new Error('MongoDB URI is required. Please set MONGODB_URI in your environment variables.');
 }
+
+client = new MongoClient(process.env.MONGODB_URI);
+clientPromise = client.connect();
 
 // Database helper functions
 export async function getDatabase() {
-  if (!clientPromise) {
-    throw new Error('Database not configured. Using demo mode.');
-  }
   const client = await clientPromise;
   return client.db('internship_tracker');
 }
@@ -27,15 +23,8 @@ export async function connectToDatabase() {
     return mongoose.connections[0];
   }
 
-  if (!process.env.MONGODB_URI) {
-    throw new Error('MongoDB URI not configured');
-  }
-
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB via Mongoose');
     return mongoose.connections[0];
   } catch (error) {
@@ -44,33 +33,9 @@ export async function connectToDatabase() {
   }
 }
 
-// Demo data storage (in-memory for demo mode)
-let demoData = {
-  users: [],
-  colleges: [],
-  cohorts: [],
-  joinRequests: []
-};
-
-// Helper to check if we're in demo mode
-const isDemoMode = () => !process.env.MONGODB_URI || process.env.DEMO_MODE === 'true';
-
 // User operations
 export async function createUser(userData) {
   try {
-    if (isDemoMode()) {
-      const newUser = {
-        _id: new ObjectId().toString(),
-        ...userData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true,
-        onboardingComplete: false
-      };
-      demoData.users.push(newUser);
-      return newUser._id;
-    }
-
     const db = await getDatabase();
     const result = await db.collection('users').insertOne({
       ...userData,
@@ -88,10 +53,6 @@ export async function createUser(userData) {
 
 export async function getUserByGitLabId(gitlabId) {
   try {
-    if (isDemoMode()) {
-      return demoData.users.find(user => user.gitlabId === String(gitlabId));
-    }
-
     const db = await getDatabase();
     return await db.collection('users').findOne({ gitlabId: String(gitlabId) });
   } catch (error) {
@@ -102,19 +63,6 @@ export async function getUserByGitLabId(gitlabId) {
 
 export async function updateUser(userId, updateData) {
   try {
-    if (isDemoMode()) {
-      const userIndex = demoData.users.findIndex(user => user._id === userId);
-      if (userIndex !== -1) {
-        demoData.users[userIndex] = {
-          ...demoData.users[userIndex],
-          ...updateData,
-          updatedAt: new Date()
-        };
-        return true;
-      }
-      return false;
-    }
-
     const db = await getDatabase();
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
@@ -135,21 +83,13 @@ export async function updateUser(userId, updateData) {
 // College operations
 export async function createCollege(collegeData) {
   try {
-    const newCollege = {
-      _id: new ObjectId().toString(),
+    const db = await getDatabase();
+    const result = await db.collection('colleges').insertOne({
       ...collegeData,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true
-    };
-
-    if (isDemoMode()) {
-      demoData.colleges.push(newCollege);
-      return newCollege._id;
-    }
-
-    const db = await getDatabase();
-    const result = await db.collection('colleges').insertOne(newCollege);
+    });
     return result.insertedId;
   } catch (error) {
     console.error('Error creating college:', error);
@@ -159,10 +99,6 @@ export async function createCollege(collegeData) {
 
 export async function getAllColleges() {
   try {
-    if (isDemoMode()) {
-      return demoData.colleges.filter(college => college.isActive);
-    }
-
     const db = await getDatabase();
     return await db.collection('colleges').find({ isActive: true }).toArray();
   } catch (error) {
@@ -173,10 +109,6 @@ export async function getAllColleges() {
 
 export async function getCollegeById(collegeId) {
   try {
-    if (isDemoMode()) {
-      return demoData.colleges.find(college => college._id === collegeId);
-    }
-
     const db = await getDatabase();
     return await db.collection('colleges').findOne({ _id: new ObjectId(collegeId) });
   } catch (error) {
@@ -187,12 +119,6 @@ export async function getCollegeById(collegeId) {
 
 export async function getCollegesByMentor(mentorId) {
   try {
-    if (isDemoMode()) {
-      return demoData.colleges.filter(college => 
-        college.createdBy === mentorId && college.isActive
-      );
-    }
-
     const db = await getDatabase();
     return await db.collection('colleges').find({ 
       createdBy: mentorId,
@@ -207,22 +133,14 @@ export async function getCollegesByMentor(mentorId) {
 // Cohort operations
 export async function createCohort(cohortData) {
   try {
-    const newCohort = {
-      _id: new ObjectId().toString(),
+    const db = await getDatabase();
+    const result = await db.collection('cohorts').insertOne({
       ...cohortData,
       currentInterns: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true
-    };
-
-    if (isDemoMode()) {
-      demoData.cohorts.push(newCohort);
-      return newCohort._id;
-    }
-
-    const db = await getDatabase();
-    const result = await db.collection('cohorts').insertOne(newCohort);
+    });
     return result.insertedId;
   } catch (error) {
     console.error('Error creating cohort:', error);
@@ -232,12 +150,6 @@ export async function createCohort(cohortData) {
 
 export async function getCohortsByCollege(collegeId) {
   try {
-    if (isDemoMode()) {
-      return demoData.cohorts.filter(cohort => 
-        cohort.collegeId === collegeId && cohort.isActive
-      );
-    }
-
     const db = await getDatabase();
     return await db.collection('cohorts').find({ 
       collegeId: new ObjectId(collegeId),
@@ -251,10 +163,6 @@ export async function getCohortsByCollege(collegeId) {
 
 export async function getCohortById(cohortId) {
   try {
-    if (isDemoMode()) {
-      return demoData.cohorts.find(cohort => cohort._id === cohortId);
-    }
-
     const db = await getDatabase();
     return await db.collection('cohorts').findOne({ _id: new ObjectId(cohortId) });
   } catch (error) {
@@ -265,19 +173,6 @@ export async function getCohortById(cohortId) {
 
 export async function updateCohort(cohortId, updateData) {
   try {
-    if (isDemoMode()) {
-      const cohortIndex = demoData.cohorts.findIndex(cohort => cohort._id === cohortId);
-      if (cohortIndex !== -1) {
-        demoData.cohorts[cohortIndex] = {
-          ...demoData.cohorts[cohortIndex],
-          ...updateData,
-          updatedAt: new Date()
-        };
-        return true;
-      }
-      return false;
-    }
-
     const db = await getDatabase();
     const result = await db.collection('cohorts').updateOne(
       { _id: new ObjectId(cohortId) },
@@ -298,21 +193,13 @@ export async function updateCohort(cohortId, updateData) {
 // Join request operations
 export async function createJoinRequest(requestData) {
   try {
-    const newRequest = {
-      _id: new ObjectId().toString(),
+    const db = await getDatabase();
+    const result = await db.collection('joinRequests').insertOne({
       ...requestData,
       status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
-    };
-
-    if (isDemoMode()) {
-      demoData.joinRequests.push(newRequest);
-      return newRequest._id;
-    }
-
-    const db = await getDatabase();
-    const result = await db.collection('joinRequests').insertOne(newRequest);
+    });
     return result.insertedId;
   } catch (error) {
     console.error('Error creating join request:', error);
@@ -322,10 +209,6 @@ export async function createJoinRequest(requestData) {
 
 export async function getJoinRequestsByMentor(mentorId) {
   try {
-    if (isDemoMode()) {
-      return demoData.joinRequests.filter(request => request.mentorId === mentorId);
-    }
-
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ mentorId }).toArray();
   } catch (error) {
@@ -336,10 +219,6 @@ export async function getJoinRequestsByMentor(mentorId) {
 
 export async function getJoinRequestsByIntern(internId) {
   try {
-    if (isDemoMode()) {
-      return demoData.joinRequests.filter(request => request.internId === internId);
-    }
-
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ internId }).toArray();
   } catch (error) {
@@ -350,20 +229,6 @@ export async function getJoinRequestsByIntern(internId) {
 
 export async function updateJoinRequest(requestId, updateData) {
   try {
-    if (isDemoMode()) {
-      const requestIndex = demoData.joinRequests.findIndex(request => request._id === requestId);
-      if (requestIndex !== -1) {
-        demoData.joinRequests[requestIndex] = {
-          ...demoData.joinRequests[requestIndex],
-          ...updateData,
-          updatedAt: new Date(),
-          reviewedAt: new Date()
-        };
-        return true;
-      }
-      return false;
-    }
-
     const db = await getDatabase();
     const result = await db.collection('joinRequests').updateOne(
       { _id: new ObjectId(requestId) },
@@ -382,176 +247,150 @@ export async function updateJoinRequest(requestId, updateData) {
   }
 }
 
-// Demo data seeding
-export async function seedDemoData() {
+// Categories functions
+export async function getAllCategories() {
   try {
-    console.log('🌱 Seeding demo data...');
+    const db = await getDatabase();
+    return await db.collection('categories').find({}).toArray();
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+}
 
-    // Create demo mentor
-    const demoMentor = {
-      _id: 'demo_mentor_1',
-      name: 'Dr. Sarah Wilson',
-      email: 'mentor@demo.com',
-      gitlabId: '999999',
-      gitlabUsername: 'demo_mentor',
-      role: 'mentor',
-      avatarUrl: 'https://via.placeholder.com/150',
-      isDemo: true,
-      onboardingComplete: true,
+export async function createCategory(categoryData) {
+  try {
+    const db = await getDatabase();
+    const result = await db.collection('categories').insertOne({
+      ...categoryData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return result.insertedId;
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+}
+
+// Tasks functions
+export async function updateTaskStatus(taskId, status, userId) {
+  try {
+    const db = await getDatabase();
+    const result = await db.collection('tasks').updateOne(
+      { _id: new ObjectId(taskId) },
+      { 
+        $set: { 
+          status,
+          updatedAt: new Date(),
+          ...(status === 'completed' && { completedAt: new Date(), completedBy: userId })
+        } 
+      }
+    );
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error('Error updating task status:', error);
+    throw error;
+  }
+}
+
+// Attendance operations
+export async function createAttendanceRecord(attendanceData) {
+  try {
+    const db = await getDatabase();
+    const result = await db.collection('attendance').insertOne({
+      ...attendanceData,
+      createdAt: new Date()
+    });
+    return result.insertedId;
+  } catch (error) {
+    console.error('Error creating attendance record:', error);
+    throw error;
+  }
+}
+
+export async function getAttendanceByUser(userId, startDate, endDate) {
+  try {
+    const db = await getDatabase();
+    const query = { userId: new ObjectId(userId) };
+    
+    if (startDate && endDate) {
+      query.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    return await db.collection('attendance').find(query).sort({ date: -1 }).toArray();
+  } catch (error) {
+    console.error('Error fetching attendance:', error);
+    throw error;
+  }
+}
+
+export async function updateAttendanceRecord(recordId, updateData) {
+  try {
+    const db = await getDatabase();
+    const result = await db.collection('attendance').updateOne(
+      { _id: new ObjectId(recordId) },
+      { 
+        $set: { 
+          ...updateData, 
+          updatedAt: new Date() 
+        } 
+      }
+    );
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error('Error updating attendance record:', error);
+    throw error;
+  }
+}
+
+// Task operations
+export async function createTask(taskData) {
+  try {
+    const db = await getDatabase();
+    const result = await db.collection('tasks').insertOne({
+      ...taskData,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isActive: true
-    };
-
-    // Create demo colleges
-    const demoColleges = [
-      {
-        _id: 'demo_college_1',
-        name: 'Sreenidhi Institute of Science and Technology',
-        description: 'Premier engineering college in Hyderabad',
-        location: 'Hyderabad, Telangana',
-        website: 'https://sreenidhi.edu.in',
-        createdBy: 'demo_mentor_1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true
-      },
-      {
-        _id: 'demo_college_2',
-        name: 'JNTUH College of Engineering',
-        description: 'Autonomous engineering college under JNTUH',
-        location: 'Hyderabad, Telangana',
-        website: 'https://jntuhceh.ac.in',
-        createdBy: 'demo_mentor_1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true
-      }
-    ];
-
-    // Create demo cohorts
-    const demoCohorts = [
-      {
-        _id: 'demo_cohort_1',
-        name: 'Summer 2025 Batch',
-        description: 'Summer internship program for 2025',
-        collegeId: 'demo_college_1',
-        createdBy: 'demo_mentor_1',
-        startDate: new Date('2025-05-01'),
-        endDate: new Date('2025-07-31'),
-        maxInterns: 20,
-        currentInterns: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true
-      },
-      {
-        _id: 'demo_cohort_2',
-        name: 'Full Stack Development Cohort',
-        description: 'Specialized cohort for full-stack development',
-        collegeId: 'demo_college_2',
-        createdBy: 'demo_mentor_1',
-        startDate: new Date('2025-01-15'),
-        endDate: new Date('2025-06-15'),
-        maxInterns: 25,
-        currentInterns: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true
-      }
-    ];
-
-    if (isDemoMode()) {
-      // Reset demo data
-      demoData = {
-        users: [demoMentor],
-        colleges: demoColleges,
-        cohorts: demoCohorts,
-        joinRequests: []
-      };
-      console.log('✅ Demo data seeded in memory');
-    } else {
-      // Seed to MongoDB
-      const db = await getDatabase();
-      
-      // Check if demo data already exists
-      const existingCollege = await db.collection('colleges').findOne({ name: 'Sreenidhi Institute of Science and Technology' });
-      if (existingCollege) {
-        console.log('Demo data already exists');
-        return;
-      }
-
-      await db.collection('users').insertOne(demoMentor);
-      await db.collection('colleges').insertMany(demoColleges);
-      await db.collection('cohorts').insertMany(demoCohorts);
-      
-      console.log('✅ Demo data seeded to MongoDB');
-    }
+      status: 'pending'
+    });
+    return result.insertedId;
   } catch (error) {
-    console.error('Error seeding demo data:', error);
+    console.error('Error creating task:', error);
     throw error;
   }
 }
 
-// GitLab API helpers
-export async function getGitLabUserInfo(accessToken) {
+export async function getTasksByUser(userId) {
   try {
-    const response = await fetch('https://gitlab.com/api/v4/user', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch GitLab user info');
-    }
-    
-    return await response.json();
+    const db = await getDatabase();
+    return await db.collection('tasks').find({ 
+      assignedTo: { $in: [new ObjectId(userId)] }
+    }).sort({ createdAt: -1 }).toArray();
   } catch (error) {
-    console.error('Error fetching GitLab user info:', error);
+    console.error('Error fetching tasks:', error);
     throw error;
   }
 }
 
-export async function getGitLabUserProjects(accessToken, userId) {
+export async function updateTask(taskId, updateData) {
   try {
-    const response = await fetch(`https://gitlab.com/api/v4/users/${userId}/projects`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    const db = await getDatabase();
+    const result = await db.collection('tasks').updateOne(
+      { _id: new ObjectId(taskId) },
+      { 
+        $set: { 
+          ...updateData, 
+          updatedAt: new Date() 
+        } 
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch GitLab projects');
-    }
-    
-    return await response.json();
+    );
+    return result.modifiedCount > 0;
   } catch (error) {
-    console.error('Error fetching GitLab projects:', error);
-    throw error;
-  }
-}
-
-export async function getGitLabUserCommits(accessToken, projectId, since = null) {
-  try {
-    let url = `https://gitlab.com/api/v4/projects/${projectId}/repository/commits`;
-    if (since) {
-      url += `?since=${since}`;
-    }
-    
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch GitLab commits');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching GitLab commits:', error);
+    console.error('Error updating task:', error);
     throw error;
   }
 }

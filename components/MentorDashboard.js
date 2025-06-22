@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-import { mockData } from '../utils/mockData';
+// Removed mockData import - using real API calls
 import { InternManagementTab } from './mentor/InternManagementTab';
 import { TaskManagementTab } from './mentor/TaskManagementTab';
 import { CategoriesTab } from './mentor/CategoriesTab';
@@ -33,12 +33,26 @@ export function MentorDashboard() {
   ];
 
   useEffect(() => {
-    // Load enhanced mock data
-    setTimeout(() => {
-      setInterns(mockData.interns);
-      setLoading(false);
-    }, 1000);
+    fetchInterns();
   }, []);
+
+  const fetchInterns = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderOverview = () => {
     const totalInterns = interns.length;

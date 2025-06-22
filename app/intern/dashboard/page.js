@@ -19,6 +19,7 @@ export default function InternDashboard() {
   const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
   useEffect(() => {
     if (status === 'loading') return;
 
@@ -27,55 +28,52 @@ export default function InternDashboard() {
       return;
     }
 
-    fetchDashboardData();
-  }, [session, status]);
+    // If user needs registration, redirect to onboarding
+    if (session.user.needsRegistration || session.user.role === 'pending') {
+      router.push('/onboarding');
+      return;
+    }
 
-  const fetchDashboardData = async () => {
+    if (session.user.role !== 'intern') {
+      router.push('/unauthorized');
+      return;
+    }
+
+    fetchJoinRequests();
+  }, [session, status, router]);
+
+  const fetchJoinRequests = async () => {
     try {
-      // Fetch intern's join requests
-      const requestsResponse = await fetch('/api/join-requests');
-      const requestsData = await requestsResponse.json();
-      
-      if (requestsResponse.ok) {
-        setJoinRequests(requestsData.joinRequests || []);
+      const response = await fetch('/api/join-requests');
+      if (response.ok) {
+        const data = await response.json();
+        setJoinRequests(data.requests || []);
       }
-
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching join requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
+
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  const approvedRequests = joinRequests.filter(req => req.status === 'approved');
-  const pendingRequests = joinRequests.filter(req => req.status === 'pending');
+  if (!session) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Demo Mode Banner */}
-      {demoMode && (
-        <div className="bg-yellow-100 border-b border-yellow-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-            <div className="flex items-center justify-center">
-              <span className="text-yellow-800 text-sm font-medium">
-                🎭 Demo Mode - Intern Dashboard Experience
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,27 +84,19 @@ export default function InternDashboard() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <img 
-                  src={demoMode ? 'https://via.placeholder.com/32' : session?.user?.image} 
-                  alt={demoMode ? 'Demo Intern' : session?.user?.name}
+                  src={session?.user?.image} 
+                  alt={session?.user?.name}
                   className="w-8 h-8 rounded-full"
                 />
                 <span className="text-sm text-gray-700">
-                  {demoMode ? 'John Smith (Demo)' : session?.user?.name}
+                  {session?.user?.name}
                 </span>
               </div>
               <button
-                onClick={() => {
-                  if (demoMode) {
-                    localStorage.removeItem('demoMode');
-                    localStorage.removeItem('demoRole');
-                    window.location.href = '/';
-                  } else {
-                    signOut();
-                  }
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={handleSignOut}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
               >
-                {demoMode ? 'Exit Demo' : 'Sign Out'}
+                Sign Out
               </button>
             </div>
           </div>
@@ -118,11 +108,11 @@ export default function InternDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {[
-              { id: 'overview', name: 'Overview', icon: '📊' },
-              { id: 'progress', name: 'My Progress', icon: '📈' },
+              { id: 'overview', name: 'Overview', icon: '🏠' },
+              { id: 'progress', name: 'Progress', icon: '📈' },
               { id: 'tasks', name: 'Tasks', icon: '✅' },
               { id: 'performance', name: 'Performance', icon: '🎯' },
-              { id: 'attendance', name: 'Attendance', icon: '📍' },
+              { id: 'attendance', name: 'Attendance', icon: '📅' },
               { id: 'gitlab', name: 'GitLab', icon: '🦊' }
             ].map((tab) => (
               <button
@@ -146,142 +136,106 @@ export default function InternDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* Welcome Message */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2">Welcome to your internship journey! 🎉</h2>
-              <p className="text-blue-100">
-                Track your progress, complete tasks, and collaborate with your mentor.
-              </p>
-            </div>
-
-            {/* Enhanced Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <MetricCard
-                title="Join Requests"
-                value={joinRequests.length}
-                change={8.2}
-                icon="📝"
-                color="blue"
-              />
-              <MetricCard
-                title="Approved"
-                value={approvedRequests.length}
-               change={15.3}
-                icon="✅"
-                color="green"
-               />
-              <MetricCard
-                title="Pending"
-                value={pendingRequests.length}
-                change={-5.1}
-                icon="⏳"
-          color="orange"
-              />
-              <MetricCard
-                title="Streak Days"
-                      value={7}
-                change={12.5}
-                icon="🔥"
-                color="red"
-              />
-            </div>
-
-            {/* Attendance Widget */}
-            <AttendanceWidget />
-
-            {/* Join Request Status */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">My Applications</h3>
-              </div>
-              <div className="p-6">
-                {joinRequests.length === 0 ? (
-                  <div className="text-center py-8">
-                    <span className="text-6xl text-gray-300">📝</span>
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">No applications yet</h3>
-                    <p className="mt-2 text-gray-500">
-                      You haven't submitted any join requests yet. Complete the onboarding process to get started.
-                    </p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Welcome Card */}
+              <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Welcome back, {session?.user?.name?.split(' ')[0]}! 👋
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Ready to continue your internship journey? Here's what you can do today.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <button 
+                      onClick={() => setActiveTab('attendance')}
+                      className="w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">📅</div>
+                      <h4 className="font-medium text-gray-900">Mark Attendance</h4>
+                      <p className="text-sm text-gray-600">Check in/out for today</p>
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {joinRequests.map((request) => (
-                      <div key={request._id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{request.collegeName}</h4>
-                            <p className="text-sm text-gray-600">{request.cohortName}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Applied on {new Date(request.createdAt).toLocaleDateString()}
-                            </p>
-                            {request.message && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                <strong>Your message:</strong> {request.message}
-                              </div>
-                            )}
-                          </div>
-                          <span className={`px-3 py-1 text-sm rounded-full ${
-                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {request.status === 'pending' ? '⏳ Pending Review' :
-                             request.status === 'approved' ? '✅ Approved' :
-                             '❌ Rejected'}
-                          </span>
-                        </div>
-                        
-                        {request.status === 'approved' && (
-                          <div className="mt-3 p-3 bg-green-50 rounded-md">
-                            <p className="text-sm text-green-800">
-                              🎉 Congratulations! You've been accepted into this cohort. Your internship journey begins now!
-                            </p>
-                          </div>
-                        )}
-                        
-                        {request.status === 'pending' && (
-                          <div className="mt-3 p-3 bg-yellow-50 rounded-md">
-                            <p className="text-sm text-yellow-800">
-                              ⏳ Your application is under review. You'll be notified once the mentor makes a decision.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <button 
+                      onClick={() => setActiveTab('tasks')}
+                      className="w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">✅</div>
+                      <h4 className="font-medium text-gray-900">View Tasks</h4>
+                      <p className="text-sm text-gray-600">Check your assignments</p>
+                    </button>
                   </div>
-                )}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <button 
+                      onClick={() => setActiveTab('progress')}
+                      className="w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">📈</div>
+                      <h4 className="font-medium text-gray-900">Track Progress</h4>
+                      <p className="text-sm text-gray-600">Monitor your growth</p>
+                    </button>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <button 
+                      onClick={() => setActiveTab('gitlab')}
+                      className="w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">🦊</div>
+                      <h4 className="font-medium text-gray-900">GitLab Integration</h4>
+                      <p className="text-sm text-gray-600">Connect your projects</p>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Quick Actions */}
-            {approvedRequests.length > 0 && (
+              {/* Attendance Widget */}
+              <AttendanceWidget />
+
+              {/* Join Request Status */}
               <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+                  <h3 className="text-lg font-medium text-gray-900">My Applications</h3>
                 </div>
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-                      <div className="text-2xl mb-2">📝</div>
-                      <h4 className="font-medium text-gray-900">View Tasks</h4>
-                      <p className="text-sm text-gray-600">Check your assigned tasks</p>
-                    </button>
-                    
-                    <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-                      <div className="text-2xl mb-2">🦊</div>
-                      <h4 className="font-medium text-gray-900">Connect GitLab</h4>
-                      <p className="text-sm text-gray-600">Link your repositories</p>
-                    </button>
-                    
-                    <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-                      <div className="text-2xl mb-2">📊</div>
-                      <h4 className="font-medium text-gray-900">View Progress</h4>
-                      <p className="text-sm text-gray-600">Track your achievements</p>
-                    </button>
-                  </div>
+                  {joinRequests.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-4">📝</div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">No Applications Yet</h4>
+                      <p className="text-gray-600 mb-4">
+                        Apply to join a cohort to start your internship journey.
+                      </p>
+                      <button 
+                        onClick={() => router.push('/apply')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Apply Now
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {joinRequests.map((request) => (
+                        <div key={request._id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-gray-900">{request.cohortName}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{request.collegeName}</p>
+                          <p className="text-sm text-gray-500">{request.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -348,7 +302,7 @@ export default function InternDashboard() {
         {activeTab === 'gitlab' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">GitLab Integration</h2>
-            <GitLabIntegration demoMode={demoMode} />
+            <GitLabIntegration />
           </div>
         )}
       </div>

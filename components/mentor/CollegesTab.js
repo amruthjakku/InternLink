@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function CollegesTab() {
   const [colleges, setColleges] = useState([]);
@@ -12,10 +12,55 @@ export function CollegesTab() {
   const [editingCollege, setEditingCollege] = useState(null);
 
   useEffect(() => {
-    setColleges(mockData.colleges);
-    setCohorts(mockData.cohorts);
-    setInterns(mockData.interns);
+    fetchColleges();
+    fetchCohorts();
+    fetchInterns();
   }, []);
+
+  const fetchColleges = async () => {
+    try {
+      const response = await fetch('/api/admin/colleges');
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(data.colleges || []);
+      } else {
+        setColleges([]);
+      }
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setColleges([]);
+    }
+  };
+
+  const fetchCohorts = async () => {
+    try {
+      const response = await fetch('/api/admin/cohorts');
+      if (response.ok) {
+        const data = await response.json();
+        setCohorts(data.cohorts || []);
+      } else {
+        setCohorts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching cohorts:', error);
+      setCohorts([]);
+    }
+  };
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
 
   const getCollegeStats = (collegeId) => {
     const collegeInterns = interns.filter(intern => intern.college_id === collegeId);

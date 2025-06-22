@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup": "node scripts/setup.js"
+    "setup": "node scripts/setup.js",
+    "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -21,6 +22,7 @@
     "chart.js": "^4.5.0",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
     "emoji-picker-react": "^4.12.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",

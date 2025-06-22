@@ -1,36 +1,50 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
-import { connectToDatabase } from '../../../../utils/database.js';
-import User from '../../../../models/User.js';
-import College from '../../../../models/College.js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { connectToDatabase } from '../../../../utils/database';
+import User from '../../../../models/User';
+import College from '../../../../models/College';
 
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic';
-
-export async function GET(request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    // Get system statistics
-    const [totalUsers, totalColleges, totalMentors, totalInterns] = await Promise.all([
-      User.countDocuments({ isActive: true }),
-      College.countDocuments({ isActive: true }),
-      User.countDocuments({ role: 'mentor', isActive: true }),
-      User.countDocuments({ role: 'intern', isActive: true })
-    ]);
+    // Get user statistics
+    const totalUsers = await User.countDocuments({ isActive: true });
+    const totalMentors = await User.countDocuments({ role: 'mentor', isActive: true });
+    const totalInterns = await User.countDocuments({ role: 'intern', isActive: true });
+    const totalAdmins = await User.countDocuments({ role: 'admin', isActive: true });
+    
+    // Get college statistics
+    const totalColleges = await College.countDocuments({ isActive: true });
+    
+    // Calculate active users (users who logged in within last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const activeUsers = await User.countDocuments({ 
+      isActive: true, 
+      lastLoginAt: { $gte: thirtyDaysAgo } 
+    });
 
-    return NextResponse.json({
+    const stats = {
       totalUsers,
       totalColleges,
       totalMentors,
-      totalInterns
-    });
+      totalInterns,
+      totalAdmins,
+      activeUsers,
+      systemHealth: 98, // This could be calculated based on various metrics
+      avgPerformance: 85, // This would come from performance tracking
+      tasksCompleted: 0 // This would come from task management system
+    };
+
+    return NextResponse.json({ stats });
 
   } catch (error) {
     console.error('Error fetching admin stats:', error);

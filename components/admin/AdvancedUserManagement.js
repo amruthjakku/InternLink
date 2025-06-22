@@ -20,212 +20,113 @@ export function AdvancedUserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Generate mock user data
-    const generateUsers = () => [
-      {
-        id: 1,
-        name: 'Alex Chen',
-        email: 'alex.chen@college.edu',
-        role: 'intern',
-        college: 'MIT',
-        status: 'active',
-        joinDate: '2024-01-01',
-        lastActive: '2024-01-16',
-        tasksCompleted: 15,
-        totalTasks: 20,
-        performanceScore: 85,
-        loginCount: 45,
-        avgSessionTime: 120, // minutes
-        skills: ['React', 'Node.js', 'MongoDB'],
-        activityLevel: 'high',
-        riskLevel: 'low',
-        location: 'Boston, MA',
-        timezone: 'EST'
-      },
-      {
-        id: 2,
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@university.edu',
-        role: 'intern',
-        college: 'Stanford',
-        status: 'active',
-        joinDate: '2024-01-02',
-        lastActive: '2024-01-16',
-        tasksCompleted: 18,
-        totalTasks: 22,
-        performanceScore: 92,
-        loginCount: 52,
-        avgSessionTime: 95,
-        skills: ['Vue.js', 'Python', 'PostgreSQL'],
-        activityLevel: 'high',
-        riskLevel: 'low',
-        location: 'Palo Alto, CA',
-        timezone: 'PST'
-      },
-      {
-        id: 3,
-        name: 'Dr. Emily Rodriguez',
-        email: 'emily.rodriguez@university.edu',
-        role: 'mentor',
-        college: 'UC Berkeley',
-        status: 'active',
-        joinDate: '2023-12-15',
-        lastActive: '2024-01-16',
-        tasksCompleted: 0,
-        totalTasks: 0,
-        performanceScore: 88,
-        loginCount: 38,
-        avgSessionTime: 180,
-        skills: ['Leadership', 'Full Stack', 'DevOps'],
-        activityLevel: 'medium',
-        riskLevel: 'low',
-        location: 'Berkeley, CA',
-        timezone: 'PST'
-      },
-      {
-        id: 4,
-        name: 'Mike Davis',
-        email: 'mike.davis@tech.edu',
-        role: 'intern',
-        college: 'Carnegie Mellon',
-        status: 'inactive',
-        joinDate: '2024-01-05',
-        lastActive: '2024-01-10',
-        tasksCompleted: 8,
-        totalTasks: 15,
-        performanceScore: 65,
-        loginCount: 12,
-        avgSessionTime: 45,
-        skills: ['JavaScript', 'CSS'],
-        activityLevel: 'low',
-        riskLevel: 'high',
-        location: 'Pittsburgh, PA',
-        timezone: 'EST'
-      },
-      {
-        id: 5,
-        name: 'Admin User',
-        email: 'admin@internlink.com',
-        role: 'admin',
-        college: 'System',
-        status: 'active',
-        joinDate: '2023-12-01',
-        lastActive: '2024-01-16',
-        tasksCompleted: 0,
-        totalTasks: 0,
-        performanceScore: 100,
-        loginCount: 120,
-        avgSessionTime: 240,
-        skills: ['System Administration', 'Analytics'],
-        activityLevel: 'high',
-        riskLevel: 'low',
-        location: 'Remote',
-        timezone: 'UTC'
-      }
-    ];
-
-    // Generate user segments
-    const generateUserSegments = () => [
-      {
-        id: 1,
-        name: 'High Performers',
-        description: 'Users with performance score > 85',
-        criteria: { performanceScore: { $gt: 85 } },
-        userCount: 12,
-        color: 'green'
-      },
-      {
-        id: 2,
-        name: 'At Risk',
-        description: 'Users inactive for > 5 days',
-        criteria: { lastActive: { $lt: '2024-01-11' } },
-        userCount: 3,
-        color: 'red'
-      },
-      {
-        id: 3,
-        name: 'New Users',
-        description: 'Users joined in last 30 days',
-        criteria: { joinDate: { $gt: '2023-12-17' } },
-        userCount: 8,
-        color: 'blue'
-      },
-      {
-        id: 4,
-        name: 'Power Users',
-        description: 'Users with > 40 logins',
-        criteria: { loginCount: { $gt: 40 } },
-        userCount: 6,
-        color: 'purple'
-      }
-    ];
-
-    // Generate activity logs
-    const generateActivityLogs = () => {
-      const activities = [
-        'User logged in',
-        'Task completed',
-        'Profile updated',
-        'File uploaded',
-        'Message sent',
-        'Meeting joined',
-        'Report generated'
-      ];
-
-      return Array.from({ length: 50 }, (_, i) => ({
-        id: i + 1,
-        userId: Math.floor(Math.random() * 5) + 1,
-        userName: ['Alex Chen', 'Sarah Johnson', 'Dr. Emily Rodriguez', 'Mike Davis', 'Admin User'][Math.floor(Math.random() * 5)],
-        action: activities[Math.floor(Math.random() * activities.length)],
-        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-        ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        details: { page: '/dashboard', duration: Math.floor(Math.random() * 300) }
-      }));
-    };
-
-    // Generate permissions
-    const generatePermissions = () => [
-      { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['intern', 'mentor', 'admin'] },
-      { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['mentor', 'admin'] },
-      { id: 3, name: 'View Reports', description: 'Access to analytics and reports', roles: ['mentor', 'admin'] },
-      { id: 4, name: 'Manage Users', description: 'Add, edit, and delete users', roles: ['admin'] },
-      { id: 5, name: 'System Settings', description: 'Modify system configuration', roles: ['admin'] },
-      { id: 6, name: 'Bulk Operations', description: 'Perform bulk user operations', roles: ['admin'] }
-    ];
-
-    setUsers(generateUsers());
-    setUserSegments(generateUserSegments());
-    setActivityLogs(generateActivityLogs());
-    setPermissions(generatePermissions());
+    fetchUsers();
+    fetchUserSegments();
+    fetchActivityLogs();
+    fetchPermissions();
   }, []);
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      } else {
+        console.error('Failed to fetch users');
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+    }
+  };
+
+  const fetchUserSegments = async () => {
+    try {
+      const response = await fetch('/api/admin/user-segments');
+      if (response.ok) {
+        const data = await response.json();
+        setUserSegments(data.segments || []);
+      } else {
+        // Fallback to basic segments calculated from users
+        setUserSegments([
+          { id: 1, name: 'Active Users', count: 0, color: '#10B981' },
+          { id: 2, name: 'Inactive Users', count: 0, color: '#6B7280' },
+          { id: 3, name: 'Interns', count: 0, color: '#3B82F6' },
+          { id: 4, name: 'Mentors', count: 0, color: '#F59E0B' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching user segments:', error);
+      setUserSegments([]);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    try {
+      const response = await fetch('/api/admin/activity-logs');
+      if (response.ok) {
+        const data = await response.json();
+        setActivityLogs(data.logs || []);
+      } else {
+        setActivityLogs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+      setActivityLogs([]);
+    }
+  };
+
+  const fetchPermissions = async () => {
+    try {
+      const response = await fetch('/api/admin/permissions');
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data.permissions || []);
+      } else {
+        // Fallback to basic permissions
+        setPermissions([
+          { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['intern', 'mentor', 'admin'] },
+          { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['mentor', 'admin'] },
+          { id: 3, name: 'View Reports', description: 'Access to analytics and reports', roles: ['mentor', 'admin'] },
+          { id: 4, name: 'Manage Users', description: 'Add, edit, and delete users', roles: ['admin'] },
+          { id: 5, name: 'System Settings', description: 'Modify system configuration', roles: ['admin'] },
+          { id: 6, name: 'Bulk Operations', description: 'Perform bulk user operations', roles: ['admin'] }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      setPermissions([]);
+    }
+  };
+
   // Filter users
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = (users && Array.isArray(users)) ? users.filter(user => {
     if (filterRole !== 'all' && user.role !== filterRole) return false;
     if (filterStatus !== 'all' && user.status !== filterStatus) return false;
     if (filterCollege !== 'all' && user.college !== filterCollege) return false;
     if (searchTerm && !user.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
         !user.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
-  });
+  }) : [];
 
   // Calculate metrics
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.status === 'active').length;
-  const avgPerformance = users.length > 0 
+  const totalUsers = (users && Array.isArray(users)) ? users.length : 0;
+  const activeUsers = (users && Array.isArray(users)) ? users.filter(u => u.status === 'active').length : 0;
+  const avgPerformance = (users && Array.isArray(users) && users.length > 0) 
     ? Math.round(users.reduce((sum, user) => sum + user.performanceScore, 0) / users.length)
     : 0;
-  const atRiskUsers = users.filter(u => u.riskLevel === 'high').length;
+  const atRiskUsers = (users && Array.isArray(users)) ? users.filter(u => u.riskLevel === 'high').length : 0;
 
   // User distribution data
   const roleDistributionData = {
     labels: ['Interns', 'Mentors', 'Admins'],
     datasets: [{
       data: [
-        users.filter(u => u.role === 'intern').length,
-        users.filter(u => u.role === 'mentor').length,
-        users.filter(u => u.role === 'admin').length
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'intern').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'mentor').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'admin').length : 0
       ],
       backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
     }]
@@ -236,9 +137,9 @@ export function AdvancedUserManagement() {
     labels: ['High', 'Medium', 'Low'],
     datasets: [{
       data: [
-        users.filter(u => u.activityLevel === 'high').length,
-        users.filter(u => u.activityLevel === 'medium').length,
-        users.filter(u => u.activityLevel === 'low').length
+        (users && Array.isArray(users)) ? users.filter(u => u.activityLevel === 'high').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.activityLevel === 'medium').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.activityLevel === 'low').length : 0
       ],
       backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
     }]
@@ -555,9 +456,9 @@ export function AdvancedUserManagement() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Colleges</option>
-              {[...new Set(users.map(u => u.college))].map(college => (
+              {users && Array.isArray(users) ? [...new Set(users.map(u => u.college))].map(college => (
                 <option key={college} value={college}>{college}</option>
-              ))}
+              )) : null}
             </select>
           </div>
         </div>

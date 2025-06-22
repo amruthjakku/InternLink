@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function CategoriesTab() {
   const [categories, setCategories] = useState([]);
@@ -16,9 +16,39 @@ export function CategoriesTab() {
   ];
 
   useEffect(() => {
-    setCategories(mockData.categories);
-    setTasks(mockData.tasks);
+    fetchCategories();
+    fetchTasks();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data.tasks || []);
+      } else {
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    }
+  };
 
   const getCategoryStats = (categoryId) => {
     const categoryTasks = tasks.filter(task => task.category_id === categoryId);

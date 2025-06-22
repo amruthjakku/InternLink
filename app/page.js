@@ -20,6 +20,12 @@ export default function Home() {
   const redirectToDashboard = () => {
     const { role } = session.user;
     
+    // If user needs registration, redirect to onboarding
+    if (session?.user?.needsRegistration || role === 'pending') {
+      router.push('/onboarding');
+      return;
+    }
+    
     switch (role) {
       case 'admin':
         router.push('/admin/dashboard');
@@ -32,6 +38,7 @@ export default function Home() {
         break;
       default:
         console.error('Unknown user role:', role);
+        router.push('/unauthorized');
         break;
     }
   };

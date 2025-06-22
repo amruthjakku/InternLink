@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function CommunicationTab() {
   const [chats, setChats] = useState([]);
@@ -12,10 +12,55 @@ export function CommunicationTab() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
 
   useEffect(() => {
-    setChats(mockData.chats || []);
-    setMessages(mockData.messages || []);
-    setInterns(mockData.interns);
+    fetchChats();
+    fetchMessages();
+    fetchInterns();
   }, []);
+
+  const fetchChats = async () => {
+    try {
+      const response = await fetch('/api/chats');
+      if (response.ok) {
+        const data = await response.json();
+        setChats(data.chats || []);
+      } else {
+        setChats([]);
+      }
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      setChats([]);
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch('/api/messages');
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      } else {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessages([]);
+    }
+  };
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
 
   const getChatMessages = (chatId) => {
     return messages.filter(message => message.chat_id === chatId);

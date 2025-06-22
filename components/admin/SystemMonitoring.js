@@ -13,178 +13,97 @@ export function SystemMonitoring() {
   const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
-    // Generate mock real-time data
-    const generateRealTimeData = () => ({
-      serverLoad: Math.floor(Math.random() * 30) + 40,
-      activeUsers: Math.floor(Math.random() * 20) + 15,
-      responseTime: Math.floor(Math.random() * 200) + 100,
-      errorRate: Math.random() * 2,
-      userGrowth: Math.random() * 10 - 5,
-      totalErrors: Math.floor(Math.random() * 10),
-      memoryUsage: Math.floor(Math.random() * 20) + 60,
-      cpuUsage: Math.floor(Math.random() * 25) + 45,
-      diskUsage: Math.floor(Math.random() * 15) + 70,
-      networkTraffic: Math.floor(Math.random() * 100) + 200
-    });
-
-    // Generate system metrics over time
-    const generateSystemMetrics = () => {
-      const days = eachDayOfInterval({
-        start: subDays(new Date(), 30),
-        end: new Date()
-      });
-
-      return days.map(date => ({
-        date,
-        serverLoad: Math.floor(Math.random() * 30) + 40,
-        activeUsers: Math.floor(Math.random() * 50) + 20,
-        responseTime: Math.floor(Math.random() * 100) + 150,
-        errorRate: Math.random() * 3,
-        requests: Math.floor(Math.random() * 1000) + 500
-      }));
-    };
-
-    // Generate usage analytics
-    const generateUsageAnalytics = () => ({
-      features: [
-        { name: 'Task Management', usage: 85 },
-        { name: 'Progress Tracking', usage: 78 },
-        { name: 'Communication', usage: 65 },
-        { name: 'File Sharing', usage: 45 },
-        { name: 'Meetings', usage: 38 },
-        { name: 'Reports', usage: 25 }
-      ],
-      heatmapData: Array.from({ length: 365 }, (_, i) => ({
-        date: subDays(new Date(), 365 - i),
-        count: Math.floor(Math.random() * 5)
-      })),
-      userTypes: {
-        interns: 65,
-        mentors: 25,
-        admins: 10
-      },
-      deviceTypes: {
-        desktop: 60,
-        mobile: 30,
-        tablet: 10
-      }
-    });
-
-    // Generate performance data
-    const generatePerformanceData = () => ({
-      slowQueries: [
-        {
-          id: 1,
-          query: 'SELECT * FROM users WHERE college_id IN (...)',
-          duration: 2500,
-          count: 45,
-          lastExecuted: '2024-01-16 14:30:00'
-        },
-        {
-          id: 2,
-          query: 'UPDATE tasks SET progress = ? WHERE user_id = ?',
-          duration: 1800,
-          count: 120,
-          lastExecuted: '2024-01-16 14:25:00'
-        },
-        {
-          id: 3,
-          query: 'SELECT COUNT(*) FROM activity_logs WHERE date >= ?',
-          duration: 1200,
-          count: 30,
-          lastExecuted: '2024-01-16 14:20:00'
-        }
-      ],
-      slowEndpoints: [
-        {
-          path: '/api/admin/analytics/performance',
-          method: 'GET',
-          avgDuration: 3200,
-          requests: 150,
-          errorRate: 2.5
-        },
-        {
-          path: '/api/tasks/bulk-update',
-          method: 'POST',
-          avgDuration: 2800,
-          requests: 80,
-          errorRate: 1.2
-        },
-        {
-          path: '/api/users/search',
-          method: 'GET',
-          avgDuration: 2100,
-          requests: 200,
-          errorRate: 0.8
-        }
-      ]
-    });
-
-    // Generate predictions
-    const generatePredictions = () => ({
-      timeline: Array.from({ length: 30 }, (_, i) => 
-        format(new Date(Date.now() + i * 24 * 60 * 60 * 1000), 'MMM dd')
-      ),
-      actualUsers: Array.from({ length: 20 }, () => Math.floor(Math.random() * 10) + 30),
-      predictedUsers: Array.from({ length: 30 }, (_, i) => 
-        i < 20 ? null : Math.floor(Math.random() * 15) + 35 + i
-      ),
-      loadTimeline: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-      currentLoad: Array.from({ length: 16 }, () => Math.floor(Math.random() * 20) + 40),
-      predictedLoad: Array.from({ length: 24 }, (_, i) => 
-        i < 16 ? null : Math.floor(Math.random() * 25) + 45 + (i - 16) * 2
-      ),
-      recommendations: [
-        'Consider scaling server resources during peak hours (2-4 PM)',
-        'Optimize database queries for user search functionality',
-        'Implement caching for frequently accessed analytics data',
-        'Monitor error rates in task management endpoints',
-        'Plan for 20% user growth in the next month'
-      ]
-    });
-
-    // Generate alerts
-    const generateAlerts = () => [
-      {
-        id: 1,
-        type: 'warning',
-        title: 'High Response Time',
-        message: 'API response time exceeded 2 seconds for /api/admin/analytics',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-        severity: 'medium'
-      },
-      {
-        id: 2,
-        type: 'error',
-        title: 'Database Connection Pool',
-        message: 'Database connection pool is 85% full',
-        timestamp: new Date(Date.now() - 15 * 60 * 1000),
-        severity: 'high'
-      },
-      {
-        id: 3,
-        type: 'info',
-        title: 'Scheduled Backup',
-        message: 'Daily backup completed successfully',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        severity: 'low'
-      }
-    ];
-
-    setRealTimeData(generateRealTimeData());
-    setSystemMetrics(generateSystemMetrics());
-    setUsageAnalytics(generateUsageAnalytics());
-    setPerformanceData(generatePerformanceData());
-    setPredictions(generatePredictions());
-    setAlerts(generateAlerts());
-
-    // Update real-time data every 30 seconds
-    const interval = setInterval(() => {
-      setRealTimeData(generateRealTimeData());
-    }, 30000);
-
+    fetchSystemData();
+    
+    // Set up real-time updates every 30 seconds
+    const interval = setInterval(fetchSystemData, 30000);
+    
     return () => clearInterval(interval);
   }, []);
+
+  const fetchSystemData = async () => {
+    try {
+      const [realTimeResponse, metricsResponse, usageResponse, performanceResponse] = await Promise.all([
+        fetch('/api/admin/system/realtime').catch(() => ({ ok: false })),
+        fetch('/api/admin/system/metrics').catch(() => ({ ok: false })),
+        fetch('/api/admin/system/usage').catch(() => ({ ok: false })),
+        fetch('/api/admin/system/performance').catch(() => ({ ok: false }))
+      ]);
+
+      if (realTimeResponse.ok) {
+        const data = await realTimeResponse.json();
+        setRealTimeData(data.metrics || getDefaultRealTimeData());
+      } else {
+        setRealTimeData(getDefaultRealTimeData());
+      }
+
+      if (metricsResponse.ok) {
+        const data = await metricsResponse.json();
+        setSystemMetrics(data.metrics || []);
+      } else {
+        setSystemMetrics([]);
+      }
+
+      if (usageResponse.ok) {
+        const data = await usageResponse.json();
+        setUsageAnalytics(data.analytics || getDefaultUsageAnalytics());
+      } else {
+        setUsageAnalytics(getDefaultUsageAnalytics());
+      }
+
+      if (performanceResponse.ok) {
+        const data = await performanceResponse.json();
+        setPerformanceData(data.performance || {});
+      } else {
+        setPerformanceData({});
+      }
+
+    } catch (error) {
+      console.error('Error fetching system data:', error);
+      // Set default values on error
+      setRealTimeData(getDefaultRealTimeData());
+      setSystemMetrics([]);
+      setUsageAnalytics(getDefaultUsageAnalytics());
+      setPerformanceData({});
+    }
+  };
+
+  const getDefaultRealTimeData = () => ({
+    serverLoad: 0,
+    activeUsers: 0,
+    responseTime: 0,
+    errorRate: 0,
+    userGrowth: 0,
+    totalErrors: 0,
+    memoryUsage: 0,
+    cpuUsage: 0,
+    diskUsage: 0,
+    networkTraffic: 0
+  });
+
+  const getDefaultUsageAnalytics = () => ({
+    features: [
+      { name: 'Task Management', usage: 0 },
+      { name: 'Progress Tracking', usage: 0 },
+      { name: 'Communication', usage: 0 },
+      { name: 'File Sharing', usage: 0 },
+      { name: 'Meetings', usage: 0 },
+      { name: 'Reports', usage: 0 }
+    ],
+    heatmapData: [],
+    userTypes: {
+      interns: 0,
+      mentors: 0,
+      admins: 0
+    },
+    deviceTypes: {
+      desktop: 0,
+      mobile: 0,
+      tablet: 0
+    }
+  });
+
+
 
   const getAlertColor = (severity) => {
     switch (severity) {

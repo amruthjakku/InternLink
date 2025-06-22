@@ -16,7 +16,7 @@ export function AttendanceHistory() {
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState('');
   const [userIP, setUserIP] = useState('');
-  const [forceUpdate, setForceUpdate] = useState(0);
+
 
   useEffect(() => {
     if (session) {
@@ -114,12 +114,8 @@ export function AttendanceHistory() {
         
         setTodayAttendance(prev => {
           const updated = prev ? [...prev, newRecord] : [newRecord];
-          console.log('Updated todayAttendance:', updated);
           return updated;
         });
-        
-        // Force component re-render
-        setForceUpdate(prev => prev + 1);
         
         // Also refresh data from server
         await fetchAttendance();
@@ -136,15 +132,10 @@ export function AttendanceHistory() {
   };
 
   const getAttendanceStatus = () => {
-    if (!todayAttendance) {
-      console.log('getAttendanceStatus: no todayAttendance');
-      return 'not-started';
-    }
+    if (!todayAttendance) return 'not-started';
     
     const hasCheckin = todayAttendance.some(record => record.action === 'checkin');
     const hasCheckout = todayAttendance.some(record => record.action === 'checkout');
-    
-    console.log('getAttendanceStatus:', { todayAttendance, hasCheckin, hasCheckout });
     
     if (hasCheckin && hasCheckout) return 'completed';
     if (hasCheckin && !hasCheckout) return 'checked-in';
@@ -279,14 +270,7 @@ export function AttendanceHistory() {
   const attendanceStatus = getAttendanceStatus();
   const todayWorkingHours = getTodayWorkingHours();
   
-  // Debug logging
-  console.log('Component render:', { 
-    attendanceStatus, 
-    todayAttendance, 
-    forceUpdate,
-    hasCheckin: todayAttendance?.some(r => r.action === 'checkin'),
-    hasCheckout: todayAttendance?.some(r => r.action === 'checkout')
-  });
+
 
   return (
     <div className="space-y-6">

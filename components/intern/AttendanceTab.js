@@ -17,62 +17,30 @@ export function AttendanceTab({ user, loading }) {
     });
     setIsOnAllowedNetwork(true);
 
-    // Mock attendance data
-    const mockAttendance = [
-      {
-        date: '2024-01-16',
-        checkIn: '09:15 AM',
-        checkOut: '05:30 PM',
-        totalHours: 8.25,
-        status: 'present',
-        location: 'Office Network',
-        tasksCompleted: 3
-      },
-      {
-        date: '2024-01-15',
-        checkIn: '09:00 AM',
-        checkOut: '05:45 PM',
-        totalHours: 8.75,
-        status: 'present',
-        location: 'Office Network',
-        tasksCompleted: 2
-      },
-      {
-        date: '2024-01-14',
-        checkIn: null,
-        checkOut: null,
-        totalHours: 0,
-        status: 'absent',
-        location: null,
-        tasksCompleted: 0
-      },
-      {
-        date: '2024-01-13',
-        checkIn: '09:30 AM',
-        checkOut: '04:00 PM',
-        totalHours: 6.5,
-        status: 'half-day',
-        location: 'Office Network',
-        tasksCompleted: 1
-      },
-      {
-        date: '2024-01-12',
-        checkIn: '09:10 AM',
-        checkOut: '05:20 PM',
-        totalHours: 8.17,
-        status: 'present',
-        location: 'Office Network',
-        tasksCompleted: 4
-      }
-    ];
-
-    setAttendanceData(mockAttendance);
-
-    // Check if today's attendance exists
-    const today = new Date().toISOString().split('T')[0];
-    const todayRecord = mockAttendance.find(record => record.date === today);
-    setTodayAttendance(todayRecord);
+    fetchAttendanceData();
   }, []);
+
+  const fetchAttendanceData = async () => {
+    try {
+      const response = await fetch('/api/attendance/my-records');
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceData(data.attendance || []);
+        
+        // Check if today's attendance exists
+        const today = new Date().toISOString().split('T')[0];
+        const todayRecord = data.attendance?.find(record => record.date === today);
+        setTodayAttendance(todayRecord);
+      } else {
+        setAttendanceData([]);
+        setTodayAttendance(null);
+      }
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+      setAttendanceData([]);
+      setTodayAttendance(null);
+    }
+  };
 
   const handleCheckIn = () => {
     const now = new Date();

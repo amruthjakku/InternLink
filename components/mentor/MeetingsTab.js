@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mockData } from '../../utils/mockData';
+// Removed mockData import - using real API calls
 
 export function MeetingsTab() {
   const [meetings, setMeetings] = useState([]);
@@ -11,58 +11,39 @@ export function MeetingsTab() {
   const [selectedMeeting, setSelectedMeeting] = useState(null);
 
   useEffect(() => {
-    // Generate more meeting data for demonstration
-    const generateMeetings = () => {
-      const meetingTypes = ['standup', 'technical', 'review', 'planning', 'one-on-one'];
-      const meetingTitles = {
-        standup: ['Daily Standup', 'Weekly Standup', 'Sprint Standup'],
-        technical: ['Technical Review', 'Code Review', 'Architecture Discussion'],
-        review: ['Progress Review', 'Performance Review', 'Project Review'],
-        planning: ['Sprint Planning', 'Project Planning', 'Goal Setting'],
-        'one-on-one': ['1:1 with Alice', '1:1 with Bob', '1:1 with Carol']
-      };
-
-      const generatedMeetings = [];
-      const today = new Date();
-
-      for (let i = 0; i < 20; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() + (i - 10)); // Past and future meetings
-        const type = meetingTypes[Math.floor(Math.random() * meetingTypes.length)];
-        const titles = meetingTitles[type];
-        const title = titles[Math.floor(Math.random() * titles.length)];
-        
-        const startHour = 9 + Math.floor(Math.random() * 8); // 9 AM to 5 PM
-        const startTime = `${startHour.toString().padStart(2, '0')}:00:00`;
-        const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00:00`;
-
-        generatedMeetings.push({
-          id: i + 1,
-          title,
-          description: `${type.charAt(0).toUpperCase() + type.slice(1)} meeting with the team`,
-          date: date.toISOString().split('T')[0],
-          start_time: startTime,
-          end_time: endTime,
-          type,
-          attendees: type === 'one-on-one' ? [1] : [1, 2, 3],
-          mentor_id: 1,
-          meeting_link: `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`,
-          recording_link: i < 10 ? `https://zoom.us/rec/${Math.floor(Math.random() * 1000000)}` : null,
-          status: i < 10 ? 'completed' : i === 10 ? 'in_progress' : 'scheduled',
-          agenda: [
-            'Review progress',
-            'Discuss challenges',
-            'Plan next steps'
-          ]
-        });
-      }
-
-      return generatedMeetings;
-    };
-
-    setMeetings(generateMeetings());
-    setInterns(mockData.interns);
+    fetchMeetings();
+    fetchInterns();
   }, []);
+
+  const fetchMeetings = async () => {
+    try {
+      const response = await fetch('/api/meetings');
+      if (response.ok) {
+        const data = await response.json();
+        setMeetings(data.meetings || []);
+      } else {
+        setMeetings([]);
+      }
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      setMeetings([]);
+    }
+  };
+
+  const fetchInterns = async () => {
+    try {
+      const response = await fetch('/api/admin/users?role=intern');
+      if (response.ok) {
+        const data = await response.json();
+        setInterns(data.users || []);
+      } else {
+        setInterns([]);
+      }
+    } catch (error) {
+      console.error('Error fetching interns:', error);
+      setInterns([]);
+    }
+  };
 
   const getMeetingsForDate = (date) => {
     return meetings.filter(meeting => meeting.date === date);

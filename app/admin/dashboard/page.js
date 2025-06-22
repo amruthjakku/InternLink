@@ -52,8 +52,14 @@ export default function AdminDashboard() {
       return;
     }
 
+    // If user needs registration, redirect to onboarding
+    if (session.user.needsRegistration || session.user.role === 'pending') {
+      router.push('/onboarding');
+      return;
+    }
+
     if (session.user.role !== 'admin') {
-      router.push('/');
+      router.push('/unauthorized');
       return;
     }
 
@@ -62,13 +68,18 @@ export default function AdminDashboard() {
 
   // Filter users when search or filter changes
   useEffect(() => {
+    if (!users || !Array.isArray(users)) {
+      setFilteredUsers([]);
+      return;
+    }
+    
     let filtered = users;
     
     if (userSearch) {
       filtered = filtered.filter(user => 
-        user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-        user.gitlabUsername.toLowerCase().includes(userSearch.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearch.toLowerCase())
+        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+        user.gitlabUsername?.toLowerCase().includes(userSearch.toLowerCase()) ||
+        user.email?.toLowerCase().includes(userSearch.toLowerCase())
       );
     }
     
@@ -81,13 +92,18 @@ export default function AdminDashboard() {
 
   // Filter colleges when search changes
   useEffect(() => {
+    if (!colleges || !Array.isArray(colleges)) {
+      setFilteredColleges([]);
+      return;
+    }
+    
     let filtered = colleges;
     
     if (collegeSearch) {
       filtered = filtered.filter(college => 
-        college.name.toLowerCase().includes(collegeSearch.toLowerCase()) ||
-        college.location.toLowerCase().includes(collegeSearch.toLowerCase()) ||
-        college.mentorUsername.toLowerCase().includes(collegeSearch.toLowerCase())
+        college.name?.toLowerCase().includes(collegeSearch.toLowerCase()) ||
+        college.location?.toLowerCase().includes(collegeSearch.toLowerCase()) ||
+        college.mentorUsername?.toLowerCase().includes(collegeSearch.toLowerCase())
       );
     }
     
@@ -98,78 +114,70 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      // Mock data for demonstration
-      const mockStats = {
-        totalUsers: 156,
-        totalColleges: 12,
-        totalMentors: 24,
-        totalInterns: 120,
-        activeUsers: 89,
-        systemHealth: 98,
-        avgPerformance: 85,
-        tasksCompleted: 1247
-      };
+      // Fetch real data from APIs
+      const [statsResponse, usersResponse, collegesResponse] = await Promise.all([
+        fetch('/api/admin/stats').catch(() => ({ ok: false })),
+        fetch('/api/admin/users').catch(() => ({ ok: false })),
+        fetch('/api/admin/colleges').catch(() => ({ ok: false }))
+      ]);
 
-      const mockUsers = [
-        {
-          _id: '1',
-          gitlabUsername: 'alex_chen',
-          name: 'Alex Chen',
-          email: 'alex.chen@college.edu',
-          role: 'intern',
-          college: 'MIT',
-          status: 'active',
-          createdAt: '2024-01-01'
-        },
-        {
-          _id: '2',
-          gitlabUsername: 'sarah_j',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@university.edu',
-          role: 'intern',
-          college: 'Stanford',
-          status: 'active',
-          createdAt: '2024-01-02'
-        },
-        {
-          _id: '3',
-          gitlabUsername: 'dr_emily',
-          name: 'Dr. Emily Rodriguez',
-          email: 'emily.rodriguez@university.edu',
-          role: 'mentor',
-          college: 'UC Berkeley',
-          status: 'active',
-          createdAt: '2023-12-15'
-        }
-      ];
+      // Handle stats
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData.stats || {
+          totalUsers: 0,
+          totalColleges: 0,
+          totalMentors: 0,
+          totalInterns: 0,
+          activeUsers: 0,
+          systemHealth: 100,
+          avgPerformance: 0,
+          tasksCompleted: 0
+        });
+      } else {
+        setStats({
+          totalUsers: 0,
+          totalColleges: 0,
+          totalMentors: 0,
+          totalInterns: 0,
+          activeUsers: 0,
+          systemHealth: 100,
+          avgPerformance: 0,
+          tasksCompleted: 0
+        });
+      }
 
-      const mockColleges = [
-        {
-          _id: '1',
-          name: 'MIT',
-          description: 'Massachusetts Institute of Technology',
-          location: 'Cambridge, MA',
-          website: 'https://mit.edu',
-          mentorUsername: 'dr_emily',
-          createdAt: '2023-12-01'
-        },
-        {
-          _id: '2',
-          name: 'Stanford',
-          description: 'Stanford University',
-          location: 'Stanford, CA',
-          website: 'https://stanford.edu',
-          mentorUsername: 'dr_emily',
-          createdAt: '2023-12-01'
-        }
-      ];
+      // Handle users
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        setUsers(usersData.users || []);
+      } else {
+        setUsers([]);
+      }
 
-      setStats(mockStats);
-      setUsers(mockUsers);
-      setColleges(mockColleges);
+      // Handle colleges
+      if (collegesResponse.ok) {
+        const collegesData = await collegesResponse.json();
+        setColleges(collegesData.colleges || []);
+      } else {
+        setColleges([]);
+      }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set default empty states on error
+      setStats({
+        totalUsers: 0,
+        totalColleges: 0,
+        totalMentors: 0,
+        totalInterns: 0,
+        activeUsers: 0,
+        systemHealth: 100,
+        avgPerformance: 0,
+        tasksCompleted: 0
+      });
+      setUsers([]);
+      setColleges([]);
     } finally {
       setLoading(false);
     }
