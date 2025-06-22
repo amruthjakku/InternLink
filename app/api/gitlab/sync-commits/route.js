@@ -36,28 +36,56 @@ export async function POST(request) {
     // Decrypt access token
     const accessToken = decrypt(integration.accessToken);
 
-    // Determine sync period (sync last 30 days or since last sync)
+    // Determine sync period - for initial sync, get all commits from past year
     const now = new Date();
     let sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - 30); // Default to 30 days
-
-    if (integration.lastSyncAt) {
+    
+    // Get query parameter for custom date range
+    const url = new URL(request.url);
+    const customDays = parseInt(url.searchParams.get('days')) || null;
+    const fullSync = url.searchParams.get('fullSync') === 'true';
+    
+    if (fullSync || !integration.lastSyncAt) {
+      // Full sync: get commits from past year for initial sync
+      sinceDate.setDate(sinceDate.getDate() - 365);
+      console.log('Performing FULL SYNC - fetching commits from past year');
+    } else if (customDays) {
+      // Custom date range
+      sinceDate.setDate(sinceDate.getDate() - customDays);
+      console.log(`Performing custom sync - fetching commits from past ${customDays} days`);
+    } else if (integration.lastSyncAt) {
       const lastSync = new Date(integration.lastSyncAt);
-      // If last sync was less than 30 days ago, sync from then
+      // If last sync was less than 30 days ago, sync from then, otherwise 30 days
       if (now - lastSync < 30 * 24 * 60 * 60 * 1000) {
         sinceDate = lastSync;
+      } else {
+        sinceDate.setDate(sinceDate.getDate() - 30);
       }
+      console.log('Performing incremental sync since last sync');
+    } else {
+      // Default to 90 days for better coverage
+      sinceDate.setDate(sinceDate.getDate() - 90);
+      console.log('Performing default sync - fetching commits from past 90 days');
     }
 
     console.log(`Syncing GitLab data for ${integration.gitlabUsername} since ${sinceDate.toISOString()}`);
+    console.log(`Using GitLab API base: ${integration.apiBase || process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4'}`);
 
     // Fetch commits from GitLab
     const syncResults = await syncUserCommits(
       accessToken, 
       integration.gitlabUsername, 
       integration.userId,
-      sinceDate
+      sinceDate,
+      integration
     );
+
+    console.log(`Sync completed for ${integration.gitlabUsername}:`, {
+      commitsProcessed: syncResults.commitsProcessed,
+      newCommits: syncResults.newCommits,
+      projectsScanned: syncResults.projectsScanned,
+      errors: syncResults.errors?.length || 0
+    });
 
     // Update last sync time
     integration.lastSyncAt = now;
@@ -91,7 +119,7 @@ export async function POST(request) {
 /**
  * Sync commits for a user and store in ActivityTracking
  */
-async function syncUserCommits(accessToken, username, userId, sinceDate) {
+async function syncUserCommits(accessToken, username, userId, sinceDate, integration) {
   const results = {
     commitsProcessed: 0,
     newCommits: 0,
@@ -101,9 +129,12 @@ async function syncUserCommits(accessToken, username, userId, sinceDate) {
   };
 
   try {
+    // Get GitLab API base URL from integration or environment
+    const apiBase = integration.apiBase || process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4';
+    
     // Fetch user's projects
     const projectsResponse = await fetch(
-      'https://gitlab.com/api/v4/projects?membership=true&per_page=100',
+      `${apiBase}/projects?membership=true&per_page=100`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -118,11 +149,17 @@ async function syncUserCommits(accessToken, username, userId, sinceDate) {
 
     const projects = await projectsResponse.json();
     results.projectsScanned = projects.length;
+    
+    console.log(`Found ${projects.length} projects for user ${username}`);
+    if (projects.length > 0) {
+      console.log(`Sample projects:`, projects.slice(0, 3).map(p => ({ id: p.id, name: p.name, path: p.path_with_namespace })));
+    }
 
     // Process each project
     for (const project of projects) {
       try {
-        await syncProjectCommits(accessToken, project, username, userId, sinceDate, results);
+        console.log(`Processing project: ${project.name} (ID: ${project.id})`);
+        await syncProjectCommits(accessToken, project, username, userId, sinceDate, results, apiBase);
       } catch (projectError) {
         console.error(`Error syncing project ${project.name}:`, projectError);
         results.errors.push(`Project ${project.name}: ${projectError.message}`);
@@ -140,21 +177,21 @@ async function syncUserCommits(accessToken, username, userId, sinceDate) {
 /**
  * Sync commits for a specific project
  */
-async function syncProjectCommits(accessToken, project, username, userId, sinceDate, results) {
+async function syncProjectCommits(accessToken, project, username, userId, sinceDate, results, apiBase) {
   let page = 1;
   const perPage = 100;
 
   while (page <= 5) { // Limit to 5 pages per project
     try {
-      const commitsResponse = await fetch(
-        `https://gitlab.com/api/v4/projects/${project.id}/repository/commits?author=${username}&since=${sinceDate.toISOString()}&per_page=${perPage}&page=${page}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
+      // First try with author filter, then without if no results
+      let commitsUrl = `${apiBase}/projects/${project.id}/repository/commits?since=${sinceDate.toISOString()}&per_page=${perPage}&page=${page}`;
+      
+      const commitsResponse = await fetch(commitsUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (!commitsResponse.ok) {
         if (commitsResponse.status === 404) {
@@ -165,16 +202,49 @@ async function syncProjectCommits(accessToken, project, username, userId, sinceD
       }
 
       const commits = await commitsResponse.json();
-      if (commits.length === 0) break;
+      if (commits.length === 0) {
+        console.log(`No commits found for project ${project.name} on page ${page}`);
+        break;
+      }
 
-      // Process each commit
+      console.log(`Found ${commits.length} commits for project ${project.name} on page ${page}`);
+
+      // Process each commit - filter by user's GitLab username, name, or email
+      let userCommitsInProject = 0;
       for (const commit of commits) {
         try {
-          await processCommit(commit, project, userId, results);
+          // Check if this commit belongs to the user
+          const isUserCommit = 
+            commit.author_name === username ||
+            commit.author_email === integration.gitlabEmail ||
+            commit.committer_name === username ||
+            commit.committer_email === integration.gitlabEmail ||
+            (commit.author_name && commit.author_name.toLowerCase().includes(username.toLowerCase()));
+          
+          if (isUserCommit) {
+            await processCommit(commit, project, userId, results);
+            userCommitsInProject++;
+          } else {
+            // Log first few non-matching commits for debugging
+            if (page === 1 && commits.indexOf(commit) < 3) {
+              console.log(`Sample non-matching commit: "${commit.title}" by ${commit.author_name} (${commit.author_email}) - looking for user ${username} (${integration.gitlabEmail})`);
+            }
+          }
         } catch (commitError) {
           console.error(`Error processing commit ${commit.id}:`, commitError);
           results.errors.push(`Commit ${commit.short_id}: ${commitError.message}`);
         }
+      }
+      
+      console.log(`Found ${userCommitsInProject} commits for user ${username} in project ${project.name} (page ${page})`);
+      
+      // If no user commits found on first page, log some sample commits for debugging
+      if (page === 1 && userCommitsInProject === 0 && commits.length > 0) {
+        console.log(`DEBUG: No matching commits found for user ${username}. Sample commits in project ${project.name}:`);
+        commits.slice(0, 3).forEach(commit => {
+          console.log(`  - "${commit.title}" by ${commit.author_name} (${commit.author_email}) on ${commit.created_at}`);
+        });
+        console.log(`Looking for matches with: username="${username}", email="${integration.gitlabEmail}"`);
       }
 
       results.commitsProcessed += commits.length;

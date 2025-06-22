@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthProvider';
 import { GitLabCommitTracker } from '../GitLabCommitTracker';
+import { GitLabDebugInfo } from './GitLabDebugInfo';
 
 export function GitLabTab() {
   const { user } = useAuth();
@@ -123,11 +124,24 @@ export function GitLabTab() {
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (fullSync = false, customDays = null) => {
     setSyncing(true);
     setError(null);
     try {
-      const response = await fetch('/api/gitlab/sync-commits', {
+      let url = '/api/gitlab/sync-commits';
+      const params = new URLSearchParams();
+      
+      if (fullSync) {
+        params.append('fullSync', 'true');
+      } else if (customDays) {
+        params.append('days', customDays.toString());
+      }
+      
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+      
+      const response = await fetch(url, {
         method: 'POST',
       });
       
@@ -136,8 +150,9 @@ export function GitLabTab() {
         await fetchGitLabData();
         // Show success message with sync results
         if (data.syncResults) {
-          setSuccessMessage(`Sync completed! Found ${data.syncResults.newCommits} new commits from ${data.syncResults.projectsScanned} projects.`);
-          setTimeout(() => setSuccessMessage(null), 5000);
+          const syncType = fullSync ? 'Full sync' : customDays ? `${customDays}-day sync` : 'Sync';
+          setSuccessMessage(`${syncType} completed! Found ${data.syncResults.newCommits} new commits and ${data.syncResults.updatedCommits} updated commits from ${data.syncResults.projectsScanned} projects.`);
+          setTimeout(() => setSuccessMessage(null), 8000);
         }
       } else {
         const errorData = await response.json();
@@ -397,6 +412,9 @@ export function GitLabTab() {
 
   return (
     <div className="space-y-6">
+      {/* Debug Information */}
+      <GitLabDebugInfo gitlabData={gitlabData} integration={{ gitlabUsername: gitlabData?.username, gitlabEmail: gitlabData?.email }} />
+
       {/* Header with Connection Status */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
@@ -415,13 +433,47 @@ export function GitLabTab() {
           </div>
           
           <div className="flex space-x-2">
+            {/* Sync Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => handleSync()}
+                disabled={syncing}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm flex items-center space-x-1"
+              >
+                <span>{syncing ? 'Syncing...' : '🔄 Quick Sync'}</span>
+              </button>
+            </div>
+            
+            {/* Full Sync Button */}
             <button
-              onClick={handleSync}
+              onClick={() => handleSync(true)}
               disabled={syncing}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm"
+              title="Sync all commits from past year"
             >
-              {syncing ? 'Syncing...' : '🔄 Sync Now'}
+              {syncing ? 'Syncing...' : '📅 Full Sync'}
             </button>
+            
+            {/* Custom Sync Options */}
+            <div className="flex space-x-1">
+              <button
+                onClick={() => handleSync(false, 90)}
+                disabled={syncing}
+                className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-xs"
+                title="Sync last 90 days"
+              >
+                90d
+              </button>
+              <button
+                onClick={() => handleSync(false, 180)}
+                disabled={syncing}
+                className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-xs"
+                title="Sync last 180 days"
+              >
+                180d
+              </button>
+            </div>
+            
             <button
               onClick={handleDisconnect}
               disabled={loading}
@@ -437,6 +489,7 @@ export function GitLabTab() {
           <nav className="flex space-x-6">
             {[
               { id: 'overview', name: 'Overview', icon: '📊' },
+              { id: 'repositories', name: 'Repositories', icon: '📁' },
               { id: 'commits', name: 'Commits', icon: '💾' },
               { id: 'analytics', name: 'Analytics', icon: '📈' }
             ].map((tab) => (
@@ -516,6 +569,115 @@ export function GitLabTab() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {activeView === 'repositories' && (
+        <div className="space-y-6">
+          {/* Repository List */}
+          {gitlabData?.repositoryStats && gitlabData.repositoryStats.length > 0 ? (
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Your Repositories ({gitlabData.repositoryStats.length})
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Repositories where you have commits
+                </p>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {gitlabData.repositoryStats.map((repo, index) => (
+                  <div key={index} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="text-lg font-medium text-gray-900">{repo.name}</h4>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            repo.visibility === 'public' 
+                              ? 'bg-green-100 text-green-800' 
+                              : repo.visibility === 'internal'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {repo.visibility}
+                          </span>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-3">
+                          {repo.path}
+                        </p>
+                        
+                        {repo.description && (
+                          <p className="text-sm text-gray-700 mb-3">
+                            {repo.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center space-x-6 text-sm text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <span>💾</span>
+                            <span>{repo.commits} commits</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-green-600">+{repo.additions}</span>
+                            <span className="text-red-600">-{repo.deletions}</span>
+                          </div>
+                          {repo.lastCommit && (
+                            <div className="flex items-center space-x-1">
+                              <span>📅</span>
+                              <span>Last: {formatDate(repo.lastCommit)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {repo.url && (
+                        <a
+                          href={repo.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          View →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-8">
+              <div className="text-center">
+                <div className="text-6xl mb-4">📁</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Repositories Found</h3>
+                <p className="text-gray-600 mb-6">
+                  No repositories with your commits were found. This could mean:
+                </p>
+                <div className="text-left max-w-md mx-auto space-y-2 text-sm text-gray-600 mb-6">
+                  <div className="flex items-start space-x-2">
+                    <span>•</span>
+                    <span>You haven't made any commits yet</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span>•</span>
+                    <span>Your commits are older than the sync period</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span>•</span>
+                    <span>Your GitLab username/email doesn't match</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleSync(true)}
+                  disabled={syncing}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                >
+                  {syncing ? 'Syncing...' : 'Try Full Sync (1 Year)'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

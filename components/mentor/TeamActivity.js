@@ -65,7 +65,7 @@ export function TeamActivity() {
           <div key={index} className="flex items-start space-x-3">
             <div className="flex-shrink-0">
               <img
-                src={activity.user?.image || 'https://via.placeholder.com/32'}
+                src={activity.user?.image || `/api/avatar/${activity.user?.name?.charAt(0) || 'U'}`}
                 alt={activity.user?.name}
                 className="w-8 h-8 rounded-full"
               />

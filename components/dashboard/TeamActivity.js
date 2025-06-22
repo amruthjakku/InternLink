@@ -17,126 +17,64 @@ export default function TeamActivity({ demoMode = false }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (demoMode) {
-      loadDemoData();
-    } else {
-      fetchTeamActivity();
-    }
-  }, [demoMode, selectedPeriod]);
+    loadRealData();
+  }, [selectedPeriod]);
 
-  const loadDemoData = () => {
-    setAnalytics({
-      totalCommits: 156,
-      activeInterns: 8,
-      openIssues: 23,
-      mergeRequests: 12,
-      totalAdditions: 8947,
-      totalDeletions: 3421,
-      activeProjects: 12
-    });
+  const loadRealData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch real team activity data
+      const response = await fetch('/api/mentors/team-activity');
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Set analytics from real data
+        setAnalytics({
+          totalCommits: data.analytics?.totalCommits || 0,
+          activeInterns: data.analytics?.activeInterns || 0,
+          openIssues: data.analytics?.openIssues || 0,
+          mergeRequests: data.analytics?.mergeRequests || 0,
+          totalAdditions: data.analytics?.totalAdditions || 0,
+          totalDeletions: data.analytics?.totalDeletions || 0,
+          activeProjects: data.analytics?.activeProjects || 0
+        });
 
-    setInternActivity([
-      {
-        id: 'intern1',
-        name: 'Alice Johnson',
-        email: 'alice@demo.com',
-        gitlabUsername: 'alice_dev',
-        avatarUrl: 'https://via.placeholder.com/40',
-        recentActivity: {
-          commits: 23,
-          issues: 5,
-          mergeRequests: 3,
-          totalAdditions: 1456,
-          totalDeletions: 623,
-          activeProjects: 2
-        },
-        lastActiveAt: '2 hours ago',
-        progressPercentage: 85,
-        status: 'active'
-      },
-      {
-        id: 'intern2',
-        name: 'Bob Smith',
-        email: 'bob@demo.com',
-        gitlabUsername: 'bob_codes',
-        avatarUrl: 'https://via.placeholder.com/40',
-        recentActivity: {
-          commits: 18,
-          issues: 4,
-          mergeRequests: 2,
-          totalAdditions: 892,
-          totalDeletions: 345,
-          activeProjects: 1
-        },
-        lastActiveAt: '1 day ago',
-        progressPercentage: 72,
-        status: 'active'
-      },
-      {
-        id: 'intern3',
-        name: 'Carol Davis',
-        email: 'carol@demo.com',
-        gitlabUsername: 'carol_dev',
-        avatarUrl: 'https://via.placeholder.com/40',
-        recentActivity: {
-          commits: 15,
-          issues: 6,
-          mergeRequests: 4,
-          totalAdditions: 1123,
-          totalDeletions: 567,
-          activeProjects: 3
-        },
-        lastActiveAt: '3 hours ago',
-        progressPercentage: 78,
-        status: 'active'
-      },
-      {
-        id: 'intern4',
-        name: 'David Wilson',
-        email: 'david@demo.com',
-        gitlabUsername: 'david_builds',
-        avatarUrl: 'https://via.placeholder.com/40',
-        recentActivity: {
-          commits: 12,
-          issues: 3,
-          mergeRequests: 1,
-          totalAdditions: 678,
-          totalDeletions: 234,
-          activeProjects: 1
-        },
-        lastActiveAt: '2 days ago',
-        progressPercentage: 65,
-        status: 'active'
-      },
-      {
-        id: 'intern5',
-        name: 'Eva Martinez',
-        email: 'eva@demo.com',
-        gitlabUsername: 'eva_creates',
-        avatarUrl: 'https://via.placeholder.com/40',
-        recentActivity: {
-          commits: 8,
-          issues: 2,
-          mergeRequests: 1,
-          totalAdditions: 445,
-          totalDeletions: 123,
-          activeProjects: 1
-        },
-        lastActiveAt: '5 days ago',
-        progressPercentage: 45,
-        status: 'inactive'
+        // Set intern activity from real data
+        setInternActivity(data.internActivity || []);
+        // Set daily trend from real data
+        setDailyTrend(data.dailyTrend || []);
+      } else {
+        // Fallback to empty data if API fails
+        setAnalytics({
+          totalCommits: 0,
+          activeInterns: 0,
+          openIssues: 0,
+          mergeRequests: 0,
+          totalAdditions: 0,
+          totalDeletions: 0,
+          activeProjects: 0
+        });
+        setInternActivity([]);
+        setDailyTrend([]);
       }
-    ]);
-
-    setDailyTrend([
-      { date: '2024-01-15', commits: 12, issues: 3, mergeRequests: 2 },
-      { date: '2024-01-16', commits: 15, issues: 4, mergeRequests: 1 },
-      { date: '2024-01-17', commits: 18, issues: 2, mergeRequests: 3 },
-      { date: '2024-01-18', commits: 14, issues: 5, mergeRequests: 2 },
-      { date: '2024-01-19', commits: 20, issues: 3, mergeRequests: 4 }
-    ]);
-
-    setLoading(false);
+    } catch (error) {
+      console.error('Error fetching team activity:', error);
+      // Set empty data on error
+      setAnalytics({
+        totalCommits: 0,
+        activeInterns: 0,
+        openIssues: 0,
+        mergeRequests: 0,
+        totalAdditions: 0,
+        totalDeletions: 0,
+        activeProjects: 0
+      });
+      setInternActivity([]);
+      setDailyTrend([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchTeamActivity = async () => {

@@ -16,151 +16,40 @@ export function TaskManagementTab() {
   const [filterPriority, setFilterPriority] = useState('all');
   const svgRef = useRef();
 
-  // Mock data
-  const interns = [
-    { id: 1, name: 'Alex Chen', email: 'alex.chen@college.edu' },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah.johnson@university.edu' },
-    { id: 3, name: 'Mike Rodriguez', email: 'mike.rodriguez@tech.edu' },
-    { id: 4, name: 'Emily Davis', email: 'emily.davis@institute.edu' }
-  ];
+  const [interns, setInterns] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate mock tasks
-    const generateTasks = () => [
-      {
-        id: 1,
-        title: 'Setup Development Environment',
-        description: 'Install and configure development tools, IDE, and project dependencies',
-        status: 'done',
-        priority: 'high',
-        assigneeId: 1,
-        assigneeName: 'Alex Chen',
-        category: 'Setup',
-        dueDate: '2024-01-15',
-        createdDate: '2024-01-01',
-        estimatedHours: 4,
-        actualHours: 3.5,
-        progress: 100,
-        tags: ['setup', 'environment'],
-        dependencies: []
-      },
-      {
-        id: 2,
-        title: 'Database Schema Design',
-        description: 'Design and implement the database schema for the user management system',
-        status: 'in_progress',
-        priority: 'high',
-        assigneeId: 2,
-        assigneeName: 'Sarah Johnson',
-        category: 'Backend',
-        dueDate: '2024-01-20',
-        createdDate: '2024-01-05',
-        estimatedHours: 8,
-        actualHours: 5,
-        progress: 60,
-        tags: ['database', 'schema'],
-        dependencies: [1]
-      },
-      {
-        id: 3,
-        title: 'User Authentication API',
-        description: 'Implement JWT-based authentication system with login/logout endpoints',
-        status: 'not_started',
-        priority: 'high',
-        assigneeId: 1,
-        assigneeName: 'Alex Chen',
-        category: 'Backend',
-        dueDate: '2024-01-25',
-        createdDate: '2024-01-08',
-        estimatedHours: 12,
-        actualHours: 0,
-        progress: 0,
-        tags: ['auth', 'api', 'jwt'],
-        dependencies: [2]
-      },
-      {
-        id: 4,
-        title: 'Frontend Login Component',
-        description: 'Create responsive login form with validation and error handling',
-        status: 'not_started',
-        priority: 'medium',
-        assigneeId: 3,
-        assigneeName: 'Mike Rodriguez',
-        category: 'Frontend',
-        dueDate: '2024-01-30',
-        createdDate: '2024-01-10',
-        estimatedHours: 6,
-        actualHours: 0,
-        progress: 0,
-        tags: ['frontend', 'react', 'form'],
-        dependencies: [3]
-      },
-      {
-        id: 5,
-        title: 'User Dashboard UI',
-        description: 'Design and implement the main user dashboard with navigation',
-        status: 'in_progress',
-        priority: 'medium',
-        assigneeId: 4,
-        assigneeName: 'Emily Davis',
-        category: 'Frontend',
-        dueDate: '2024-02-05',
-        createdDate: '2024-01-12',
-        estimatedHours: 10,
-        actualHours: 3,
-        progress: 30,
-        tags: ['frontend', 'dashboard', 'ui'],
-        dependencies: [4]
-      },
-      {
-        id: 6,
-        title: 'API Documentation',
-        description: 'Create comprehensive API documentation using Swagger/OpenAPI',
-        status: 'not_started',
-        priority: 'low',
-        assigneeId: 2,
-        assigneeName: 'Sarah Johnson',
-        category: 'Documentation',
-        dueDate: '2024-02-10',
-        createdDate: '2024-01-15',
-        estimatedHours: 4,
-        actualHours: 0,
-        progress: 0,
-        tags: ['documentation', 'api', 'swagger'],
-        dependencies: [3]
-      },
-      {
-        id: 7,
-        title: 'Unit Tests',
-        description: 'Write comprehensive unit tests for all API endpoints',
-        status: 'review',
-        priority: 'medium',
-        assigneeId: 1,
-        assigneeName: 'Alex Chen',
-        category: 'Testing',
-        dueDate: '2024-02-15',
-        createdDate: '2024-01-18',
-        estimatedHours: 8,
-        actualHours: 7,
-        progress: 90,
-        tags: ['testing', 'unit-tests', 'jest'],
-        dependencies: [3]
-      }
-    ];
-
-    // Generate dependencies
-    const generateDependencies = () => [
-      { prerequisite: 1, dependent: 2 },
-      { prerequisite: 2, dependent: 3 },
-      { prerequisite: 3, dependent: 4 },
-      { prerequisite: 4, dependent: 5 },
-      { prerequisite: 3, dependent: 6 },
-      { prerequisite: 3, dependent: 7 }
-    ];
-
-    setTasks(generateTasks());
-    setDependencies(generateDependencies());
+    fetchTasksAndInterns();
   }, []);
+
+  const fetchTasksAndInterns = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch real tasks and interns data
+      const [tasksResponse, internsResponse] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/admin/users?role=intern')
+      ]);
+
+      if (tasksResponse.ok) {
+        const tasksData = await tasksResponse.json();
+        setTasks(tasksData.tasks || []);
+      }
+
+      if (internsResponse.ok) {
+        const internsData = await internsResponse.json();
+        setInterns(internsData.users || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks and interns:', error);
+      setTasks([]);
+      setInterns([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter tasks
   const filteredTasks = tasks.filter(task => {

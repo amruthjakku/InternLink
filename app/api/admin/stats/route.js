@@ -4,6 +4,8 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../utils/database';
 import User from '../../../../models/User';
 import College from '../../../../models/College';
+import Task from '../../../../models/Task';
+import Attendance from '../../../../models/Attendance';
 
 export async function GET() {
   try {
@@ -32,6 +34,22 @@ export async function GET() {
       lastLoginAt: { $gte: thirtyDaysAgo } 
     });
 
+    // Calculate real metrics
+    const totalTasks = await Task.countDocuments();
+    const completedTasks = await Task.countDocuments({ status: 'completed' });
+    const tasksCompleted = completedTasks;
+    
+    // Calculate average performance based on task completion rates
+    const avgPerformance = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    // Calculate system health based on various factors
+    const recentAttendance = await Attendance.countDocuments({
+      date: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
+    });
+    const expectedAttendance = totalInterns * 7; // Assuming daily attendance
+    const attendanceRate = expectedAttendance > 0 ? (recentAttendance / expectedAttendance) * 100 : 100;
+    const systemHealth = Math.min(100, Math.round((attendanceRate + avgPerformance) / 2));
+
     const stats = {
       totalUsers,
       totalColleges,
@@ -39,9 +57,11 @@ export async function GET() {
       totalInterns,
       totalAdmins,
       activeUsers,
-      systemHealth: 98, // This could be calculated based on various metrics
-      avgPerformance: 85, // This would come from performance tracking
-      tasksCompleted: 0 // This would come from task management system
+      systemHealth,
+      avgPerformance,
+      tasksCompleted,
+      totalTasks,
+      attendanceRate: Math.round(attendanceRate)
     };
 
     return NextResponse.json({ stats });

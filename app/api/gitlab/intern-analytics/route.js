@@ -51,15 +51,7 @@ export async function GET(request) {
     const includeStats = searchParams.get('includeStats') !== 'false';
 
     try {
-      // Fetch commit activity using new GitLab API utility
-      const commitActivity = await getUserCommitActivity(accessToken, {
-        since: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
-      });
-
-      // Generate analytics
-      const analytics = generateCommitAnalytics(commitActivity.commits);
-
-      // Get stored activity tracking data for comparison
+      // Get stored activity tracking data (this is what we actually have)
       const storedActivities = await ActivityTracking.find({
         userId: session.user.id,
         type: 'commit',
@@ -67,6 +59,49 @@ export async function GET(request) {
           $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
         }
       }).sort({ activityCreatedAt: -1 });
+
+      console.log(`Found ${storedActivities.length} stored activities for user ${session.user.id}`);
+      
+      if (storedActivities.length > 0) {
+        const uniqueProjects = [...new Set(storedActivities.map(a => a.projectName))];
+        console.log(`Activities span ${uniqueProjects.length} projects:`, uniqueProjects.slice(0, 5));
+      }
+
+      // Convert stored activities to commit format for analytics
+      const commits = storedActivities.map(activity => ({
+        id: activity.gitlabId,
+        title: activity.title,
+        message: activity.message,
+        author_name: activity.metadata?.authorName || integration.gitlabUsername,
+        author_email: activity.metadata?.authorEmail || integration.gitlabEmail,
+        created_at: activity.activityCreatedAt,
+        web_url: activity.metadata?.webUrl || activity.url,
+        project: {
+          id: activity.projectId,
+          name: activity.projectName,
+          path: activity.projectPath,
+          url: activity.metadata?.projectUrl
+        },
+        stats: {
+          additions: activity.metadata?.additions || 0,
+          deletions: activity.metadata?.deletions || 0,
+          total: activity.metadata?.total || 0
+        }
+      }));
+
+      // Generate analytics from stored data
+      const analytics = generateCommitAnalytics(commits);
+
+      // Also try to fetch fresh data from GitLab API for comparison
+      let commitActivity = { commits: [], projects: [], user: null, totalCommits: 0, activeProjects: 0 };
+      try {
+        commitActivity = await getUserCommitActivity(accessToken, {
+          since: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+        });
+        console.log(`GitLab API returned ${commitActivity.commits.length} commits from ${commitActivity.projects.length} projects`);
+      } catch (apiError) {
+        console.warn('Failed to fetch from GitLab API, using stored data only:', apiError.message);
+      }
 
       // Prepare response data
       const responseData = {
@@ -83,28 +118,38 @@ export async function GET(request) {
         
         // Summary metrics
         summary: {
-          totalCommits: analytics.totalCommits,
-          activeRepositories: commitActivity.activeProjects,
+          totalCommits: storedActivities.length,
+          activeRepositories: Object.keys(storedActivities.reduce((acc, activity) => {
+            acc[activity.projectId] = true;
+            return acc;
+          }, {})).length,
           currentStreak: analytics.streak,
           longestStreak: analytics.longestStreak,
-          totalProjects: commitActivity.projects.length
+          totalProjects: commitActivity.projects.length || Object.keys(storedActivities.reduce((acc, activity) => {
+            acc[activity.projectId] = true;
+            return acc;
+          }, {})).length
         },
 
-        // Recent commits (last 10)
-        recentCommits: analytics.recentCommits.map(commit => ({
-          id: commit.id,
-          title: commit.title,
-          message: commit.message,
-          author_name: commit.author_name,
-          author_email: commit.author_email,
-          created_at: commit.created_at,
-          web_url: commit.web_url,
-          project: commit.project ? {
-            name: commit.project.name,
-            path: commit.project.path,
-            url: commit.project.url
-          } : null,
-          stats: commit.stats || null
+        // Recent commits (last 10) from stored data
+        recentCommits: storedActivities.slice(0, 10).map(activity => ({
+          id: activity.gitlabId,
+          title: activity.title,
+          message: activity.message,
+          author_name: activity.metadata?.authorName || integration.gitlabUsername,
+          author_email: activity.metadata?.authorEmail || integration.gitlabEmail,
+          created_at: activity.activityCreatedAt,
+          web_url: activity.metadata?.webUrl || activity.url,
+          project: {
+            name: activity.projectName,
+            path: activity.projectPath,
+            url: activity.metadata?.projectUrl
+          },
+          stats: {
+            additions: activity.metadata?.additions || 0,
+            deletions: activity.metadata?.deletions || 0,
+            total: activity.metadata?.total || 0
+          }
         })),
 
         // Commit heatmap for visualization
@@ -116,30 +161,48 @@ export async function GET(request) {
           .sort((a, b) => a.week.localeCompare(b.week))
           .slice(-12), // Last 12 weeks
 
-        // Repository stats
-        repositoryStats: commitActivity.projects
-          .filter(project => commitActivity.commits.some(c => c.project?.id === project.id))
-          .map(project => {
-            const projectCommits = commitActivity.commits.filter(c => c.project?.id === project.id);
-            const totalStats = projectCommits.reduce((acc, commit) => ({
-              additions: acc.additions + (commit.stats?.additions || 0),
-              deletions: acc.deletions + (commit.stats?.deletions || 0)
+        // Repository stats from stored data
+        repositoryStats: (() => {
+          // Group stored activities by project
+          const projectGroups = {};
+          storedActivities.forEach(activity => {
+            const projectId = activity.projectId;
+            if (!projectGroups[projectId]) {
+              projectGroups[projectId] = {
+                id: projectId,
+                name: activity.projectName,
+                path: activity.projectPath,
+                url: activity.metadata?.projectUrl,
+                description: '', // We don't store this
+                commits: [],
+                visibility: activity.metadata?.projectVisibility || 'private'
+              };
+            }
+            projectGroups[projectId].commits.push(activity);
+          });
+
+          // Convert to repository stats format
+          return Object.values(projectGroups).map(project => {
+            const totalStats = project.commits.reduce((acc, activity) => ({
+              additions: acc.additions + (activity.metadata?.additions || 0),
+              deletions: acc.deletions + (activity.metadata?.deletions || 0)
             }), { additions: 0, deletions: 0 });
 
             return {
               name: project.name,
-              path: project.path_with_namespace,
-              url: project.web_url,
+              path: project.path,
+              url: project.url,
               description: project.description,
-              commits: projectCommits.length,
+              commits: project.commits.length,
               additions: totalStats.additions,
               deletions: totalStats.deletions,
-              lastCommit: projectCommits[0]?.created_at,
+              lastCommit: project.commits[0]?.activityCreatedAt,
               visibility: project.visibility
             };
           })
           .sort((a, b) => b.commits - a.commits)
-          .slice(0, 10), // Top 10 repositories
+          .slice(0, 10); // Top 10 repositories
+        })(),
 
         // Language usage (if available)
         languages: analytics.languages

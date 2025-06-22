@@ -83,7 +83,7 @@ export function InternManagement() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <img
-                  src={intern.image || 'https://via.placeholder.com/48'}
+                  src={intern.image || `/api/avatar/${intern.name?.charAt(0) || 'U'}`}
                   alt={intern.name}
                   className="w-12 h-12 rounded-full"
                 />

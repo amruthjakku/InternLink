@@ -122,7 +122,7 @@ export function PerformanceOverview() {
                 <div key={intern._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-4">
                     <img
-                      src={intern.image || 'https://via.placeholder.com/40'}
+                      src={intern.image || `/api/avatar/${intern.name?.charAt(0) || 'U'}`}
                       alt={intern.name}
                       className="w-10 h-10 rounded-full"
                     />

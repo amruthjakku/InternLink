@@ -33,7 +33,7 @@ export default function OnboardingFlow() {
           email: demoRole === 'mentor' ? 'mentor@demo.com' : 'intern@demo.com',
           gitlabId: demoRole === 'mentor' ? '999999' : '888888',
           gitlabUsername: demoRole === 'mentor' ? 'demo_mentor' : 'demo_intern',
-          image: 'https://via.placeholder.com/150',
+          image: null, // No placeholder image
           role: demoRole,
           isDemo: true
         };
