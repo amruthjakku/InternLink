@@ -26,8 +26,9 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Validate token by making a test API call
-    const testResponse = await fetch('https://gitlab.com/api/v4/user', {
+    // Validate token by making a test API call to Swecha GitLab
+    const gitlabApiBase = process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4';
+    const testResponse = await fetch(`${gitlabApiBase}/user`, {
       headers: {
         'Authorization': `Bearer ${personalAccessToken}`,
         'Content-Type': 'application/json'
@@ -66,8 +67,11 @@ export async function POST(request) {
         userId: session.user.id,
         gitlabUserId: gitlabUser.id,
         gitlabUsername: gitlabUser.username,
+        gitlabEmail: gitlabUser.email,
         accessToken: encryptedToken,
         tokenType: 'personal_access_token',
+        gitlabInstance: process.env.GITLAB_ISSUER || 'https://code.swecha.org',
+        apiBase: gitlabApiBase,
         specificRepositories: repositoryList,
         userProfile: {
           name: gitlabUser.name,
@@ -94,7 +98,7 @@ export async function POST(request) {
 
     // Fetch user's repositories to populate the integration
     try {
-      const reposResponse = await fetch('https://gitlab.com/api/v4/projects?membership=true&per_page=100', {
+      const reposResponse = await fetch(`${gitlabApiBase}/projects?membership=true&per_page=100`, {
         headers: {
           'Authorization': `Bearer ${personalAccessToken}`,
           'Content-Type': 'application/json'

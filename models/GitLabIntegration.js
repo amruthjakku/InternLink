@@ -43,6 +43,16 @@ const GitLabIntegrationSchema = new mongoose.Schema({
     type: Date,
     required: false // Personal Access Tokens don't expire automatically
   },
+  
+  // GitLab instance configuration
+  gitlabInstance: {
+    type: String,
+    default: 'https://code.swecha.org' // Default to Swecha instance
+  },
+  apiBase: {
+    type: String,
+    default: 'https://code.swecha.org/api/v4'
+  },
 
   // For Personal Access Token connections
   specificRepositories: [{

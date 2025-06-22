@@ -64,7 +64,7 @@ export default function SignIn() {
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.16l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94z"/>
                     </svg>
-                    Sign in with {provider.name}
+                    Sign in with Swecha GitLab
                   </>
                 )}
               </button>
@@ -85,7 +85,7 @@ export default function SignIn() {
                 </h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <p>
-                    Your GitLab account must be pre-registered by an admin or mentor to access this platform.
+                    Your Swecha GitLab account must be pre-registered by an admin or mentor to access this platform.
                   </p>
                 </div>
               </div>
@@ -117,7 +117,7 @@ export default function SignIn() {
       {/* Footer */}
       <div className="mt-8 text-center">
         <p className="text-xs text-gray-500">
-          Secure authentication powered by GitLab OAuth
+          Secure authentication powered by Swecha GitLab OAuth
         </p>
       </div>
     </div>

@@ -24,6 +24,8 @@ export function GitLabTab() {
   const [syncing, setSyncing] = useState(false);
   const [activeView, setActiveView] = useState('overview'); // overview, commits, analytics
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showOAuthConnect, setShowOAuthConnect] = useState(false);
+  const [oauthAvailable, setOauthAvailable] = useState(false);
 
   useEffect(() => {
     checkGitLabConnection();
@@ -32,12 +34,36 @@ export function GitLabTab() {
   const checkGitLabConnection = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/gitlab/connection-status');
-      if (response.ok) {
-        const data = await response.json();
-        setIsConnected(data.connected);
-        if (data.connected) {
-          await fetchGitLabData();
+      
+      // First check OAuth status
+      const oauthResponse = await fetch('/api/gitlab/oauth-connect');
+      if (oauthResponse.ok) {
+        const oauthData = await oauthResponse.json();
+        setOauthAvailable(oauthData.canConnectViaOAuth);
+        
+        if (oauthData.canConnectViaOAuth) {
+          // User has valid OAuth token, check if already connected
+          const statusResponse = await fetch('/api/gitlab/connection-status');
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            setIsConnected(statusData.connected);
+            if (statusData.connected) {
+              await fetchGitLabData();
+            } else {
+              // Has OAuth token but not connected, show OAuth connect option
+              setShowOAuthConnect(true);
+            }
+          }
+        } else {
+          // No OAuth token, check for existing PAT connection
+          const statusResponse = await fetch('/api/gitlab/connection-status');
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            setIsConnected(statusData.connected);
+            if (statusData.connected) {
+              await fetchGitLabData();
+            }
+          }
         }
       }
     } catch (error) {
@@ -125,6 +151,34 @@ export function GitLabTab() {
     }
   };
 
+  const handleOAuthConnect = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/gitlab/oauth-connect', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsConnected(true);
+        setShowOAuthConnect(false);
+        setSuccessMessage(`Successfully connected to GitLab via OAuth! Found ${data.stats?.totalProjects || 0} projects with ${data.stats?.totalCommits || 0} commits.`);
+        await fetchGitLabData();
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to connect via OAuth');
+      }
+    } catch (error) {
+      console.error('Error connecting via OAuth:', error);
+      setError('Failed to connect via OAuth');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     if (!confirm('Are you sure you want to disconnect your GitLab account? This will remove all stored data and analytics.')) {
       return;
@@ -141,6 +195,7 @@ export function GitLabTab() {
         setIsConnected(false);
         setGitlabData(null);
         setError(null);
+        setShowOAuthConnect(false);
         setSuccessMessage(`GitLab account disconnected successfully. Removed ${data.removedData?.activityRecords || 0} activity records.`);
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
@@ -198,26 +253,62 @@ export function GitLabTab() {
             <div className="text-6xl mb-4">🦊</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Connect Your GitLab Account</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Connect your GitLab account using a Personal Access Token to track your development progress, 
+              Connect your Swecha GitLab account to track your development progress, 
               commits, and contributions across your repositories.
             </p>
             
-            {!showTokenForm ? (
-              <button
-                onClick={() => {
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('Connect GitLab Account button clicked');
-                    console.log('Current state:', { showTokenForm, isConnected, loading });
-                  }
-                  setShowTokenForm(true);
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('showTokenForm set to true');
-                  }
-                }}
-                className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors font-medium"
-              >
-                Connect GitLab Account
-              </button>
+            {/* OAuth Connect Option (if available) */}
+            {showOAuthConnect && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">🎉 Quick Connect Available!</h4>
+                <p className="text-blue-700 text-sm mb-4">
+                  You're already signed in with GitLab. Connect instantly to start tracking your progress.
+                </p>
+                <button
+                  onClick={handleOAuthConnect}
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium mr-3"
+                >
+                  {loading ? 'Connecting...' : '🚀 Connect via OAuth'}
+                </button>
+                <button
+                  onClick={() => setShowOAuthConnect(false)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Use Personal Access Token instead
+                </button>
+              </div>
+            )}
+            
+            {!showTokenForm && !showOAuthConnect ? (
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('Connect GitLab Account button clicked');
+                      console.log('Current state:', { showTokenForm, isConnected, loading });
+                    }
+                    setShowTokenForm(true);
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('showTokenForm set to true');
+                    }
+                  }}
+                  className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                >
+                  Connect with Personal Access Token
+                </button>
+                {oauthAvailable && (
+                  <div>
+                    <p className="text-sm text-gray-500 mt-2">or</p>
+                    <button
+                      onClick={() => setShowOAuthConnect(true)}
+                      className="text-blue-600 hover:text-blue-800 text-sm underline"
+                    >
+                      Use OAuth (Recommended)
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="max-w-md mx-auto">
                 {process.env.NODE_ENV === 'development' && (
@@ -253,7 +344,7 @@ export function GitLabTab() {
                       placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Create a token at GitLab → Settings → Access Tokens with 'read_api' and 'read_repository' scopes
+                      Create a token at <a href="https://code.swecha.org/-/profile/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Swecha GitLab → Settings → Access Tokens</a> with 'read_api', 'read_repository', and 'read_user' scopes
                     </p>
                   </div>
                   

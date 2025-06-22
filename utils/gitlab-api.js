@@ -1,260 +1,351 @@
 /**
- * GitLab API Wrapper Class
- * Handles all GitLab API interactions with proper error handling and rate limiting
+ * GitLab API Utility for Swecha Instance
+ * Handles API calls to https://code.swecha.org
  */
 
-export class GitLabAPI {
-  constructor(accessToken) {
-    this.accessToken = accessToken;
-    this.baseURL = 'https://gitlab.com/api/v4';
-    this.rateLimitDelay = 100; // ms between requests
-  }
+const GITLAB_API_BASE = process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4';
 
-  /**
-   * Make authenticated request to GitLab API
-   */
-  async makeRequest(endpoint, options = {}) {
-    try {
-      // Add rate limiting delay
-      await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
+/**
+ * Make authenticated request to GitLab API
+ */
+export async function gitlabApiRequest(endpoint, accessToken, options = {}) {
+  const url = `${GITLAB_API_BASE}${endpoint}`;
+  
+  const config = {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    ...options
+  };
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-        ...options
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('GitLab token expired or invalid');
-        }
-        if (response.status === 403) {
-          throw new Error('GitLab API rate limit exceeded');
-        }
-        throw new Error(`GitLab API Error: ${response.status} ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`GitLab API request failed for ${endpoint}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get current user profile
-   */
-  async getUserProfile() {
-    return this.makeRequest('/user');
-  }
-
-  /**
-   * Get user's projects with membership
-   */
-  async getUserProjects(page = 1, perPage = 100) {
-    return this.makeRequest(`/projects?membership=true&page=${page}&per_page=${perPage}&order_by=last_activity_at&sort=desc`);
-  }
-
-  /**
-   * Get commits for a specific project
-   */
-  async getProjectCommits(projectId, options = {}) {
-    const { since, until, author, page = 1, perPage = 100 } = options;
-    let endpoint = `/projects/${projectId}/repository/commits?page=${page}&per_page=${perPage}`;
+  try {
+    const response = await fetch(url, config);
     
-    const params = new URLSearchParams();
-    if (since) params.append('since', since);
-    if (until) params.append('until', until);
-    if (author) params.append('author', author);
-    
-    if (params.toString()) {
-      endpoint += `&${params.toString()}`;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`GitLab API Error (${response.status}): ${errorText}`);
     }
     
-    return this.makeRequest(endpoint);
+    return await response.json();
+  } catch (error) {
+    console.error(`GitLab API request failed for ${endpoint}:`, error);
+    throw error;
   }
+}
 
-  /**
-   * Get all commits by user across their projects
-   */
-  async getUserCommits(userEmail, since = null, until = null) {
-    try {
-      const projects = await this.getUserProjects();
-      const allCommits = [];
-      
-      for (const project of projects) {
-        try {
-          const commits = await this.getProjectCommits(project.id, {
-            since,
-            until,
-            author: userEmail
-          });
-          
-          // Add project context to each commit
-          const enrichedCommits = commits.map(commit => ({
-            ...commit,
-            project_name: project.name,
-            project_id: project.id,
-            project_url: project.web_url,
-            project_path: project.path_with_namespace
-          }));
-          
-          allCommits.push(...enrichedCommits);
-        } catch (error) {
-          console.error(`Error fetching commits for project ${project.name}:`, error);
-          // Continue with other projects even if one fails
-        }
-      }
-      
-      // Sort by creation date (newest first)
-      return allCommits.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    } catch (error) {
-      console.error('Error fetching user commits:', error);
-      throw error;
-    }
-  }
+/**
+ * Get current user info from GitLab
+ */
+export async function getCurrentUser(accessToken) {
+  return await gitlabApiRequest('/user', accessToken);
+}
 
-  /**
-   * Get commit details including stats
-   */
-  async getCommitDetails(projectId, commitSha) {
-    return this.makeRequest(`/projects/${projectId}/repository/commits/${commitSha}`);
-  }
+/**
+ * Get user's projects/repositories
+ */
+export async function getUserProjects(accessToken, options = {}) {
+  const params = new URLSearchParams({
+    membership: 'true',
+    per_page: options.perPage || 100,
+    page: options.page || 1,
+    order_by: 'last_activity_at',
+    sort: 'desc',
+    ...options.params
+  });
+  
+  return await gitlabApiRequest(`/projects?${params}`, accessToken);
+}
 
-  /**
-   * Get issues for a project
-   */
-  async getProjectIssues(projectId, state = 'opened', page = 1, perPage = 100) {
-    return this.makeRequest(`/projects/${projectId}/issues?state=${state}&page=${page}&per_page=${perPage}`);
-  }
+/**
+ * Get commits for a specific project
+ */
+export async function getProjectCommits(projectId, accessToken, options = {}) {
+  const params = new URLSearchParams({
+    per_page: options.perPage || 50,
+    page: options.page || 1,
+    since: options.since || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // Last 90 days
+    author: options.author,
+    ...options.params
+  });
+  
+  return await gitlabApiRequest(`/projects/${projectId}/repository/commits?${params}`, accessToken);
+}
 
-  /**
-   * Get issues assigned to user
-   */
-  async getUserIssues(userId, state = 'opened') {
-    return this.makeRequest(`/issues?assignee_id=${userId}&state=${state}&scope=assigned_to_me`);
-  }
+/**
+ * Get commit details with stats
+ */
+export async function getCommitDetails(projectId, commitSha, accessToken) {
+  return await gitlabApiRequest(`/projects/${projectId}/repository/commits/${commitSha}`, accessToken);
+}
 
-  /**
-   * Get merge requests for a project
-   */
-  async getProjectMergeRequests(projectId, state = 'opened', page = 1, perPage = 100) {
-    return this.makeRequest(`/projects/${projectId}/merge_requests?state=${state}&page=${page}&per_page=${perPage}`);
-  }
-
-  /**
-   * Get merge requests authored by user
-   */
-  async getUserMergeRequests(userId, state = 'opened') {
-    return this.makeRequest(`/merge_requests?author_id=${userId}&state=${state}&scope=created_by_me`);
-  }
-
-  /**
-   * Get project languages
-   */
-  async getProjectLanguages(projectId) {
-    return this.makeRequest(`/projects/${projectId}/languages`);
-  }
-
-  /**
-   * Get project contributors
-   */
-  async getProjectContributors(projectId) {
-    return this.makeRequest(`/projects/${projectId}/repository/contributors`);
-  }
-
-  /**
-   * Get project statistics
-   */
-  async getProjectStatistics(projectId) {
-    return this.makeRequest(`/projects/${projectId}/statistics`);
-  }
-
-  /**
-   * Get user's contribution analytics
-   */
-  async getUserAnalytics(userEmail, since = null) {
-    try {
-      const projects = await this.getUserProjects();
-      const analytics = {
-        totalCommits: 0,
-        totalAdditions: 0,
-        totalDeletions: 0,
-        activeProjects: 0,
-        languages: {},
-        commitsByDate: {},
-        projectActivity: []
-      };
-
-      for (const project of projects) {
-        try {
-          const commits = await this.getProjectCommits(project.id, {
-            since,
-            author: userEmail
-          });
-
-          if (commits.length > 0) {
-            analytics.activeProjects++;
-            analytics.totalCommits += commits.length;
-
-            // Get project languages
-            try {
-              const languages = await this.getProjectLanguages(project.id);
-              Object.keys(languages).forEach(lang => {
-                analytics.languages[lang] = (analytics.languages[lang] || 0) + languages[lang];
-              });
-            } catch (error) {
-              console.error(`Error fetching languages for ${project.name}:`, error);
-            }
-
-            // Process commits for detailed stats
-            for (const commit of commits) {
-              try {
-                const commitDetails = await this.getCommitDetails(project.id, commit.id);
-                analytics.totalAdditions += commitDetails.stats?.additions || 0;
-                analytics.totalDeletions += commitDetails.stats?.deletions || 0;
-
-                // Group commits by date
-                const date = new Date(commit.created_at).toDateString();
-                analytics.commitsByDate[date] = (analytics.commitsByDate[date] || 0) + 1;
-              } catch (error) {
-                console.error(`Error fetching commit details for ${commit.id}:`, error);
-              }
-            }
-
-            analytics.projectActivity.push({
-              projectName: project.name,
-              projectUrl: project.web_url,
-              commits: commits.length,
-              lastActivity: commits[0]?.created_at
-            });
+/**
+ * Get user's commit activity across all projects
+ */
+export async function getUserCommitActivity(accessToken, options = {}) {
+  try {
+    // First, get user's projects
+    const projects = await getUserProjects(accessToken, { perPage: 100 });
+    
+    const commitActivity = [];
+    const since = options.since || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    
+    // Get current user to filter commits by author
+    const currentUser = await getCurrentUser(accessToken);
+    
+    // Fetch commits from each project
+    for (const project of projects) {
+      try {
+        const commits = await getProjectCommits(project.id, accessToken, {
+          since,
+          author: currentUser.username,
+          perPage: 100
+        });
+        
+        // Add project context to each commit
+        const projectCommits = commits.map(commit => ({
+          ...commit,
+          project: {
+            id: project.id,
+            name: project.name,
+            path: project.path_with_namespace,
+            url: project.web_url
           }
-        } catch (error) {
-          console.error(`Error processing project ${project.name}:`, error);
-        }
+        }));
+        
+        commitActivity.push(...projectCommits);
+      } catch (error) {
+        console.warn(`Failed to fetch commits for project ${project.name}:`, error.message);
+        // Continue with other projects
       }
+    }
+    
+    // Sort by date (newest first)
+    commitActivity.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    return {
+      commits: commitActivity,
+      projects: projects,
+      user: currentUser,
+      totalCommits: commitActivity.length,
+      activeProjects: projects.filter(p => commitActivity.some(c => c.project.id === p.id)).length
+    };
+  } catch (error) {
+    console.error('Error fetching user commit activity:', error);
+    throw error;
+  }
+}
 
-      return analytics;
-    } catch (error) {
-      console.error('Error generating user analytics:', error);
-      throw error;
+/**
+ * Get user's issues
+ */
+export async function getUserIssues(accessToken, options = {}) {
+  const params = new URLSearchParams({
+    scope: 'assigned_to_me',
+    state: options.state || 'opened',
+    per_page: options.perPage || 50,
+    page: options.page || 1,
+    ...options.params
+  });
+  
+  return await gitlabApiRequest(`/issues?${params}`, accessToken);
+}
+
+/**
+ * Get user's merge requests
+ */
+export async function getUserMergeRequests(accessToken, options = {}) {
+  const params = new URLSearchParams({
+    scope: 'assigned_to_me',
+    state: options.state || 'opened',
+    per_page: options.perPage || 50,
+    page: options.page || 1,
+    ...options.params
+  });
+  
+  return await gitlabApiRequest(`/merge_requests?${params}`, accessToken);
+}
+
+/**
+ * Generate commit analytics
+ */
+export function generateCommitAnalytics(commits) {
+  const now = new Date();
+  const analytics = {
+    totalCommits: commits.length,
+    recentCommits: commits.slice(0, 10),
+    commitsByDay: {},
+    commitsByWeek: {},
+    commitsByMonth: {},
+    languages: {},
+    streak: 0,
+    longestStreak: 0
+  };
+  
+  // Process commits for analytics
+  commits.forEach(commit => {
+    const date = new Date(commit.created_at);
+    const dayKey = date.toISOString().split('T')[0];
+    const weekKey = getWeekKey(date);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    // Count by day
+    analytics.commitsByDay[dayKey] = (analytics.commitsByDay[dayKey] || 0) + 1;
+    
+    // Count by week
+    analytics.commitsByWeek[weekKey] = (analytics.commitsByWeek[weekKey] || 0) + 1;
+    
+    // Count by month
+    analytics.commitsByMonth[monthKey] = (analytics.commitsByMonth[monthKey] || 0) + 1;
+    
+    // Track languages (if available in project data)
+    if (commit.project && commit.project.language) {
+      analytics.languages[commit.project.language] = (analytics.languages[commit.project.language] || 0) + 1;
+    }
+  });
+  
+  // Calculate streak
+  analytics.streak = calculateCurrentStreak(analytics.commitsByDay);
+  analytics.longestStreak = calculateLongestStreak(analytics.commitsByDay);
+  
+  // Generate heatmap data (last 90 days)
+  analytics.commitHeatmap = generateCommitHeatmap(analytics.commitsByDay);
+  
+  return analytics;
+}
+
+/**
+ * Get week key for grouping
+ */
+function getWeekKey(date) {
+  const year = date.getFullYear();
+  const week = getWeekNumber(date);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+/**
+ * Get week number of the year
+ */
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+/**
+ * Calculate current commit streak
+ */
+function calculateCurrentStreak(commitsByDay) {
+  const today = new Date();
+  let streak = 0;
+  
+  for (let i = 0; i < 365; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dayKey = date.toISOString().split('T')[0];
+    
+    if (commitsByDay[dayKey]) {
+      streak++;
+    } else if (i > 0) {
+      // Allow one day gap for today
+      break;
     }
   }
+  
+  return streak;
+}
 
-  /**
-   * Search for projects
-   */
-  async searchProjects(query, page = 1, perPage = 20) {
-    return this.makeRequest(`/projects?search=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`);
+/**
+ * Calculate longest commit streak
+ */
+function calculateLongestStreak(commitsByDay) {
+  const dates = Object.keys(commitsByDay).sort();
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let lastDate = null;
+  
+  dates.forEach(dateStr => {
+    const date = new Date(dateStr);
+    
+    if (lastDate) {
+      const dayDiff = (date - lastDate) / (1000 * 60 * 60 * 24);
+      if (dayDiff === 1) {
+        currentStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, currentStreak);
+        currentStreak = 1;
+      }
+    } else {
+      currentStreak = 1;
+    }
+    
+    lastDate = date;
+  });
+  
+  return Math.max(longestStreak, currentStreak);
+}
+
+/**
+ * Generate commit heatmap data for last 90 days
+ */
+function generateCommitHeatmap(commitsByDay) {
+  const heatmap = [];
+  const today = new Date();
+  
+  for (let i = 89; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dayKey = date.toISOString().split('T')[0];
+    
+    heatmap.push({
+      date: dayKey,
+      count: commitsByDay[dayKey] || 0,
+      level: getHeatmapLevel(commitsByDay[dayKey] || 0)
+    });
   }
+  
+  return heatmap;
+}
 
-  /**
-   * Get project events (activity feed)
-   */
-  async getProjectEvents(projectId, page = 1, perPage = 100) {
-    return this.makeRequest(`/projects/${projectId}/events?page=${page}&per_page=${perPage}`);
+/**
+ * Get heatmap intensity level (0-4)
+ */
+function getHeatmapLevel(count) {
+  if (count === 0) return 0;
+  if (count <= 2) return 1;
+  if (count <= 5) return 2;
+  if (count <= 10) return 3;
+  return 4;
+}
+
+/**
+ * Test GitLab API connection
+ */
+export async function testGitLabConnection(accessToken) {
+  try {
+    const user = await getCurrentUser(accessToken);
+    const projects = await getUserProjects(accessToken, { perPage: 5 });
+    
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        avatar_url: user.avatar_url
+      },
+      projectCount: projects.length,
+      apiBase: GITLAB_API_BASE
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      apiBase: GITLAB_API_BASE
+    };
   }
 }

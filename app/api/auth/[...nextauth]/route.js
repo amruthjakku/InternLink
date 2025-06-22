@@ -53,6 +53,13 @@ export const authOptions = {
           await connectToDatabase();
           let user = await User.findByGitLabUsername(profile.username).populate('college');
           
+          // Store GitLab access token for API calls
+          if (account.access_token) {
+            token.gitlabAccessToken = account.access_token;
+            token.gitlabRefreshToken = account.refresh_token;
+            token.gitlabTokenExpires = account.expires_at;
+          }
+          
           if (user) {
             // Existing user - update their info and login time
             token.role = user.role;
@@ -89,6 +96,11 @@ export const authOptions = {
       session.user.assignedBy = token.assignedBy;
       session.user.id = token.userId;
       session.user.needsRegistration = token.needsRegistration;
+      
+      // Add GitLab access token (server-side only, not exposed to client)
+      session.gitlabAccessToken = token.gitlabAccessToken;
+      session.gitlabRefreshToken = token.gitlabRefreshToken;
+      session.gitlabTokenExpires = token.gitlabTokenExpires;
       
       return session;
     }

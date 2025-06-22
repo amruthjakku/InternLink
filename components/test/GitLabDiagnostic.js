@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../AuthProvider';
+import { useSession } from 'next-auth/react';
 
 export function GitLabDiagnostic() {
-  const { user } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   const [diagnostics, setDiagnostics] = useState({});
   const [testResults, setTestResults] = useState([]);
 

@@ -89,3 +89,17 @@ export function generateToken(length = 32) {
 export function isEncrypted(data) {
   return data && typeof data === 'object' && data.encrypted && data.iv && data.authTag;
 }
+
+/**
+ * Encrypt token (alias for encrypt function)
+ */
+export function encryptToken(token) {
+  return encrypt(token);
+}
+
+/**
+ * Decrypt token (alias for decrypt function)
+ */
+export function decryptToken(encryptedToken) {
+  return decrypt(encryptedToken);
+}
