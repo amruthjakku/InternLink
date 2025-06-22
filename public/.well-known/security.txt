@@ -1,0 +1,10 @@
+Contact: mailto:security@internlink.com
+Expires: 2025-12-31T23:59:59.000Z
+Acknowledgments: https://internlink-858p.onrender.com/security
+Preferred-Languages: en
+Canonical: https://internlink-858p.onrender.com/.well-known/security.txt
+
+# InternLink Security Policy
+# This is a legitimate internship management application
+# Built with Next.js, MongoDB, and GitLab OAuth integration
+# No malicious content is present on this site
