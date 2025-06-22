@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthProvider';
+import { GitLabCommitTracker } from '../GitLabCommitTracker';
 
 export function GitLabTab() {
   const { user } = useAuth();
@@ -360,47 +361,7 @@ export function GitLabTab() {
 
       {activeView === 'commits' && (
         <div className="space-y-6">
-          {/* Recent Commits */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Commits</h3>
-            <div className="space-y-4">
-              {gitlabData?.recentCommits?.length > 0 ? (
-                gitlabData.recentCommits.slice(0, 10).map((commit, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{commit.title}</p>
-                        <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                          <span>📁 {commit.project}</span>
-                          <span>🌿 {commit.branch}</span>
-                          <span>📅 {formatDate(commit.created_at)}</span>
-                        </div>
-                        {commit.stats && (
-                          <div className="flex items-center space-x-4 mt-1 text-sm">
-                            <span className="text-green-600">+{commit.stats.additions}</span>
-                            <span className="text-red-600">-{commit.stats.deletions}</span>
-                          </div>
-                        )}
-                      </div>
-                      <a
-                        href={commit.web_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View →
-                      </a>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">📝</div>
-                  <p>No commits found. Start coding to see your activity here!</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <GitLabCommitTracker />
 
           {/* Commit Activity Heatmap */}
           {gitlabData?.commitHeatmap && (

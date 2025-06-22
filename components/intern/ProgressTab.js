@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { EnhancedLineChart, SkillRadarChart, ActivityHeatmap, ProgressRing, MetricCard } from '../Charts';
+import { AttendanceWidget } from '../AttendanceWidget';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 
 export function ProgressTab({ user, tasks, loading }) {
@@ -304,6 +305,9 @@ export function ProgressTab({ user, tasks, loading }) {
           </div>
         </div>
       </div>
+
+      {/* Attendance Overview */}
+      <AttendanceWidget />
 
       {/* Activity Heatmap */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

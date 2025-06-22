@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from './AuthProvider';
+import { GitLabLogin } from './auth/GitLabLogin';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -50,27 +51,7 @@ export function LoginPage() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* GitLab Login */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Sign in with GitLab</h2>
-            <p className="text-gray-600 mb-6">
-              Use your GitLab account to access the platform with full features.
-            </p>
-            <button
-              onClick={handleGitLabLogin}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.16l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94z"/>
-              </svg>
-              Continue with GitLab
-            </button>
-            
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> GitLab OAuth is not configured in this demo. Use the demo login instead.
-              </p>
-            </div>
-          </div>
+          <GitLabLogin />
 
           {/* Demo Login */}
           <div className="bg-white rounded-lg shadow-lg p-6">

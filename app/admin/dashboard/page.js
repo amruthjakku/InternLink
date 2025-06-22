@@ -8,6 +8,7 @@ import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserMa
 import { AdvancedSystemAnalytics } from '../../../components/admin/AdvancedSystemAnalytics';
 import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
 import { IPManagement } from '../../../components/admin/IPManagement';
+import { CollegeManagement } from '../../../components/CollegeManagement';
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
@@ -429,6 +430,7 @@ export default function AdminDashboard() {
               { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
+              { id: 'college-management', name: 'College Management', icon: '🎓' },
               { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦' },
               { id: 'analytics', name: 'Analytics', icon: '📈' }
             ].map((tab) => (
@@ -665,6 +667,9 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* College Management Tab */}
+        {activeTab === 'college-management' && <CollegeManagement />}
 
         {/* Bulk Operations Tab */}
         {activeTab === 'bulk-operations' && (

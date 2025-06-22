@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 // Removed mockData import - using real API calls
 import { InternManagementTab } from './mentor/InternManagementTab';
-import { TaskManagementTab } from './mentor/TaskManagementTab';
+import { AdvancedTaskManagement } from './mentor/AdvancedTaskManagement';
 import { CategoriesTab } from './mentor/CategoriesTab';
 import { CollegesTab } from './mentor/CollegesTab';
 import { AttendanceTab } from './mentor/AttendanceTab';
@@ -12,6 +12,11 @@ import { LeaderboardTab } from './mentor/LeaderboardTab';
 import { CommunicationTab } from './mentor/CommunicationTab';
 import { MeetingsTab } from './mentor/MeetingsTab';
 import { AIAssistantTab } from './mentor/AIAssistantTab';
+import { PerformanceOverview } from './mentor/PerformanceOverview';
+import { TeamActivity } from './mentor/TeamActivity';
+import TeamActivityDashboard from './dashboard/TeamActivity';
+import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
+import { Chat } from './Chat';
 
 export function MentorDashboard() {
   const { user } = useAuth();
@@ -23,11 +28,16 @@ export function MentorDashboard() {
     { id: 'overview', name: 'Overview', icon: '📊' },
     { id: 'intern-management', name: 'Intern Management', icon: '👥' },
     { id: 'task-management', name: 'Task Management', icon: '📝' },
+    { id: 'performance', name: 'Performance', icon: '📈' },
+    { id: 'team-activity', name: 'Team Activity', icon: '🔄' },
+    { id: 'team-dashboard', name: 'Team Dashboard', icon: '📊' },
+    { id: 'gitlab-integration', name: 'GitLab Integration', icon: '🦊' },
     { id: 'categories', name: 'Categories', icon: '🎯' },
     { id: 'colleges', name: 'Colleges', icon: '🏫' },
     { id: 'attendance', name: 'Attendance', icon: '📍' },
     { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
     { id: 'communication', name: 'Communication', icon: '💬' },
+    { id: 'team-chat', name: 'Team Chat', icon: '💭' },
     { id: 'meetings', name: 'Meetings', icon: '📹' },
     { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
   ];
@@ -231,7 +241,15 @@ export function MentorDashboard() {
       case 'intern-management':
         return <InternManagementTab />;
       case 'task-management':
-        return <TaskManagementTab />;
+        return <AdvancedTaskManagement />;
+      case 'performance':
+        return <PerformanceOverview />;
+      case 'team-activity':
+        return <TeamActivity />;
+      case 'team-dashboard':
+        return <TeamActivityDashboard />;
+      case 'gitlab-integration':
+        return <GitLabIntegrationDashboard />;
       case 'categories':
         return <CategoriesTab />;
       case 'colleges':
@@ -242,6 +260,8 @@ export function MentorDashboard() {
         return <LeaderboardTab />;
       case 'communication':
         return <CommunicationTab />;
+      case 'team-chat':
+        return <Chat />;
       case 'meetings':
         return <MeetingsTab />;
       case 'ai-settings':

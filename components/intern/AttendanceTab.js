@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AttendanceMarker } from '../AttendanceMarker';
 
 export function AttendanceTab({ user, loading }) {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -134,6 +135,9 @@ export function AttendanceTab({ user, loading }) {
 
   return (
     <div className="space-y-6">
+      {/* Attendance Marker */}
+      <AttendanceMarker onAttendanceMarked={fetchAttendanceData} />
+
       {/* Check In/Out Section */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Attendance</h3>
