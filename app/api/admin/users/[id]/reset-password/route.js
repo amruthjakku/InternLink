@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../../../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../../../../utils/database';
-import User from '../../../../../../../models/User';
+import { authOptions } from '../../../../auth/[...nextauth]/route';
+import { connectToDatabase } from '../../../../../../utils/database';
+import User from '../../../../../../models/User';
 
 export async function POST(request, { params }) {
   try {

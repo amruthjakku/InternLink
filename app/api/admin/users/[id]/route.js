@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]/route.js';
-import { connectToDatabase } from '../../../../../utils/database.js';
-import User from '../../../../../models/User.js';
-import College from '../../../../../models/College.js';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../auth/[...nextauth]/route';
+import { connectToDatabase } from '../../../../../utils/database';
+import User from '../../../../../models/User';
+import College from '../../../../../models/College';
 
 
 // Force dynamic rendering for this route
