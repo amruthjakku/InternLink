@@ -10,6 +10,7 @@ import { CollegesTab } from './mentor/CollegesTab';
 import { AttendanceTab } from './mentor/AttendanceTab';
 import { LeaderboardTab } from './mentor/LeaderboardTab';
 import { CommunicationTab } from './mentor/CommunicationTab';
+import { SuperMentorCommunicationTab } from './mentor/SuperMentorCommunicationTab';
 import { MeetingsTab } from './mentor/MeetingsTab';
 import { AIAssistantTab } from './mentor/AIAssistantTab';
 import { PerformanceOverview } from './mentor/PerformanceOverview';
@@ -19,6 +20,7 @@ import { CohortManagementTab } from './mentor/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
 import { Chat } from './Chat';
+import { EnhancedChat } from './EnhancedChat';
 
 export function MentorDashboard() {
   const { user, refreshUserData, logout } = useAuth();
@@ -314,9 +316,9 @@ export function MentorDashboard() {
       case 'leaderboard':
         return <LeaderboardTab userRole={user?.role} />;
       case 'communication':
-        return user?.role === 'super-mentor' ? <CommunicationTab /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <SuperMentorCommunicationTab /> : renderComingSoon();
       case 'team-chat':
-        return <Chat userRole={user?.role} />;
+        return <EnhancedChat userRole={user?.role} />;
       case 'meetings':
         return user?.role === 'super-mentor' ? <MeetingsTab /> : renderComingSoon();
       case 'ai-settings':

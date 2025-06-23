@@ -9,6 +9,7 @@ import { PerformanceTab } from './intern/PerformanceTab';
 import { LeaderboardTab } from './intern/LeaderboardTab';
 import { AttendanceTab } from './intern/AttendanceTab';
 import { ChatTab } from './intern/ChatTab';
+import { EnhancedChat } from './EnhancedChat';
 import { AIAssistantTab } from './intern/AIAssistantTab';
 import { ProfileTab } from './intern/ProfileTab';
 import { SimpleGitLabTab } from './intern/SimpleGitLabTab';
@@ -123,7 +124,7 @@ export function InternDashboard() {
       case 'attendance-history':
         return <AttendanceHistory />;
       case 'chat':
-        return <ChatTab {...commonProps} />;
+        return <EnhancedChat userRole="intern" />;
       case 'ai-assistant':
         return <AIAssistantTab {...commonProps} />;
       default:
