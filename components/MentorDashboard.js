@@ -21,10 +21,11 @@ import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
 import { Chat } from './Chat';
 
 export function MentorDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUserData, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Dynamic tabs based on user role
   const getTabsForRole = (role) => {
@@ -89,6 +90,32 @@ export function MentorDashboard() {
       setInterns([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshSession = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUserData();
+      // Also refresh the interns data since role might have changed
+      await fetchInterns();
+      alert('✅ Session refreshed! Your dashboard has been updated with the latest permissions.');
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      alert('❌ Failed to refresh session. Please try logging out and back in.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      try {
+        await logout();
+      } catch (error) {
+        console.error('Error signing out:', error);
+        alert('❌ Failed to sign out. Please try again.');
+      }
     }
   };
 
@@ -381,7 +408,7 @@ export function MentorDashboard() {
                 </p>
               </div>
               
-              {/* Quick Stats */}
+              {/* Quick Stats and Actions */}
               <div className="flex items-center space-x-4">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-blue-600">
@@ -400,6 +427,44 @@ export function MentorDashboard() {
                     {interns.reduce((sum, intern) => sum + intern.totalTasks, 0)}
                   </div>
                   <div className="text-xs text-gray-500">Total Tasks</div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2 ml-4">
+                  {/* Refresh Button */}
+                  <button
+                    onClick={handleRefreshSession}
+                    disabled={refreshing}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                    title="Refresh your session to get the latest permissions and data"
+                  >
+                    <svg 
+                      className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="text-sm hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                  </button>
+
+                  {/* Sign Out Button */}
+                  <button
+                    onClick={handleSignOut}
+                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                    title="Sign out of your account"
+                  >
+                    <svg 
+                      className="w-4 h-4" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="text-sm hidden sm:inline">Sign Out</span>
+                  </button>
                 </div>
               </div>
             </div>

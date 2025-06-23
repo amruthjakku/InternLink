@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../utils/database';
 import User from '../../../../models/User';
+import College from '../../../../models/College';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -78,7 +79,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -118,6 +119,23 @@ export async function POST(request) {
       }
     }
 
+    // Find college ObjectId if college is provided
+    let collegeId = null;
+    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
+      const collegeDoc = await College.findOne({ 
+        name: college.trim(),
+        isActive: true 
+      });
+      
+      if (!collegeDoc) {
+        return NextResponse.json({ 
+          error: `College "${college}" not found. Please make sure the college exists.` 
+        }, { status: 400 });
+      }
+      
+      collegeId = collegeDoc._id;
+    }
+
     // Create new user
     const userData = {
       gitlabUsername: gitlabUsername.toLowerCase(),
@@ -129,8 +147,8 @@ export async function POST(request) {
       isActive: true
     };
 
-    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
-      userData.college = college;
+    if (collegeId) {
+      userData.college = collegeId;
     }
 
     const newUser = new User(userData);

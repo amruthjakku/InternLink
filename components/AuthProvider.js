@@ -9,6 +9,37 @@ export function AuthProvider({ children }) {
   const { data: session, status } = useSession();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  // Function to refresh user data from database
+  const refreshUserData = async () => {
+    if (!session?.user?.gitlabUsername) return;
+    
+    try {
+      const response = await fetch('/api/auth/refresh-session');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          // Update user state with fresh data from database
+          setUser(prevUser => ({
+            ...prevUser,
+            ...data.user,
+            gitlabId: session.user.gitlabId,
+            gitlabUsername: session.user.gitlabUsername,
+            is_demo: false
+          }));
+          
+          // Update localStorage with fresh data
+          localStorage.setItem(`user_${session.user.gitlabId}`, JSON.stringify(data.user));
+          setLastRefresh(Date.now());
+          
+          console.log('User data refreshed:', data.user.role);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
 
   useEffect(() => {
     if (status === 'loading') {
@@ -31,6 +62,13 @@ export function AuthProvider({ children }) {
             gitlabUsername: session.user?.gitlabUsername,
             is_demo: false
           });
+          
+          // Refresh user data from database to get latest role/info
+          // But only if we haven't refreshed recently (within last 30 seconds)
+          const now = Date.now();
+          if (!lastRefresh || (now - lastRefresh) > 30000) {
+            refreshUserData();
+          }
         } catch (error) {
           console.error('Error parsing stored user data:', error);
           localStorage.removeItem(`user_${session.user.gitlabId}`);
@@ -63,7 +101,7 @@ export function AuthProvider({ children }) {
     }
     
     setLoading(false);
-  }, [session, status]);
+  }, [session, status, lastRefresh]);
 
   const login = (userData) => {
     // For demo login (fallback)
@@ -113,6 +151,7 @@ export function AuthProvider({ children }) {
     logout,
     completeOnboarding,
     updateProfile,
+    refreshUserData,
     loading,
     isGitLabAuth: !!session
   };

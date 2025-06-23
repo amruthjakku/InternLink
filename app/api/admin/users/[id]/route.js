@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -62,18 +62,35 @@ export async function PUT(request, { params }) {
       }
     }
 
-    // Validate college for intern role
-    if (role === 'intern' && !college) {
+    // Find college ObjectId if college is provided
+    let collegeId = null;
+    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
+      const collegeDoc = await College.findOne({ 
+        name: college.trim(),
+        isActive: true 
+      });
+      
+      if (!collegeDoc) {
+        return NextResponse.json({ 
+          error: `College "${college}" not found. Please make sure the college exists.` 
+        }, { status: 400 });
+      }
+      
+      collegeId = collegeDoc._id;
+    }
+
+    // Validate college for roles that require it
+    if ((role === 'intern' || role === 'mentor' || role === 'super-mentor') && !college) {
       return NextResponse.json({ 
-        error: 'College is required for intern role' 
+        error: 'College is required for intern, mentor, and super-mentor roles' 
       }, { status: 400 });
     }
 
     // If changing to mentor role and college is provided, check if college already has a mentor
-    if (role === 'mentor' && college && user.role !== 'mentor') {
+    if (role === 'mentor' && collegeId && user.role !== 'mentor') {
       const existingMentor = await User.findOne({ 
         role: 'mentor', 
-        college: college, 
+        college: collegeId, 
         isActive: true,
         _id: { $ne: id } // Exclude current user
       });
@@ -85,22 +102,28 @@ export async function PUT(request, { params }) {
       }
 
       // Update college with mentor username
-      await College.findByIdAndUpdate(college, {
+      await College.findByIdAndUpdate(collegeId, {
         mentorUsername: gitlabUsername.toLowerCase()
       });
+    }
+
+    // Prepare update data
+    const updateData = {
+      name,
+      email: email.toLowerCase(),
+      gitlabUsername: gitlabUsername.toLowerCase(),
+      role,
+      updatedAt: new Date()
+    };
+
+    if (collegeId) {
+      updateData.college = collegeId;
     }
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      {
-        name,
-        email: email.toLowerCase(),
-        gitlabUsername: gitlabUsername.toLowerCase(),
-        role,
-        college: (role === 'intern' || (role === 'mentor' && college)) ? college : undefined,
-        updatedAt: new Date()
-      },
+      updateData,
       { new: true }
     ).populate('college');
 
@@ -117,7 +140,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

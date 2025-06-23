@@ -5,16 +5,31 @@ import User from '../../../../models/User.js';
 
 export const authOptions = {
   providers: [
-    GitLabProvider({
+    {
+      id: "gitlab",
+      name: "GitLab",
+      type: "oauth",
+      authorization: {
+        url: `${process.env.GITLAB_ISSUER}/oauth/authorize`,
+        params: {
+          scope: "read_user read_api read_repository",
+          response_type: "code",
+        },
+      },
+      token: `${process.env.GITLAB_ISSUER}/oauth/token`,
+      userinfo: `${process.env.GITLAB_ISSUER}/api/v4/user`,
       clientId: process.env.GITLAB_CLIENT_ID,
       clientSecret: process.env.GITLAB_CLIENT_SECRET,
-      issuer: process.env.GITLAB_ISSUER || 'https://gitlab.com',
-      authorization: {
-        params: {
-          scope: 'read_user read_api read_repository'
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name,
+          email: profile.email,
+          image: profile.avatar_url,
+          username: profile.username,
         }
-      }
-    })
+      },
+    }
   ],
   callbacks: {
     async signIn({ user, account, profile }) {

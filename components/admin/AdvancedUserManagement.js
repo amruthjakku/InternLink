@@ -7,6 +7,7 @@ import { getCollegeName } from '../../utils/helpers';
 
 export function AdvancedUserManagement() {
   const [users, setUsers] = useState([]);
+  const [colleges, setColleges] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [userSegments, setUserSegments] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -24,6 +25,7 @@ export function AdvancedUserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    fetchColleges();
     fetchUserSegments();
     fetchActivityLogs();
     fetchPermissions();
@@ -45,12 +47,27 @@ export function AdvancedUserManagement() {
     }
   };
 
+  const fetchColleges = async () => {
+    try {
+      const response = await fetch('/api/admin/colleges');
+      if (response.ok) {
+        const data = await response.json();
+        setColleges(data.colleges || []);
+      } else {
+        console.error('Failed to fetch colleges');
+        setColleges([]);
+      }
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setColleges([]);
+    }
+  };
+
   const fetchUserSegments = async () => {
     try {
       const response = await fetch('/api/admin/user-segments');
       if (response.ok) {
         const data = await response.json();
-        // Map the API response to match component expectations
         const mappedSegments = (data.segments || []).map(segment => ({
           id: segment.id,
           name: segment.name,
@@ -60,7 +77,6 @@ export function AdvancedUserManagement() {
         }));
         setUserSegments(mappedSegments);
       } else {
-        // Fallback to basic segments calculated from users
         setUserSegments([
           { id: 1, name: 'Active Users', userCount: 0, color: '#10B981', description: 'Users active in the last 7 days' },
           { id: 2, name: 'Inactive Users', userCount: 0, color: '#6B7280', description: 'Users not active recently' },
@@ -96,7 +112,6 @@ export function AdvancedUserManagement() {
         const data = await response.json();
         setPermissions(data.permissions || []);
       } else {
-        // Fallback to basic permissions
         setPermissions([
           { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['intern', 'mentor', 'admin'] },
           { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['mentor', 'admin'] },
@@ -113,7 +128,6 @@ export function AdvancedUserManagement() {
   };
 
   const handleSendMessage = async (userId) => {
-    // This would open a messaging modal or redirect to messaging system
     console.log('Send message to user:', userId);
     alert('Messaging functionality would be implemented here');
   };
@@ -152,12 +166,15 @@ export function AdvancedUserManagement() {
       if (response.ok) {
         const result = await response.json();
         console.log('Success result:', result);
-        fetchUsers(); // Refresh the user list
+        fetchUsers();
         setShowUserModal(false);
         setSelectedUser(null);
         setIsEditMode(false);
         setEditFormData({});
-        alert(userData.id ? 'User updated successfully' : 'User created successfully');
+        const successMessage = userData.id 
+          ? `✅ User "${userData.name}" updated successfully!\n\n⚠️ Note: If you changed their role, they may need to log out and log back in to see the changes in their dashboard.` 
+          : `🎉 New ${userData.role} "${userData.name}" created successfully!\n📧 Email: ${userData.email}\n🔗 GitLab: ${userData.gitlabUsername}`;
+        alert(successMessage);
       } else {
         const error = await response.json();
         console.error('API Error Response:', error);
@@ -179,7 +196,7 @@ export function AdvancedUserManagement() {
       });
 
       if (response.ok) {
-        fetchUsers(); // Refresh the user list
+        fetchUsers();
         alert('User deleted successfully');
       } else {
         alert('Failed to delete user');
@@ -191,7 +208,6 @@ export function AdvancedUserManagement() {
   };
 
   const handleViewFullActivity = (userId) => {
-    // This would open a detailed activity view
     console.log('View full activity for user:', userId);
     alert('Full activity view would be implemented here');
   };
@@ -260,6 +276,20 @@ export function AdvancedUserManagement() {
     setShowUserModal(true);
   };
 
+  const handleQuickAddUser = (role = 'intern') => {
+    setSelectedUser(null);
+    setIsEditMode(true);
+    setEditFormData({
+      name: '',
+      email: '',
+      gitlabUsername: '',
+      role: role,
+      college: '',
+      status: 'active'
+    });
+    setShowUserModal(true);
+  };
+
   const handleBulkAction = async (action, userIds) => {
     try {
       const response = await fetch('/api/admin/users/bulk', {
@@ -271,7 +301,7 @@ export function AdvancedUserManagement() {
       });
 
       if (response.ok) {
-        fetchUsers(); // Refresh the user list
+        fetchUsers();
         setSelectedUsers([]);
         setShowBulkModal(false);
       } else {
@@ -297,20 +327,21 @@ export function AdvancedUserManagement() {
   const totalUsers = (users && Array.isArray(users)) ? users.length : 0;
   const activeUsers = (users && Array.isArray(users)) ? users.filter(u => u.status === 'active').length : 0;
   const avgPerformance = (users && Array.isArray(users) && users.length > 0) 
-    ? Math.round(users.reduce((sum, user) => sum + user.performanceScore, 0) / users.length)
+    ? Math.round(users.reduce((sum, user) => sum + (user.performanceScore || 0), 0) / users.length)
     : 0;
   const atRiskUsers = (users && Array.isArray(users)) ? users.filter(u => u.riskLevel === 'high').length : 0;
 
   // User distribution data
   const roleDistributionData = {
-    labels: ['Interns', 'Mentors', 'Admins'],
+    labels: ['Interns', 'Mentors', 'Super Mentors', 'Admins'],
     datasets: [{
       data: [
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'intern').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'mentor').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'super-mentor').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'admin').length : 0
       ],
-      backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
+      backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B']
     }]
   };
 
@@ -345,6 +376,8 @@ export function AdvancedUserManagement() {
     }
   };
 
+
+
   const UserModal = () => {
     if (!showUserModal) return null;
 
@@ -363,12 +396,11 @@ export function AdvancedUserManagement() {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Modal Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {isEditMode ? (selectedUser ? 'Edit User' : 'Add New User') : selectedUser?.name}
+                  {isEditMode ? (selectedUser ? 'Edit User' : `Add New ${editFormData.role ? editFormData.role.charAt(0).toUpperCase() + editFormData.role.slice(1) : 'User'}`) : selectedUser?.name}
                 </h2>
                 {!isEditMode && selectedUser && (
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -396,136 +428,153 @@ export function AdvancedUserManagement() {
             </div>
           </div>
 
-          {/* Modal Content */}
           <div className="p-6">
             {isEditMode ? (
-              /* Edit Form */
-              <form onSubmit={handleFormSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={editFormData.name || ''}
-                      onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      value={editFormData.email || ''}
-                      onChange={(e) => {
-                        const email = e.target.value;
-                        setEditFormData({
-                          ...editFormData, 
-                          email: email,
-                          // Auto-generate GitLab username from email if it's empty
-                          gitlabUsername: editFormData.gitlabUsername || email.split('@')[0].toLowerCase()
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      GitLab Username *
-                    </label>
-                    <input
-                      type="text"
-                      value={editFormData.gitlabUsername || ''}
-                      onChange={(e) => setEditFormData({...editFormData, gitlabUsername: e.target.value.toLowerCase()})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter GitLab username"
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      This will be auto-filled from email, but you can customize it
+              <div className="space-y-6">
+                {editFormData.role && (
+                  <div className={`p-4 rounded-lg border-l-4 ${
+                    editFormData.role === 'super-admin' ? 'bg-purple-50 border-purple-400' :
+                    editFormData.role === 'admin' ? 'bg-red-50 border-red-400' :
+                    editFormData.role === 'super-mentor' ? 'bg-yellow-50 border-yellow-400' :
+                    editFormData.role === 'mentor' ? 'bg-green-50 border-green-400' :
+                    'bg-blue-50 border-blue-400'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-3 h-3 rounded-full ${
+                        editFormData.role === 'super-admin' ? 'bg-purple-500' :
+                        editFormData.role === 'admin' ? 'bg-red-500' :
+                        editFormData.role === 'super-mentor' ? 'bg-yellow-500' :
+                        editFormData.role === 'mentor' ? 'bg-green-500' :
+                        'bg-blue-500'
+                      }`}></span>
+                      <span className="font-medium text-gray-900">
+                        Creating {editFormData.role.replace('-', ' ')} account
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {editFormData.role === 'super-admin' ? 'Full system access with all administrative privileges' :
+                       editFormData.role === 'admin' ? 'Administrative access to manage users and system settings' :
+                       editFormData.role === 'super-mentor' ? 'Manage mentors and interns within assigned college' :
+                       editFormData.role === 'mentor' ? 'Guide and manage assigned interns' :
+                       'Learn and complete tasks under mentor guidance'}
                     </p>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role *
-                    </label>
-                    <select
-                      value={editFormData.role || 'intern'}
-                      onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="intern">Intern</option>
-                      <option value="mentor">Mentor</option>
-                      <option value="super-mentor">Super-Mentor</option>
-                      <option value="admin">Admin</option>
-                      <option value="super-admin">Super-Admin</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status *
-                    </label>
-                    <select
-                      value={editFormData.status || 'active'}
-                      onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                  
-                  {(editFormData.role === 'intern' || editFormData.role === 'mentor' || editFormData.role === 'super-mentor') && (
-                    <div className="md:col-span-2">
+                )}
+
+                <form onSubmit={handleFormSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        College {editFormData.role === 'intern' ? '*' : ''}
+                        Full Name *
                       </label>
                       <input
                         type="text"
+                        value={editFormData.name || ''}
+                        onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter full name"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        value={editFormData.email || ''}
+                        onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        GitLab Username *
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.gitlabUsername || ''}
+                        onChange={(e) => setEditFormData({...editFormData, gitlabUsername: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="gitlab.username"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Role *
+                      </label>
+                      <select
+                        value={editFormData.role || 'intern'}
+                        onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="intern">Intern</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="super-mentor">Super Mentor</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        College *
+                      </label>
+                      <select
                         value={editFormData.college || ''}
                         onChange={(e) => setEditFormData({...editFormData, college: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter college name"
-                        required={editFormData.role === 'intern'}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {editFormData.role === 'intern' ? 'Required for intern role' : 'Optional for mentors'}
-                      </p>
+                        required
+                      >
+                        <option value="">Select College</option>
+                        {colleges.map(college => (
+                          <option key={college.id} value={college.name}>
+                            {college.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  )}
-                </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Status *
+                      </label>
+                      <select
+                        value={editFormData.status || 'active'}
+                        onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
                 
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    {selectedUser ? 'Update User' : 'Create User'}
-                  </button>
-                </div>
-              </form>
+                  <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    >
+                      <span>{selectedUser ? 'Update User' : 'Create User'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             ) : (
-              /* View Mode */
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* User Stats */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-900">User Statistics</h3>
                   
@@ -559,7 +608,6 @@ export function AdvancedUserManagement() {
                     </div>
                   </div>
 
-                  {/* User Details */}
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">GitLab Username</span>
@@ -590,7 +638,6 @@ export function AdvancedUserManagement() {
                   </div>
                 </div>
 
-                {/* Recent Activity */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-900">Recent Activity</h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -601,7 +648,7 @@ export function AdvancedUserManagement() {
                         <div key={log.id} className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
                           <div className="font-medium">{log.action}</div>
                           <div className="text-xs text-gray-500">
-                            {log.timestamp.toLocaleString()}
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'}
                           </div>
                         </div>
                       ))}
@@ -610,52 +657,49 @@ export function AdvancedUserManagement() {
                     )}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Action Buttons - Only show in view mode */}
-            {!isEditMode && selectedUser && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex flex-wrap gap-3">
-                  <button 
-                    onClick={() => handleSendMessage(selectedUser.id)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Send Message
-                  </button>
-                  <button 
-                    onClick={() => handleEditUser(selectedUser)}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Edit User
-                  </button>
-                  <button 
-                    onClick={() => handleViewFullActivity(selectedUser.id)}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                  >
-                    View Full Activity
-                  </button>
-                  <button 
-                    onClick={() => handleResetPassword(selectedUser.id)}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    Reset Password
-                  </button>
-                  {selectedUser.status === 'active' ? (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-3">
                     <button 
-                      onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      onClick={() => handleSendMessage(selectedUser.id)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                     >
-                      Deactivate
+                      Send Message
                     </button>
-                  ) : (
                     <button 
-                      onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
+                      onClick={() => handleEditUser(selectedUser)}
                       className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                     >
-                      Activate
+                      Edit User
                     </button>
-                  )}
+                    <button 
+                      onClick={() => handleViewFullActivity(selectedUser.id)}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                    >
+                      View Full Activity
+                    </button>
+                    <button 
+                      onClick={() => handleResetPassword(selectedUser.id)}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                    >
+                      Reset Password
+                    </button>
+                    {selectedUser.status === 'active' ? (
+                      <button 
+                        onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Deactivate
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
+                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                      >
+                        Activate
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -667,7 +711,6 @@ export function AdvancedUserManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Overview Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
           title="Total Users"
@@ -695,237 +738,148 @@ export function AdvancedUserManagement() {
         />
       </div>
 
-      {/* User Segments */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold mb-4">👥 User Segments</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {userSegments.map(segment => (
-            <div key={segment.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-gray-900">{segment.name}</h4>
-                <span className={`w-3 h-3 rounded-full bg-${segment.color}-500`}></span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">{segment.description}</p>
-              <div className="text-2xl font-bold text-gray-900">{segment.userCount}</div>
-              <div className="text-xs text-gray-500">users</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* User Distribution Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-4">📊 Role Distribution</h3>
-          <EnhancedBarChart data={roleDistributionData} height={250} />
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-4">🎯 Activity Levels</h3>
-          <EnhancedBarChart data={activityLevelData} height={250} />
-        </div>
-      </div>
-
-      {/* User Management Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowBulkModal(true)}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-              >
-                Bulk Actions
-              </button>
-              <button 
-                onClick={handleAddUser}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                + Add User
-              </button>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleAddUser}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <span>Add User</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
           </div>
+        </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <input
               type="text"
-              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search users..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Roles</option>
-              <option value="intern">Interns</option>
-              <option value="mentor">Mentors</option>
-              <option value="super-mentor">Super-Mentors</option>
-              <option value="admin">Admins</option>
+              <option value="intern">Intern</option>
+              <option value="mentor">Mentor</option>
+              <option value="super-mentor">Super Mentor</option>
+              <option value="admin">Admin</option>
             </select>
-            
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-            
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">College</label>
             <select
               value={filterCollege}
               onChange={(e) => setFilterCollege(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Colleges</option>
-              {users && Array.isArray(users) ? [...new Set(users.map(u => u.college))].map(college => (
-                <option key={college} value={college}>{college}</option>
-              )) : null}
+              {colleges.map(college => (
+                <option key={college.id} value={college.name}>
+                  {college.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <input type="checkbox" className="rounded" />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  GitLab Username
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  College
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Performance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Activity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Risk Level
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-medium text-gray-900">User</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">Role</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">College</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">Performance</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input type="checkbox" className="rounded" />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+            <tbody>
+              {filteredUsers.map(user => (
+                <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                         {user.name.charAt(0)}
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                      <div>
+                        <div className="font-medium text-gray-900">{user.name}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">@{user.gitlabUsername}</div>
+                  <td className="py-3 px-4">
+                    <span className="capitalize text-sm font-medium text-gray-900">{user.role}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.role === 'super-admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      user.role === 'mentor' ? 'bg-green-100 text-green-800' :
-                      'bg-blue-100 text-blue-800'
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{user.college}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.status === 'active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
                     }`}>
-                      {user.role}
+                      {user.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getCollegeName(user.college)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-900 mr-2">
-                        {user.performanceScore}%
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900">{user.performanceScore || 0}%</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskColor(user.riskLevel)}`}>
+                        {user.riskLevel || 'low'} risk
                       </span>
-                      <div className={`w-2 h-2 rounded-full ${
-                        user.performanceScore >= 90 ? 'bg-green-500' :
-                        user.performanceScore >= 70 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`} />
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActivityColor(user.activityLevel)}`}>
-                      {user.activityLevel}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRiskColor(user.riskLevel)}`}>
-                      {user.riskLevel}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(user.lastActive).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => {
                           setSelectedUser(user);
                           setIsEditMode(false);
                           setShowUserModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="View Details"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        👁️
+                        View
                       </button>
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="text-green-600 hover:text-green-900"
-                        title="Edit User"
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
                       >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleToggleUserStatus(user.id, user.status)}
-                        className={user.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                        title={user.status === 'active' ? 'Deactivate' : 'Activate'}
-                      >
-                        {user.status === 'active' ? '🚫' : '✅'}
-                      </button>
-                      <button
-                        onClick={() => handleResetPassword(user.id)}
-                        className="text-orange-600 hover:text-orange-900"
-                        title="Reset Password"
-                      >
-                        🔑
+                        Edit
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete User"
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -934,42 +888,72 @@ export function AdvancedUserManagement() {
             </tbody>
           </table>
         </div>
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No users found matching your criteria.</p>
+          </div>
+        )}
       </div>
 
-      {/* Recent Activity Logs */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold mb-4">📋 Recent Activity Logs</h3>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {activityLogs.slice(0, 20).map(log => (
-            <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {log.userName.charAt(0)}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {log.userName} - {log.action}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {log.timestamp.toLocaleString()} • {log.ipAddress}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Segments</h3>
+          <div className="space-y-3">
+            {userSegments.map(segment => (
+              <div key={segment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: segment.color }}
+                  ></div>
+                  <div>
+                    <div className="font-medium text-gray-900">{segment.name}</div>
+                    <div className="text-sm text-gray-500">{segment.description}</div>
                   </div>
                 </div>
+                <span className="text-lg font-bold text-gray-900">{segment.userCount}</span>
               </div>
-              <button 
-                onClick={() => {
-                  setSelectedUser(user);
-                  setShowUserModal(true);
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800"
-              >
-                View Details
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            {activityLogs.slice(0, 5).map(log => (
+              <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {log.userName ? log.userName.charAt(0) : 'U'}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {log.userName} - {log.action}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'} • {log.ipAddress}
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    const user = users.find(u => u.id === log.userId);
+                    if (user) {
+                      setSelectedUser(user);
+                      setShowUserModal(true);
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* User Modal */}
       {showUserModal && <UserModal />}
     </div>
   );
