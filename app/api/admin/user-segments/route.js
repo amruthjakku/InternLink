@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,6 +24,7 @@ export async function GET() {
     const interns = await User.countDocuments({ role: 'intern', isActive: true });
     const mentors = await User.countDocuments({ role: 'mentor', isActive: true });
     const admins = await User.countDocuments({ role: 'admin', isActive: true });
+    const superAdmins = await User.countDocuments({ role: 'super-admin', isActive: true });
 
     const segments = [
       {
@@ -60,6 +61,13 @@ export async function GET() {
         description: 'Users with admin role',
         count: admins,
         color: '#8B5CF6'
+      },
+      {
+        id: 6,
+        name: 'Super Admins',
+        description: 'Users with super-admin role',
+        count: superAdmins,
+        color: '#7C3AED'
       }
     ];
 

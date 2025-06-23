@@ -21,6 +21,7 @@ export default function Onboarding() {
     // If user already has a role (not pending), redirect them
     if (session.user.role && session.user.role !== 'pending') {
       const dashboardPath = session.user.role === 'admin' ? '/admin/dashboard' :
+                           session.user.role === 'super-mentor' ? '/mentor/dashboard' :
                            session.user.role === 'mentor' ? '/mentor/dashboard' :
                            '/intern/dashboard';
       router.push(dashboardPath);

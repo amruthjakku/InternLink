@@ -12,19 +12,19 @@ export const dynamic = 'force-dynamic';
 export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
 
     const { id } = params;
-    const { name, email, role, college } = await request.json();
+    const { name, email, role, college, gitlabUsername } = await request.json();
 
     // Validate required fields
-    if (!name || !email || !role) {
+    if (!name || !email || !role || !gitlabUsername) {
       return NextResponse.json({ 
-        error: 'Name, email, and role are required' 
+        error: 'Name, email, role, and GitLab username are required' 
       }, { status: 400 });
     }
 
@@ -32,6 +32,34 @@ export async function PUT(request, { params }) {
     const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if GitLab username is already taken by another user
+    if (gitlabUsername !== user.gitlabUsername) {
+      const existingUser = await User.findOne({ 
+        gitlabUsername: gitlabUsername.toLowerCase(),
+        _id: { $ne: id }
+      });
+      
+      if (existingUser) {
+        return NextResponse.json({ 
+          error: 'GitLab username is already taken' 
+        }, { status: 400 });
+      }
+    }
+
+    // Check if email is already taken by another user
+    if (email !== user.email) {
+      const existingEmailUser = await User.findOne({ 
+        email: email.toLowerCase(),
+        _id: { $ne: id }
+      });
+      
+      if (existingEmailUser) {
+        return NextResponse.json({ 
+          error: 'Email is already taken' 
+        }, { status: 400 });
+      }
     }
 
     // Validate college for intern role
@@ -58,7 +86,7 @@ export async function PUT(request, { params }) {
 
       // Update college with mentor username
       await College.findByIdAndUpdate(college, {
-        mentorUsername: user.gitlabUsername
+        mentorUsername: gitlabUsername.toLowerCase()
       });
     }
 
@@ -68,6 +96,7 @@ export async function PUT(request, { params }) {
       {
         name,
         email: email.toLowerCase(),
+        gitlabUsername: gitlabUsername.toLowerCase(),
         role,
         college: (role === 'intern' || (role === 'mentor' && college)) ? college : undefined,
         updatedAt: new Date()
@@ -88,7 +117,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

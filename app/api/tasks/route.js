@@ -87,7 +87,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'mentor' && session.user.role !== 'admin')) {
+    if (!session || !['mentor', 'super-mentor', 'admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -133,6 +133,7 @@ export async function POST(request) {
       assigneeName: assignee.name,
       assigneeId: assignedTo,
       createdBy: session.user.id,
+      createdByRole: session.user.role,
       dueDate: new Date(dueDate),
       estimatedHours,
       tags,

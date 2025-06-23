@@ -1,0 +1,575 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '../AuthProvider';
+
+export function CohortManagementTab() {
+  const { user } = useAuth();
+  const [cohorts, setCohorts] = useState([]);
+  const [mentors, setMentors] = useState([]);
+  const [interns, setInterns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCohort, setEditingCohort] = useState(null);
+  const [newCohort, setNewCohort] = useState({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    mentorId: '',
+    maxInterns: 10
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [cohortsRes, mentorsRes, internsRes] = await Promise.all([
+        fetch('/api/super-mentor/cohorts'),
+        fetch('/api/super-mentor/college-mentors'),
+        fetch('/api/super-mentor/college-interns')
+      ]);
+
+      if (cohortsRes.ok) {
+        const cohortsData = await cohortsRes.json();
+        setCohorts(cohortsData.cohorts || []);
+      }
+
+      if (mentorsRes.ok) {
+        const mentorsData = await mentorsRes.json();
+        setMentors(mentorsData.mentors || []);
+      }
+
+      if (internsRes.ok) {
+        const internsData = await internsRes.json();
+        setInterns(internsData.interns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateCohort = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/super-mentor/cohorts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newCohort,
+          college: user?.college?._id || user?.college,
+          createdBy: user?.gitlabUsername
+        })
+      });
+
+      if (response.ok) {
+        setShowCreateModal(false);
+        setNewCohort({
+          name: '',
+          description: '',
+          startDate: '',
+          endDate: '',
+          mentorId: '',
+          maxInterns: 10
+        });
+        fetchData();
+        alert('Cohort created successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error creating cohort:', error);
+      alert('Failed to create cohort');
+    }
+  };
+
+  const handleEditCohort = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/super-mentor/cohorts/${editingCohort._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCohort)
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingCohort(null);
+        fetchData();
+        alert('Cohort updated successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating cohort:', error);
+      alert('Failed to update cohort');
+    }
+  };
+
+  const handleDeleteCohort = async (cohortId) => {
+    if (!confirm('Are you sure you want to delete this cohort? This will unassign all interns.')) return;
+
+    try {
+      const response = await fetch(`/api/super-mentor/cohorts/${cohortId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        fetchData();
+        alert('Cohort deleted successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting cohort:', error);
+      alert('Failed to delete cohort');
+    }
+  };
+
+  const assignInternToCohort = async (internId, cohortId) => {
+    try {
+      const response = await fetch('/api/super-mentor/assign-intern-cohort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internId, cohortId })
+      });
+
+      if (response.ok) {
+        fetchData();
+        alert('Intern assigned to cohort successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error assigning intern:', error);
+      alert('Failed to assign intern');
+    }
+  };
+
+  const getUnassignedInterns = () => {
+    return interns.filter(intern => !intern.cohortId);
+  };
+
+  const getCohortInterns = (cohortId) => {
+    return interns.filter(intern => intern.cohortId === cohortId);
+  };
+
+  const getCohortStatus = (cohort) => {
+    const now = new Date();
+    const startDate = new Date(cohort.startDate);
+    const endDate = new Date(cohort.endDate);
+
+    if (now < startDate) return { status: 'upcoming', color: 'bg-blue-100 text-blue-800' };
+    if (now > endDate) return { status: 'completed', color: 'bg-gray-100 text-gray-800' };
+    return { status: 'active', color: 'bg-green-100 text-green-800' };
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Cohort Management</h3>
+            <p className="text-sm text-gray-600">Create and manage intern cohorts</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <span className="mr-2">➕</span>
+            Create Cohort
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{cohorts.length}</div>
+            <div className="text-sm text-gray-600">Total Cohorts</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">
+              {cohorts.filter(c => getCohortStatus(c).status === 'active').length}
+            </div>
+            <div className="text-sm text-gray-600">Active Cohorts</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">
+              {interns.filter(i => i.cohortId).length}
+            </div>
+            <div className="text-sm text-gray-600">Assigned Interns</div>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-orange-600">
+              {getUnassignedInterns().length}
+            </div>
+            <div className="text-sm text-gray-600">Unassigned Interns</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cohorts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {cohorts.map((cohort) => {
+          const cohortStatus = getCohortStatus(cohort);
+          const cohortInterns = getCohortInterns(cohort._id);
+          const mentor = mentors.find(m => m._id === cohort.mentorId);
+
+          return (
+            <div key={cohort._id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">{cohort.name}</h4>
+                  <p className="text-sm text-gray-600">{cohort.description}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cohortStatus.color}`}>
+                    {cohortStatus.status}
+                  </span>
+                  <div className="relative">
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <span className="sr-only">Options</span>
+                      ⋮
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center text-sm text-gray-600">
+                  <span className="mr-2">👨‍🏫</span>
+                  <span>Mentor: {mentor?.name || 'Unassigned'}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <span className="mr-2">📅</span>
+                  <span>
+                    {new Date(cohort.startDate).toLocaleDateString()} - {new Date(cohort.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <span className="mr-2">👥</span>
+                  <span>{cohortInterns.length}/{cohort.maxInterns} interns</span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>Capacity</span>
+                  <span>{Math.round((cohortInterns.length / cohort.maxInterns) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{ width: `${Math.min((cohortInterns.length / cohort.maxInterns) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Interns List */}
+              {cohortInterns.length > 0 && (
+                <div className="mb-4">
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Assigned Interns</h5>
+                  <div className="space-y-1">
+                    {cohortInterns.slice(0, 3).map(intern => (
+                      <div key={intern._id} className="flex items-center text-sm text-gray-600">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-white text-xs">{intern.name.charAt(0)}</span>
+                        </div>
+                        <span>{intern.name}</span>
+                      </div>
+                    ))}
+                    {cohortInterns.length > 3 && (
+                      <div className="text-sm text-gray-500">
+                        +{cohortInterns.length - 3} more interns
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setEditingCohort(cohort);
+                    setShowEditModal(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteCohort(cohort._id)}
+                  className="text-red-600 hover:text-red-900 text-sm font-medium"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Unassigned Interns */}
+      {getUnassignedInterns().length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Unassigned Interns</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getUnassignedInterns().map(intern => (
+              <div key={intern._id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center mb-3">
+                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white text-sm">{intern.name.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{intern.name}</div>
+                    <div className="text-xs text-gray-500">{intern.email}</div>
+                  </div>
+                </div>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      assignInternToCohort(intern._id, e.target.value);
+                    }
+                  }}
+                  className="w-full text-sm border-gray-300 rounded-md"
+                  defaultValue=""
+                >
+                  <option value="">Assign to cohort...</option>
+                  {cohorts
+                    .filter(c => getCohortInterns(c._id).length < c.maxInterns)
+                    .map(cohort => (
+                      <option key={cohort._id} value={cohort._id}>
+                        {cohort.name} ({getCohortInterns(cohort._id).length}/{cohort.maxInterns})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Create Cohort Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Cohort</h3>
+              <form onSubmit={handleCreateCohort} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Cohort Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCohort.name}
+                    onChange={(e) => setNewCohort({...newCohort, name: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="e.g., Spring 2024 Batch"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    value={newCohort.description}
+                    onChange={(e) => setNewCohort({...newCohort, description: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    rows="3"
+                    placeholder="Brief description of the cohort"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={newCohort.startDate}
+                      onChange={(e) => setNewCohort({...newCohort, startDate: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={newCohort.endDate}
+                      onChange={(e) => setNewCohort({...newCohort, endDate: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Assigned Mentor</label>
+                  <select
+                    value={newCohort.mentorId}
+                    onChange={(e) => setNewCohort({...newCohort, mentorId: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">Select a mentor...</option>
+                    {mentors.map(mentor => (
+                      <option key={mentor._id} value={mentor._id}>
+                        {mentor.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Max Interns</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    required
+                    value={newCohort.maxInterns}
+                    onChange={(e) => setNewCohort({...newCohort, maxInterns: parseInt(e.target.value)})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Create Cohort
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Cohort Modal */}
+      {showEditModal && editingCohort && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Cohort</h3>
+              <form onSubmit={handleEditCohort} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Cohort Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCohort.name}
+                    onChange={(e) => setEditingCohort({...editingCohort, name: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    value={editingCohort.description}
+                    onChange={(e) => setEditingCohort({...editingCohort, description: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    rows="3"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={editingCohort.startDate?.split('T')[0]}
+                      onChange={(e) => setEditingCohort({...editingCohort, startDate: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={editingCohort.endDate?.split('T')[0]}
+                      onChange={(e) => setEditingCohort({...editingCohort, endDate: e.target.value})}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Assigned Mentor</label>
+                  <select
+                    value={editingCohort.mentorId}
+                    onChange={(e) => setEditingCohort({...editingCohort, mentorId: e.target.value})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">Select a mentor...</option>
+                    {mentors.map(mentor => (
+                      <option key={mentor._id} value={mentor._id}>
+                        {mentor.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Max Interns</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    required
+                    value={editingCohort.maxInterns}
+                    onChange={(e) => setEditingCohort({...editingCohort, maxInterns: parseInt(e.target.value)})}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Update Cohort
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

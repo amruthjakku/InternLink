@@ -172,6 +172,7 @@ export function AttendanceAnalytics() {
             <option value="all">All Roles</option>
             <option value="intern">Interns</option>
             <option value="mentor">Mentors</option>
+            <option value="super-mentor">Super-Mentors</option>
             <option value="admin">Admins</option>
           </select>
           

@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,18 +19,50 @@ export async function GET() {
       .select('gitlabUsername name email role college isActive createdAt lastLoginAt')
       .sort({ createdAt: -1 });
 
-    // Format users for frontend
-    const formattedUsers = users.map(user => ({
-      _id: user._id,
-      gitlabUsername: user.gitlabUsername,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      college: user.college?.name || 'N/A',
-      status: user.isActive ? 'active' : 'inactive',
-      createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt
-    }));
+    // Format users for frontend with calculated metrics
+    const formattedUsers = users.map(user => {
+      // Calculate performance score based on various factors
+      const daysSinceCreated = Math.floor((new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24));
+      const daysSinceLastLogin = user.lastLoginAt ? 
+        Math.floor((new Date() - new Date(user.lastLoginAt)) / (1000 * 60 * 60 * 24)) : 999;
+      
+      // Performance score calculation (0-100)
+      let performanceScore = 75; // Base score
+      if (daysSinceLastLogin <= 1) performanceScore += 20;
+      else if (daysSinceLastLogin <= 7) performanceScore += 10;
+      else if (daysSinceLastLogin <= 30) performanceScore -= 10;
+      else performanceScore -= 25;
+      
+      performanceScore = Math.max(0, Math.min(100, performanceScore));
+      
+      // Activity level based on last login
+      let activityLevel = 'low';
+      if (daysSinceLastLogin <= 1) activityLevel = 'high';
+      else if (daysSinceLastLogin <= 7) activityLevel = 'medium';
+      
+      // Risk level based on activity and account age
+      let riskLevel = 'low';
+      if (daysSinceLastLogin > 30) riskLevel = 'high';
+      else if (daysSinceLastLogin > 14) riskLevel = 'medium';
+      
+      return {
+        id: user._id.toString(),
+        _id: user._id,
+        gitlabUsername: user.gitlabUsername,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        college: user.college?.name || 'N/A',
+        status: user.isActive ? 'active' : 'inactive',
+        performanceScore: performanceScore,
+        activityLevel: activityLevel,
+        riskLevel: riskLevel,
+        lastActive: user.lastLoginAt || user.createdAt,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        joinDate: user.createdAt
+      };
+    });
 
     return NextResponse.json({ users: formattedUsers });
 
@@ -46,18 +78,25 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { gitlabUsername, name, email, role, college, assignedBy } = await request.json();
+    const requestBody = await request.json();
+    console.log('POST /api/admin/users - Request body:', requestBody);
+    
+    const { gitlabUsername, name, email, role, college, assignedBy } = requestBody;
 
-    if (!gitlabUsername || !name || !email || !role || !assignedBy) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!name || !email || !role) {
+      return NextResponse.json({ error: 'Name, email, and role are required' }, { status: 400 });
     }
 
-    if ((role === 'intern' || role === 'mentor') && !college) {
-      return NextResponse.json({ error: 'College is required for interns and mentors' }, { status: 400 });
+    if (!gitlabUsername) {
+      return NextResponse.json({ error: 'GitLab username is required' }, { status: 400 });
+    }
+
+    if ((role === 'intern' || role === 'mentor' || role === 'super-mentor') && !college) {
+      return NextResponse.json({ error: 'College is required for interns, mentors, and super-mentors' }, { status: 400 });
     }
 
     await connectToDatabase();
@@ -65,13 +104,18 @@ export async function POST(request) {
     // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [
-        { gitlabUsername: gitlabUsername.toLowerCase() },
-        { email: email.toLowerCase() }
+        { email: email.toLowerCase() },
+        { gitlabUsername: gitlabUsername.toLowerCase() }
       ]
     });
 
     if (existingUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
+      if (existingUser.email === email.toLowerCase()) {
+        return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
+      }
+      if (existingUser.gitlabUsername === gitlabUsername.toLowerCase()) {
+        return NextResponse.json({ error: 'GitLab username already exists' }, { status: 400 });
+      }
     }
 
     // Create new user
@@ -81,11 +125,11 @@ export async function POST(request) {
       name,
       email: email.toLowerCase(),
       role,
-      assignedBy,
+      assignedBy: assignedBy || session.user.name || session.user.email,
       isActive: true
     };
 
-    if (college && (role === 'intern' || role === 'mentor')) {
+    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
       userData.college = college;
     }
 
@@ -106,8 +150,10 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating user:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     return NextResponse.json({ 
-      error: 'Failed to create user' 
+      error: `Failed to create user: ${error.message}` 
     }, { status: 500 });
   }
 }

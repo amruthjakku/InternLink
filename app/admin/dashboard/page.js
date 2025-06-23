@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
-import { AdvancedSystemAnalytics } from '../../../components/admin/AdvancedSystemAnalytics';
+import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
 import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
 import { IPManagement } from '../../../components/admin/IPManagement';
 import { CollegeManagement } from '../../../components/CollegeManagement';
+import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
@@ -432,6 +433,7 @@ export default function AdminDashboard() {
               { id: 'attendance-analytics', name: 'Attendance Analytics', icon: '📍' },
               { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
+              { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'college-management', name: 'College Management', icon: '🎓' },
               { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦' },
@@ -621,7 +623,7 @@ export default function AdminDashboard() {
         {activeTab === 'system-monitoring' && <SystemMonitoring />}
 
         {/* Advanced Analytics Tab */}
-        {activeTab === 'advanced-analytics' && <AdvancedSystemAnalytics />}
+        {activeTab === 'advanced-analytics' && <AdvancedAnalytics />}
 
         {/* Attendance Analytics Tab */}
         {activeTab === 'attendance-analytics' && <AttendanceAnalytics />}
@@ -631,6 +633,9 @@ export default function AdminDashboard() {
 
         {/* User Management Tab */}
         {activeTab === 'user-management' && <AdvancedUserManagement />}
+
+        {/* Super-Mentor Management Tab */}
+        {activeTab === 'super-mentor-management' && <SuperMentorManagement />}
 
         {/* Colleges Tab */}
         {activeTab === 'colleges' && (
@@ -808,19 +813,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Advanced Analytics</h2>
-            
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Coming Soon</h3>
-              <p className="text-gray-600">
-                Advanced analytics features including custom report builder, 
-                automated scheduling, and predictive analytics will be available soon.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'analytics' && <AdvancedAnalytics />}
       </div>
 
       {/* Add User Modal */}
@@ -880,11 +873,12 @@ export default function AdminDashboard() {
                 >
                   <option value="intern">Intern</option>
                   <option value="mentor">Mentor</option>
+                  <option value="super-mentor">Super-Mentor</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               
-              {(newUser.role === 'intern' || newUser.role === 'mentor') && (
+              {(newUser.role === 'intern' || newUser.role === 'mentor' || newUser.role === 'super-mentor') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     College
@@ -893,7 +887,7 @@ export default function AdminDashboard() {
                     value={newUser.college}
                     onChange={(e) => setNewUser({...newUser, college: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={newUser.role === 'intern'}
+                    required={newUser.role === 'intern' || newUser.role === 'mentor' || newUser.role === 'super-mentor'}
                   >
                     <option value="">Select College</option>
                     {colleges.map((college) => (
@@ -1065,11 +1059,12 @@ export default function AdminDashboard() {
                 >
                   <option value="intern">Intern</option>
                   <option value="mentor">Mentor</option>
+                  <option value="super-mentor">Super-Mentor</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               
-              {(editingUser.role === 'intern' || editingUser.role === 'mentor') && (
+              {(editingUser.role === 'intern' || editingUser.role === 'mentor' || editingUser.role === 'super-mentor') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     College
@@ -1078,7 +1073,7 @@ export default function AdminDashboard() {
                     value={editingUser.college}
                     onChange={(e) => setEditingUser({...editingUser, college: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={editingUser.role === 'intern'}
+                    required={editingUser.role === 'intern' || editingUser.role === 'mentor' || editingUser.role === 'super-mentor'}
                   >
                     <option value="">Select College</option>
                     {colleges.map((college) => (

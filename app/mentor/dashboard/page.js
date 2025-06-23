@@ -25,7 +25,7 @@ export default function MentorDashboardPage() {
       return;
     }
 
-    if (session.user.role !== 'mentor') {
+    if (session.user.role !== 'mentor' && session.user.role !== 'super-mentor') {
       router.push('/unauthorized');
       return;
     }

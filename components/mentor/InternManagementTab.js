@@ -5,10 +5,13 @@ import { EnhancedBarChart, EnhancedLineChart, MetricCard, SkillRadarChart } from
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { getCollegeName } from '../../utils/helpers';
 
-export function InternManagementTab() {
+export function InternManagementTab({ userRole }) {
   const [interns, setInterns] = useState([]);
+  const [mentors, setMentors] = useState([]);
   const [selectedIntern, setSelectedIntern] = useState(null);
   const [showInternModal, setShowInternModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningIntern, setAssigningIntern] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPerformance, setFilterPerformance] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,20 +20,45 @@ export function InternManagementTab() {
   useEffect(() => {
     fetchInterns();
     fetchInternAnalytics();
-  }, []);
+    if (userRole === 'super-mentor') {
+      fetchMentors();
+    }
+  }, [userRole]);
 
   const fetchInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=intern');
+      let endpoint = '/api/admin/users?role=intern';
+      if (userRole === 'mentor') {
+        endpoint = '/api/mentor/assigned-interns';
+      } else if (userRole === 'super-mentor') {
+        endpoint = '/api/super-mentor/college-interns';
+      }
+      
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setInterns(data.users || data.interns || []);
       } else {
         setInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
       setInterns([]);
+    }
+  };
+
+  const fetchMentors = async () => {
+    try {
+      const response = await fetch('/api/super-mentor/college-mentors');
+      if (response.ok) {
+        const data = await response.json();
+        setMentors(data.mentors || []);
+      } else {
+        setMentors([]);
+      }
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+      setMentors([]);
     }
   };
 
@@ -75,6 +103,57 @@ export function InternManagementTab() {
     if (score >= 85) return 'text-green-600';
     if (score >= 70) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const handleAssignIntern = async (mentorId) => {
+    if (!assigningIntern || !mentorId) return;
+
+    try {
+      const response = await fetch('/api/super-mentor/assign-intern', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internId: assigningIntern._id,
+          mentorId: mentorId
+        })
+      });
+
+      if (response.ok) {
+        setShowAssignModal(false);
+        setAssigningIntern(null);
+        fetchInterns();
+        alert('Intern assigned successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error assigning intern:', error);
+      alert('Failed to assign intern');
+    }
+  };
+
+  const handleUnassignIntern = async (internId) => {
+    if (!confirm('Are you sure you want to unassign this intern from their mentor?')) return;
+
+    try {
+      const response = await fetch('/api/super-mentor/assign-intern', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internId })
+      });
+
+      if (response.ok) {
+        fetchInterns();
+        alert('Intern unassigned successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error unassigning intern:', error);
+      alert('Failed to unassign intern');
+    }
   };
 
   return (
@@ -198,10 +277,40 @@ export function InternManagementTab() {
                       <p className="text-xs text-gray-500">
                         {intern.tasksCompleted || 0}/{intern.totalTasks || 0} tasks
                       </p>
+                      {intern.assignedMentor && (
+                        <p className="text-xs text-blue-600">
+                          Mentor: {intern.assignedMentorName || 'Assigned'}
+                        </p>
+                      )}
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(intern.status)}`}>
                       {intern.status || 'unknown'}
                     </span>
+                    {userRole === 'super-mentor' && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAssigningIntern(intern);
+                            setShowAssignModal(true);
+                          }}
+                          className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        >
+                          {intern.assignedMentor ? 'Reassign' : 'Assign'}
+                        </button>
+                        {intern.assignedMentor && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnassignIntern(intern._id);
+                            }}
+                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            Unassign
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -256,6 +365,64 @@ export function InternManagementTab() {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Assignment Modal */}
+      {showAssignModal && assigningIntern && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Assign Mentor to {assigningIntern.name}
+              </h3>
+              <div className="space-y-3">
+                {mentors.map((mentor) => (
+                  <div
+                    key={mentor._id}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">
+                          {mentor.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{mentor.name}</div>
+                        <div className="text-xs text-gray-500">{mentor.email}</div>
+                        <div className="text-xs text-gray-400">
+                          {mentor.assignedInterns || 0} interns assigned
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleAssignIntern(mentor._id)}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Assign
+                    </button>
+                  </div>
+                ))}
+                {mentors.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No mentors available in your college
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setAssigningIntern(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

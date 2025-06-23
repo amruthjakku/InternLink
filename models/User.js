@@ -27,20 +27,27 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['admin', 'mentor', 'intern'],
+    enum: ['super-admin', 'admin', 'super-mentor', 'mentor', 'intern'],
     default: 'intern'
   },
   college: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
     required: function() {
-      return this.role === 'intern';
+      return this.role === 'intern' || this.role === 'mentor' || this.role === 'super-mentor';
     }
   },
   assignedBy: {
     type: String,
     required: true,
     trim: true
+  },
+  assignedMentor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: function() {
+      return this.role === 'intern';
+    }
   },
   isActive: {
     type: Boolean,
@@ -70,6 +77,7 @@ const userSchema = new mongoose.Schema({
 // Note: gitlabUsername and gitlabId already have unique indexes from schema definition
 userSchema.index({ role: 1 });
 userSchema.index({ college: 1 });
+userSchema.index({ assignedMentor: 1 });
 
 // Virtual for college name (populated)
 userSchema.virtual('collegeName', {
@@ -114,13 +122,45 @@ userSchema.statics.getInternsByMentor = function(mentorUsername) {
     .populate('college')
     .then(mentor => {
       if (!mentor) return [];
-      return this.find({ role: 'intern', college: mentor.college, isActive: true }).populate('college');
+      return this.find({ 
+        role: 'intern', 
+        assignedMentor: mentor._id, 
+        isActive: true 
+      }).populate('college');
+    });
+};
+
+userSchema.statics.getSuperMentorsByCollege = function(collegeId) {
+  return this.find({ role: 'super-mentor', college: collegeId, isActive: true }).populate('college');
+};
+
+userSchema.statics.getInternsBySuperMentor = function(superMentorUsername) {
+  return this.findOne({ gitlabUsername: superMentorUsername, role: 'super-mentor' })
+    .populate('college')
+    .then(superMentor => {
+      if (!superMentor) return [];
+      return this.find({ role: 'intern', college: superMentor.college, isActive: true }).populate('college');
+    });
+};
+
+userSchema.statics.getMentorsBySuperMentor = function(superMentorUsername) {
+  return this.findOne({ gitlabUsername: superMentorUsername, role: 'super-mentor' })
+    .populate('college')
+    .then(superMentor => {
+      if (!superMentor) return [];
+      return this.find({ role: 'mentor', college: superMentor.college, isActive: true }).populate('college');
     });
 };
 
 // Instance methods
 userSchema.methods.canManageUser = function(targetUser) {
   if (this.role === 'admin') return true;
+  if (this.role === 'super-mentor') {
+    // Super-mentor can manage interns and mentors in their college
+    if (targetUser.role === 'intern' || targetUser.role === 'mentor') {
+      return this.college.toString() === targetUser.college.toString();
+    }
+  }
   if (this.role === 'mentor' && targetUser.role === 'intern') {
     return this.college.toString() === targetUser.college.toString();
   }
@@ -129,7 +169,7 @@ userSchema.methods.canManageUser = function(targetUser) {
 
 userSchema.methods.canAccessCollege = function(collegeId) {
   if (this.role === 'admin') return true;
-  if (this.role === 'mentor' || this.role === 'intern') {
+  if (this.role === 'super-mentor' || this.role === 'mentor' || this.role === 'intern') {
     return this.college.toString() === collegeId.toString();
   }
   return false;

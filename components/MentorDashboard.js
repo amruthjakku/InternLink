@@ -14,6 +14,8 @@ import { MeetingsTab } from './mentor/MeetingsTab';
 import { AIAssistantTab } from './mentor/AIAssistantTab';
 import { PerformanceOverview } from './mentor/PerformanceOverview';
 import { TeamActivity } from './mentor/TeamActivity';
+import { MentorManagementTab } from './mentor/MentorManagementTab';
+import { CohortManagementTab } from './mentor/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
 import { Chat } from './Chat';
@@ -24,23 +26,41 @@ export function MentorDashboard() {
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'intern-management', name: 'Intern Management', icon: '👥' },
-    { id: 'task-management', name: 'Task Management', icon: '📝' },
-    { id: 'performance', name: 'Performance', icon: '📈' },
-    { id: 'team-activity', name: 'Team Activity', icon: '🔄' },
-    { id: 'team-dashboard', name: 'Team Dashboard', icon: '📊' },
-    { id: 'gitlab-integration', name: 'GitLab Integration', icon: '🦊' },
-    { id: 'categories', name: 'Categories', icon: '🎯' },
-    { id: 'colleges', name: 'Colleges', icon: '🏫' },
-    { id: 'attendance', name: 'Attendance', icon: '📍' },
-    { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
-    { id: 'communication', name: 'Communication', icon: '💬' },
-    { id: 'team-chat', name: 'Team Chat', icon: '💭' },
-    { id: 'meetings', name: 'Meetings', icon: '📹' },
-    { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
-  ];
+  // Dynamic tabs based on user role
+  const getTabsForRole = (role) => {
+    const baseTabs = [
+      { id: 'overview', name: 'Overview', icon: '📊' },
+      { id: 'intern-management', name: 'Intern Management', icon: '👥' },
+      { id: 'performance', name: 'Performance', icon: '📈' },
+      { id: 'team-activity', name: 'Team Activity', icon: '🔄' },
+      { id: 'attendance', name: 'Attendance', icon: '📍' },
+      { id: 'leaderboard', name: 'Team Leaderboard', icon: '🏆' },
+    ];
+
+    if (role === 'super-mentor') {
+      return [
+        ...baseTabs,
+        { id: 'mentor-management', name: 'Mentor Management', icon: '👨‍🏫' },
+        { id: 'cohort-management', name: 'Cohort Management', icon: '🎓' },
+        { id: 'task-management', name: 'Task Management', icon: '📝' },
+        { id: 'team-dashboard', name: 'Team Dashboard', icon: '📊' },
+        { id: 'gitlab-integration', name: 'GitLab Integration', icon: '🦊' },
+        { id: 'communication', name: 'Communication', icon: '💬' },
+        { id: 'team-chat', name: 'Team Chat', icon: '💭' },
+        { id: 'meetings', name: 'Meetings', icon: '📹' },
+        { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
+      ];
+    } else {
+      // Regular mentor tabs - limited functionality
+      return [
+        ...baseTabs,
+        { id: 'team-chat', name: 'Team Chat', icon: '💭' },
+        { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
+      ];
+    }
+  };
+
+  const tabs = getTabsForRole(user?.role);
 
   useEffect(() => {
     fetchInterns();
@@ -49,10 +69,18 @@ export function MentorDashboard() {
   const fetchInterns = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/users?role=intern');
+      // Different API endpoints based on role
+      let endpoint = '/api/admin/users?role=intern';
+      if (user?.role === 'mentor') {
+        endpoint = '/api/mentor/assigned-interns';
+      } else if (user?.role === 'super-mentor') {
+        endpoint = '/api/super-mentor/college-interns';
+      }
+      
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setInterns(data.users || data.interns || []);
       } else {
         setInterns([]);
       }
@@ -239,47 +267,49 @@ export function MentorDashboard() {
       case 'overview':
         return renderOverview();
       case 'intern-management':
-        return <InternManagementTab />;
+        return <InternManagementTab userRole={user?.role} />;
+      case 'mentor-management':
+        return user?.role === 'super-mentor' ? <MentorManagementTab /> : renderComingSoon();
+      case 'cohort-management':
+        return user?.role === 'super-mentor' ? <CohortManagementTab /> : renderComingSoon();
       case 'task-management':
-        return <AdvancedTaskManagement />;
+        return user?.role === 'super-mentor' ? <AdvancedTaskManagement /> : renderComingSoon();
       case 'performance':
-        return <PerformanceOverview />;
+        return <PerformanceOverview userRole={user?.role} />;
       case 'team-activity':
-        return <TeamActivity />;
+        return <TeamActivity userRole={user?.role} />;
       case 'team-dashboard':
-        return <TeamActivityDashboard />;
+        return user?.role === 'super-mentor' ? <TeamActivityDashboard /> : renderComingSoon();
       case 'gitlab-integration':
-        return <GitLabIntegrationDashboard />;
-      case 'categories':
-        return <CategoriesTab />;
-      case 'colleges':
-        return <CollegesTab />;
+        return user?.role === 'super-mentor' ? <GitLabIntegrationDashboard /> : renderComingSoon();
       case 'attendance':
-        return <AttendanceTab />;
+        return <AttendanceTab userRole={user?.role} />;
       case 'leaderboard':
-        return <LeaderboardTab />;
+        return <LeaderboardTab userRole={user?.role} />;
       case 'communication':
-        return <CommunicationTab />;
+        return user?.role === 'super-mentor' ? <CommunicationTab /> : renderComingSoon();
       case 'team-chat':
-        return <Chat />;
+        return <Chat userRole={user?.role} />;
       case 'meetings':
-        return <MeetingsTab />;
+        return user?.role === 'super-mentor' ? <MeetingsTab /> : renderComingSoon();
       case 'ai-settings':
         return <AIAssistantTab />;
       default:
-        return (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🚧</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{tabs.find(t => t.id === activeTab)?.name}</h3>
-              <p className="text-gray-600 max-w-md mx-auto">
-                This feature is coming soon! We're working hard to bring you amazing tools for managing your internship program.
-              </p>
-            </div>
-          </div>
-        );
+        return renderComingSoon();
     }
   };
+
+  const renderComingSoon = () => (
+    <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+      <div className="text-center py-12">
+        <div className="text-gray-400 text-6xl mb-4">🚧</div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">{tabs.find(t => t.id === activeTab)?.name}</h3>
+        <p className="text-gray-600 max-w-md mx-auto">
+          This feature is coming soon! We're working hard to bring you amazing tools for managing your internship program.
+        </p>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -342,8 +372,11 @@ export function MentorDashboard() {
                 </h1>
                 <p className="mt-1 text-sm text-gray-600">
                   <span className="inline-flex items-center">
-                    <span className="mr-1">👨‍🏫</span>
-                    Manage and monitor intern progress
+                    <span className="mr-1">{user?.role === 'super-mentor' ? '👨‍💼' : '👨‍🏫'}</span>
+                    {user?.role === 'super-mentor' 
+                      ? 'Manage mentors, interns, and college operations'
+                      : 'Manage and monitor your assigned interns'
+                    }
                   </span>
                 </p>
               </div>
