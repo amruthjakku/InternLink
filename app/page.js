@@ -21,8 +21,14 @@ export default function Home() {
     const { role } = session.user;
     
     // If user needs registration, redirect to onboarding
-    if (session?.user?.needsRegistration || role === 'pending') {
+    if (session?.user?.needsRegistration) {
       router.push('/onboarding');
+      return;
+    }
+    
+    // If user has pending role, redirect to approval page
+    if (role === 'pending') {
+      router.push('/pending');
       return;
     }
     

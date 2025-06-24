@@ -96,16 +96,23 @@ userSchema.pre('save', function(next) {
 });
 
 // Static methods
-userSchema.statics.findByGitLabUsername = function(username, populateFields = '') {
-  const query = { gitlabUsername: username.toLowerCase(), isActive: true };
-  
+userSchema.statics.findByGitLabUsername = function(username, populateFields = '', includeInactive = false) {
+  const query = { gitlabUsername: username.toLowerCase() };
+  if (!includeInactive) query.isActive = true;
   let mongooseQuery = this.findOne(query);
-  
-  // Add population if requested
   if (populateFields) {
     mongooseQuery = mongooseQuery.populate(populateFields);
   }
-  
+  return mongooseQuery;
+};
+
+// Find user by GitLab username, including inactive users (for login/reactivation logic)
+userSchema.statics.findAnyByGitLabUsername = function(username, populateFields = '') {
+  const query = { gitlabUsername: username.toLowerCase() };
+  let mongooseQuery = this.findOne(query);
+  if (populateFields) {
+    mongooseQuery = mongooseQuery.populate(populateFields);
+  }
   return mongooseQuery;
 };
 

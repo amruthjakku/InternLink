@@ -82,9 +82,15 @@ export default function AdminDashboard() {
       return;
     }
 
-    // If user needs registration, redirect to onboarding
-    if (session.user.needsRegistration || session.user.role === 'pending') {
+    // If user needs registration, redirect to onboarding (but not if they're admin)
+    if (session.user.needsRegistration) {
       router.push('/onboarding');
+      return;
+    }
+    
+    // If user has pending role and is not admin, redirect 
+    if (session.user.role === 'pending') {
+      router.push('/pending');
       return;
     }
 

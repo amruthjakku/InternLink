@@ -46,7 +46,7 @@ export const authOptions = {
         await connectToDatabase();
         
         // Check if user exists in our system by GitLab username
-        const existingUser = await User.findByGitLabUsername(profile.username);
+        let existingUser = await User.findByGitLabUsername(profile.username);
         
         console.log('🔍 SignIn Debug - Database lookup result:', {
           username: profile.username,
@@ -57,9 +57,30 @@ export const authOptions = {
         });
         
         if (!existingUser) {
-          // User not found in our system - they need to be pre-registered
-          console.log(`❌ Unauthorized login attempt by GitLab user: ${profile.username} - No record found in database`);
-          return false; // This will trigger the error page
+          // Auto-register new GitLab users as pending
+          console.log(`🔄 Auto-registering new GitLab user: ${profile.username}`);
+          
+          try {
+            const newUser = new User({
+              gitlabUsername: profile.username.toLowerCase(),
+              gitlabId: profile.id.toString(),
+              name: profile.name,
+              email: profile.email,
+              role: 'pending', // They'll need admin approval
+              profileImage: profile.avatar_url,
+              isActive: true,
+              lastLoginAt: new Date()
+            });
+            
+            await newUser.save();
+            console.log(`✅ Auto-registered user: ${profile.username} with pending role`);
+            
+            // Use the newly created user
+            existingUser = newUser;
+          } catch (error) {
+            console.error(`❌ Failed to auto-register user ${profile.username}:`, error);
+            return false;
+          }
         }
         
         // Update user's GitLab info and last login
@@ -93,14 +114,7 @@ export const authOptions = {
           await connectToDatabase();
           let user = await User.findByGitLabUsername(token.gitlabUsername, 'college');
           
-          console.log('🔍 JWT Debug - Token refresh user lookup:', {
-            username: token.gitlabUsername,
-            found: !!user,
-            currentRole: user?.role,
-            tokenRole: token.role,
-            hasCollege: !!user?.college,
-            collegeName: user?.college?.name
-          });
+
           
           if (user) {
             // Update token with latest user info (including role changes)
@@ -163,14 +177,7 @@ export const authOptions = {
         }
       }
       
-      console.log('🔍 JWT Debug - Final token state:', {
-        role: token.role,
-        username: token.gitlabUsername,
-        needsRegistration: token.needsRegistration,
-        hasCollege: !!token.college,
-        collegeId: token.college?._id,
-        collegeName: token.college?.name
-      });
+
       
       return token;
     },
