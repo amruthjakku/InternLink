@@ -12,42 +12,12 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Handle demo mode
-    if (!process.env.MONGODB_URI || process.env.DEMO_MODE === 'true') {
-      const demoIPs = [
-        {
-          _id: 'demo_ip_1',
-          ip: '192.168.1.100',
-          description: 'Main Office Wi-Fi',
-          location: 'Office Building A',
-          addedBy: 'admin@demo.com',
-          addedAt: new Date(),
-          isActive: true,
-          source: 'admin'
-        },
-        {
-          _id: 'demo_ip_2',
-          ip: '203.192.217.10',
-          description: 'Branch Office Network',
-          location: 'Branch Office',
-          addedBy: 'admin@demo.com',
-          addedAt: new Date(),
-          isActive: true,
-          source: 'admin'
-        }
-      ];
-      
-      // Add environment IPs
-      const envIPs = process.env.AUTHORIZED_IPS?.split(',').map(ip => ({
-        ip: ip.trim(),
-        description: 'Environment IP',
-        addedBy: 'System',
-        addedAt: new Date(),
-        isActive: true,
-        source: 'environment'
-      })) || [];
-      
-      return NextResponse.json({ authorizedIPs: [...demoIPs, ...envIPs] });
+    // Check if database is available
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        error: 'Database not configured',
+        authorizedIPs: []
+      }, { status: 500 });
     }
 
     const db = await getDatabase();
@@ -91,13 +61,11 @@ export async function POST(request) {
 
     const { ip, description, location } = await request.json();
     
-    // Handle demo mode
-    if (!process.env.MONGODB_URI || process.env.DEMO_MODE === 'true') {
+    // Check if database is available
+    if (!process.env.MONGODB_URI) {
       return NextResponse.json({ 
-        success: true, 
-        message: 'IP address added successfully (Demo Mode)',
-        ipId: 'demo_new_ip'
-      });
+        error: 'Database not configured'
+      }, { status: 500 });
     }
     
     // Validate IP address format
@@ -162,6 +130,13 @@ export async function DELETE(request) {
       }, { status: 400 });
     }
 
+    // Check if database is available
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        error: 'Database not configured'
+      }, { status: 500 });
+    }
+
     const db = await getDatabase();
     
     // Delete the IP
@@ -202,6 +177,13 @@ export async function PUT(request) {
       return NextResponse.json({ 
         error: 'IP ID is required' 
       }, { status: 400 });
+    }
+
+    // Check if database is available
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        error: 'Database not configured'
+      }, { status: 500 });
     }
 
     const db = await getDatabase();

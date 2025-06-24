@@ -15,7 +15,7 @@ export async function GET() {
 
     const attendance = await getAttendanceByUser(session.user.id);
 
-    return NextResponse.json({ attendance });
+    return NextResponse.json({ records: attendance });
 
   } catch (error) {
     console.error('Error fetching user attendance:', error);

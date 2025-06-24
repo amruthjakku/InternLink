@@ -12,7 +12,7 @@ import { ChatTab } from './intern/ChatTab';
 import { EnhancedChat } from './EnhancedChat';
 import { AIAssistantTab } from './intern/AIAssistantTab';
 import { ProfileTab } from './intern/ProfileTab';
-import { SimpleGitLabTab } from './intern/SimpleGitLabTab';
+import { GitLabTab } from './intern/GitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { AttendanceHistory } from './AttendanceHistory';
@@ -112,7 +112,7 @@ export function InternDashboard() {
       case 'performance':
         return <PerformanceTab {...commonProps} />;
       case 'gitlab':
-        return <SimpleGitLabTab {...commonProps} />;
+        return <GitLabTab {...commonProps} />;
       case 'meetings':
         return <Meetings />;
       case 'profile':

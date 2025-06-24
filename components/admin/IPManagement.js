@@ -20,15 +20,21 @@ export function IPManagement() {
 
   const fetchAuthorizedIPs = async () => {
     setLoading(true);
+    setError('');
     try {
       const response = await fetch('/api/admin/authorized-ips');
       if (response.ok) {
         const data = await response.json();
         setAuthorizedIPs(data.authorizedIPs || []);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to fetch authorized IPs');
+        setAuthorizedIPs([]);
       }
     } catch (error) {
       console.error('Error fetching authorized IPs:', error);
-      setError('Failed to fetch authorized IPs');
+      setError('Network error: Failed to fetch authorized IPs');
+      setAuthorizedIPs([]);
     } finally {
       setLoading(false);
     }
@@ -65,6 +71,9 @@ export function IPManagement() {
   };
 
   const handleToggleIP = async (ipId, currentStatus) => {
+    setError('');
+    setSuccess('');
+
     try {
       const response = await fetch('/api/admin/authorized-ips', {
         method: 'PUT',
@@ -77,16 +86,17 @@ export function IPManagement() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         fetchAuthorizedIPs();
         setSuccess(`IP ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
       } else {
-        const data = await response.json();
         setError(data.error || 'Failed to update IP status');
       }
     } catch (error) {
       console.error('Error updating IP:', error);
-      setError('Network error occurred');
+      setError('Network error: Failed to update IP status');
     }
   };
 
@@ -95,21 +105,25 @@ export function IPManagement() {
       return;
     }
 
+    setError('');
+    setSuccess('');
+
     try {
       const response = await fetch(`/api/admin/authorized-ips?id=${ipId}`, {
         method: 'DELETE',
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         fetchAuthorizedIPs();
         setSuccess('IP address deleted successfully');
       } else {
-        const data = await response.json();
         setError(data.error || 'Failed to delete IP address');
       }
     } catch (error) {
       console.error('Error deleting IP:', error);
-      setError('Network error occurred');
+      setError('Network error: Failed to delete IP address');
     }
   };
 
@@ -172,7 +186,12 @@ export function IPManagement() {
           <div className="p-6 text-center">
             <div className="text-6xl mb-4">🌐</div>
             <div className="text-lg font-medium text-gray-900 mb-2">No Authorized IPs</div>
-            <div className="text-gray-600">Add IP addresses to allow attendance marking from specific networks.</div>
+            <div className="text-gray-600 mb-4">Add IP addresses to allow attendance marking from specific networks.</div>
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="text-red-700 text-sm">{error}</div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">

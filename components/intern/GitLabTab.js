@@ -27,6 +27,8 @@ export function GitLabTab() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [showOAuthConnect, setShowOAuthConnect] = useState(false);
   const [oauthAvailable, setOauthAvailable] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     checkGitLabConnection();
@@ -35,6 +37,7 @@ export function GitLabTab() {
   const checkGitLabConnection = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
       
       // First check OAuth status
       const oauthResponse = await fetch('/api/gitlab/oauth-connect');
@@ -54,6 +57,13 @@ export function GitLabTab() {
               // Has OAuth token but not connected, show OAuth connect option
               setShowOAuthConnect(true);
             }
+          } else {
+            const statusError = await statusResponse.json();
+            console.error('Connection status check failed:', statusError);
+            // Only show error if it's not a simple "not connected" case
+            if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
+              setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+            }
           }
         } else {
           // No OAuth token, check for existing PAT connection
@@ -64,13 +74,42 @@ export function GitLabTab() {
             if (statusData.connected) {
               await fetchGitLabData();
             }
+          } else {
+            const statusError = await statusResponse.json();
+            console.error('Connection status check failed:', statusError);
+            // Don't show error for first-time users, just show connect UI
+            if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
+              setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+            }
           }
+        }
+      } else {
+        // OAuth check failed, try to check PAT connection status
+        console.warn('OAuth check failed, checking for existing PAT connection');
+        try {
+          const statusResponse = await fetch('/api/gitlab/connection-status');
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            setIsConnected(statusData.connected);
+            if (statusData.connected) {
+              await fetchGitLabData();
+            }
+          } else {
+            // Both OAuth and PAT checks failed, but don't show error for first-time users
+            console.log('No existing GitLab connection found, showing connect UI');
+          }
+        } catch (fallbackError) {
+          console.warn('Fallback connection check also failed:', fallbackError);
         }
       }
     } catch (error) {
       console.error('Error checking GitLab connection:', error);
       // Only set error if already connected, otherwise show connect UI
-      if (isConnected) setError('Failed to check GitLab connection');
+      if (isConnected) {
+        setError(`Connection check failed: ${error.message}`);
+      } else {
+        console.warn('Initial connection check failed, showing connect UI');
+      }
     } finally {
       setLoading(false);
     }
@@ -97,10 +136,74 @@ export function GitLabTab() {
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!tokenForm.personalAccessToken || !tokenForm.gitlabUsername) {
+      setTestResult({ success: false, message: 'Please fill in both username and token first' });
+      return;
+    }
+
+    if (!tokenForm.personalAccessToken.startsWith('glpat-')) {
+      setTestResult({ success: false, message: 'Token should start with "glpat-"' });
+      return;
+    }
+
+    setTestingConnection(true);
+    setTestResult(null);
+
+    try {
+      const response = await fetch('/api/gitlab/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: tokenForm.personalAccessToken,
+          username: tokenForm.gitlabUsername
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTestResult({ 
+          success: true, 
+          message: `✅ Connection successful! Found user: ${data.user?.name} (@${data.user?.username})`,
+          user: data.user
+        });
+      } else {
+        setTestResult({ 
+          success: false, 
+          message: data.error || 'Connection test failed'
+        });
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      setTestResult({ 
+        success: false, 
+        message: `Connection test failed: ${error.message}`
+      });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   const handleTokenSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Basic validation
+    if (!tokenForm.personalAccessToken || !tokenForm.gitlabUsername) {
+      setError('Please fill in both GitLab username and Personal Access Token');
+      setLoading(false);
+      return;
+    }
+
+    if (!tokenForm.personalAccessToken.startsWith('glpat-')) {
+      setError('Personal Access Token should start with "glpat-". Please check your token.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/gitlab/connect-token', {
@@ -121,11 +224,26 @@ export function GitLabTab() {
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to connect GitLab');
+        let errorMessage = errorData.error || 'Failed to connect GitLab';
+        
+        // Provide more specific error messages
+        if (response.status === 400) {
+          if (errorMessage.includes('Invalid Personal Access Token')) {
+            errorMessage = 'Invalid Personal Access Token. Please check that your token is correct and has the required permissions (read_api, read_repository, read_user).';
+          } else if (errorMessage.includes('username does not match')) {
+            errorMessage = 'The GitLab username does not match the token owner. Please verify both your username and token.';
+          }
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please check your Personal Access Token and try again.';
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. Your token may not have the required permissions (read_api, read_repository, read_user).';
+        }
+        
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error connecting GitLab:', error);
-      setError('Failed to connect GitLab');
+      setError(`Connection failed: ${error.message}. Please check your internet connection and try again.`);
     } finally {
       setLoading(false);
     }
@@ -270,6 +388,32 @@ export function GitLabTab() {
   if (!isConnected) {
     return (
       <div className="space-y-6">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="text-red-400 mr-3">⚠️</div>
+              <div>
+                <h4 className="text-red-800 font-medium">Connection Error</h4>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="text-green-400 mr-3">✅</div>
+              <div>
+                <h4 className="text-green-800 font-medium">Success!</h4>
+                <p className="text-green-600 text-sm mt-1">{successMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-center py-8">
             <div className="text-6xl mb-4">🦊</div>
@@ -278,6 +422,16 @@ export function GitLabTab() {
               Connect your Swecha GitLab account to track your development progress, 
               commits, and contributions across your repositories.
             </p>
+            
+            {/* Connection Requirements */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-lg mx-auto">
+              <h4 className="font-semibold text-blue-900 mb-2">📋 What You'll Need:</h4>
+              <ul className="text-blue-700 text-sm text-left space-y-1">
+                <li>• A Swecha GitLab account (code.swecha.org)</li>
+                <li>• Personal Access Token with proper permissions</li>
+                <li>• Your GitLab username</li>
+              </ul>
+            </div>
             
             {/* OAuth Connect Option (if available) */}
             {showOAuthConnect && (
@@ -338,10 +492,23 @@ export function GitLabTab() {
                     Debug: Form is now visible (showTokenForm = {showTokenForm.toString()})
                   </div>
                 )}
+                {/* Step-by-step instructions */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                  <h4 className="font-semibold text-yellow-900 mb-2">🔑 How to Create a Personal Access Token:</h4>
+                  <ol className="text-yellow-800 text-sm space-y-1 list-decimal list-inside">
+                    <li>Go to <a href="https://code.swecha.org/-/profile/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Swecha GitLab → Settings → Access Tokens</a></li>
+                    <li>Click "Add new token"</li>
+                    <li>Give it a name (e.g., "InternLink Integration")</li>
+                    <li>Select scopes: <strong>read_api</strong>, <strong>read_repository</strong>, <strong>read_user</strong></li>
+                    <li>Click "Create personal access token"</li>
+                    <li>Copy the token (starts with "glpat-")</li>
+                  </ol>
+                </div>
+
                 <form onSubmit={handleTokenSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      GitLab Username
+                      GitLab Username <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -351,11 +518,14 @@ export function GitLabTab() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="your-gitlab-username"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your username from code.swecha.org (not your display name)
+                    </p>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Personal Access Token
+                      Personal Access Token <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -366,8 +536,31 @@ export function GitLabTab() {
                       placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Create a token at <a href="https://code.swecha.org/-/profile/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Swecha GitLab → Settings → Access Tokens</a> with 'read_api', 'read_repository', and 'read_user' scopes
+                      The token you created with <strong>read_api</strong>, <strong>read_repository</strong>, and <strong>read_user</strong> permissions
                     </p>
+                    
+                    {/* Test Connection Button */}
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={handleTestConnection}
+                        disabled={testingConnection || !tokenForm.personalAccessToken || !tokenForm.gitlabUsername}
+                        className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                      >
+                        {testingConnection ? '🔄 Testing...' : '🔍 Test Connection'}
+                      </button>
+                    </div>
+                    
+                    {/* Test Result */}
+                    {testResult && (
+                      <div className={`mt-2 p-2 rounded text-sm ${
+                        testResult.success 
+                          ? 'bg-green-50 border border-green-200 text-green-700' 
+                          : 'bg-red-50 border border-red-200 text-red-700'
+                      }`}>
+                        {testResult.message}
+                      </div>
+                    )}
                   </div>
                   
                   <div>

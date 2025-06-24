@@ -294,12 +294,16 @@ export function PerformanceTab({ user, loading }) {
               <div>
                 <h5 className="font-medium text-sm mb-2">Recent Activities:</h5>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  {skill.recentActivities.map((activity, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-green-500 mr-2">✓</span>
-                      {activity}
-                    </li>
-                  ))}
+                  {skill.recentActivities && skill.recentActivities.length > 0 ? (
+                    skill.recentActivities.map((activity, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-green-500 mr-2">✓</span>
+                        {activity}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-gray-500 italic">No recent activities</li>
+                  )}
                 </ul>
               </div>
             </div>

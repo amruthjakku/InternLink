@@ -1,32 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Calendar, Clock, MapPin, Wifi, WifiOff, CheckCircle, XCircle, AlertTriangle, BarChart3, TrendingUp, Download, Filter, Search } from 'lucide-react';
-
-// Mock AttendanceMarker component for demo
-const AttendanceMarker = ({ onAttendanceMarked }) => (
-  <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-lg text-white">
-    <h3 className="font-semibold mb-2">Quick Actions</h3>
-    <button 
-      onClick={onAttendanceMarked}
-      className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg hover:bg-white/30 transition-all"
-    >
-      Refresh Data
-    </button>
-  </div>
-);
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, AlertTriangle, BarChart3 } from 'lucide-react';
+import { AttendanceMarker } from '../AttendanceMarker';
 
 export function AttendanceTab({ user, loading }) {
   const [attendanceData, setAttendanceData] = useState([]);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [isOnAllowedNetwork, setIsOnAllowedNetwork] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState(null);
-  const [networkStatus, setNetworkStatus] = useState('checking');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showNetworkDetails, setShowNetworkDetails] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Real-time clock
   useEffect(() => {
@@ -36,129 +19,82 @@ export function AttendanceTab({ user, loading }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch real attendance data and network status
+  // Fetch attendance data
   useEffect(() => {
     fetchAttendanceData();
-    detectLocationAndNetwork();
   }, []);
 
-  const addNotification = useCallback((type, message) => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { id, type, message, timestamp: new Date() }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  }, []);
-
-  const fetchAttendanceData = useCallback(async () => {
+  const fetchAttendanceData = async () => {
     try {
+      setDataLoading(true);
+      setError(null);
+      
       const response = await fetch('/api/attendance/my-records');
       if (response.ok) {
         const data = await response.json();
         setAttendanceData(data.records || []);
+        
         // Set today's attendance
         const today = new Date().toISOString().split('T')[0];
         const todayRecord = (data.records || []).find(record => record.date === today);
         setTodayAttendance(todayRecord);
       } else {
+        setError('Failed to fetch attendance data');
         setAttendanceData([]);
         setTodayAttendance(null);
-        addNotification('error', 'Failed to fetch attendance data');
       }
-    } catch (error) {
+    } catch (err) {
+      setError('Network error: ' + err.message);
       setAttendanceData([]);
       setTodayAttendance(null);
-      addNotification('error', 'Failed to fetch attendance data');
+    } finally {
+      setDataLoading(false);
     }
-  }, [addNotification]);
-
-  const detectLocationAndNetwork = useCallback(async () => {
-    setNetworkStatus('checking');
-    try {
-      // Fetch allowed IPs and current IP from backend
-      const ipRes = await fetch('/api/attendance/summary');
-      if (ipRes.ok) {
-        const data = await ipRes.json();
-        setCurrentLocation(data.location || null);
-        setIsOnAllowedNetwork(data.isAllowed || false);
-        setNetworkStatus(data.isAllowed ? 'connected' : 'not-allowed');
-        if (!data.isAllowed) {
-          addNotification('warning', 'You are not on an approved network. Attendance marking is disabled.');
-        }
-      } else {
-        setNetworkStatus('error');
-        addNotification('error', 'Failed to detect network location.');
-      }
-    } catch (error) {
-      setNetworkStatus('error');
-      addNotification('error', 'Failed to detect network location.');
-    }
-  }, [addNotification]);
+  };
 
   const handleCheckIn = async () => {
-    if (!isOnAllowedNetwork) {
-      addNotification('error', 'Check-in only allowed from approved networks');
-      return;
-    }
     try {
+      setError(null);
       const response = await fetch('/api/attendance/checkin-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'checkin' })
       });
+      
+      const data = await response.json();
+      
       if (response.ok) {
-        addNotification('success', 'Successfully checked in!');
+        alert('✅ Successfully checked in!');
         fetchAttendanceData();
       } else {
-        addNotification('error', 'Failed to check in. Please try again.');
+        setError(data.error || 'Failed to check in. Please try again.');
       }
-    } catch (error) {
-      addNotification('error', 'Failed to check in. Please try again.');
+    } catch (err) {
+      setError('Network error: Failed to check in');
     }
   };
 
   const handleCheckOut = async () => {
-    if (!isOnAllowedNetwork) {
-      addNotification('error', 'Check-out only allowed from approved networks');
-      return;
-    }
     try {
+      setError(null);
       const response = await fetch('/api/attendance/checkin-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'checkout' })
       });
+      
+      const data = await response.json();
+      
       if (response.ok) {
-        addNotification('success', 'Successfully checked out!');
+        alert('✅ Successfully checked out!');
         fetchAttendanceData();
       } else {
-        addNotification('error', 'Failed to check out. Please try again.');
+        setError(data.error || 'Failed to check out. Please try again.');
       }
-    } catch (error) {
-      addNotification('error', 'Failed to check out. Please try again.');
+    } catch (err) {
+      setError('Network error: Failed to check out');
     }
   };
-
-  // Enhanced filtering and search
-  const filteredAttendanceData = useMemo(() => {
-    return attendanceData.filter(record => {
-      const matchesSearch = !searchTerm || 
-        record.date.includes(searchTerm) ||
-        record.location?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [attendanceData, searchTerm, statusFilter]);
-
-  // Enhanced statistics
-  const statistics = useMemo(() => {
-    const totalDays = attendanceData.length;
-    const presentDays = attendanceData.filter(record => record.status === 'present').length;
-    const lateDays = attendanceData.filter(record => record.status === 'late').length;
-    const absentDays = attendanceData.filter(record => record.status === 'absent').length;
-    const halfDays = attendanceData.filter(record => record.status === 'half-day').length;
-    return { totalDays, presentDays, lateDays, absentDays, halfDays };
-  }, [attendanceData]);
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -186,7 +122,7 @@ export function AttendanceTab({ user, loading }) {
     return configs[status] || configs.present;
   };
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="bg-white p-6 rounded-xl shadow-sm">
@@ -207,34 +143,13 @@ export function AttendanceTab({ user, loading }) {
 
   return (
     <div className="space-y-6">
-      {/* Notifications */}
-      {notifications.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 space-y-2">
-          {notifications.map(notification => (
-            <div
-              key={notification.id}
-              className={`p-4 rounded-lg shadow-lg border-l-4 bg-white ${
-                notification.type === 'success' ? 'border-green-500' :
-                notification.type === 'warning' ? 'border-yellow-500' :
-                'border-red-500'
-              } animate-slide-in`}
-            >
-              <p className="text-sm font-medium">{notification.message}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Attendance Marker */}
-      <AttendanceMarker onAttendanceMarked={fetchAttendanceData} />
-
-      {/* Real-time Check In/Out Section */}
+      {/* Header */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            Today's Attendance
-          </h3>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <Calendar className="w-6 h-6 text-blue-600" />
+            Attendance Tracking
+          </h2>
           <div className="text-right">
             <div className="text-2xl font-mono font-bold text-gray-900">
               {currentTime.toLocaleTimeString('en-US', { hour12: false })}
@@ -249,59 +164,66 @@ export function AttendanceTab({ user, loading }) {
             </div>
           </div>
         </div>
-        
-        {/* Enhanced Network Status */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-xl border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {networkStatus === 'connected' ? (
-                <Wifi className="w-5 h-5 text-green-600" />
-              ) : (
-                <WifiOff className="w-5 h-5 text-red-600" />
-              )}
+
+        {/* Status Message */}
+        {error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <XCircle className="w-5 h-5 text-red-400 mr-3" />
               <div>
-                <p className="font-medium text-gray-900">Network Status</p>
-                <p className="text-sm text-gray-600">
-                  {currentLocation?.networkName} | {currentLocation?.location}
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        ) : attendanceData.length === 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <Calendar className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">No Attendance Data</h3>
+            <p className="text-blue-700 mb-4">
+              Your attendance records will appear here once data is available.
+            </p>
+            <button
+              onClick={fetchAttendanceData}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Refresh Data
+            </button>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+              <div>
+                <h3 className="text-sm font-medium text-green-800">Attendance System Ready</h3>
+                <p className="text-sm text-green-700 mt-1">
+                  Found {attendanceData.length} attendance records
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                isOnAllowedNetwork 
-                  ? 'bg-green-100 text-green-800 border-green-200' 
-                  : 'bg-red-100 text-red-800 border-red-200'
-              }`}>
-                {isOnAllowedNetwork ? '✅ Approved Network' : '❌ Restricted Network'}
-              </div>
-              <button
-                onClick={() => setShowNetworkDetails(!showNetworkDetails)}
-                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-              </button>
-            </div>
           </div>
-          
-          {showNetworkDetails && (
-            <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 grid grid-cols-2 gap-4">
-              <div>IP Address: {currentLocation?.ip}</div>
-              <div>Signal: {currentLocation?.signal}</div>
-              <div>Security: {currentLocation?.security}</div>
-              <div>Coordinates: {currentLocation?.coordinates?.lat}, {currentLocation?.coordinates?.lng}</div>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* Enhanced Check In/Out Controls */}
+      {/* Attendance Marker */}
+      <AttendanceMarker onAttendanceMarked={fetchAttendanceData} />
+
+      {/* Check-in/Check-out Section */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-blue-600" />
+          Manual Check-in/Check-out
+        </h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Check In */}
           <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors">
             <div className="text-3xl mb-3">🕐</div>
             <h4 className="font-semibold text-gray-900 mb-3">Check In</h4>
             {todayAttendance?.checkIn ? (
               <div className="space-y-2">
                 <p className="text-xl font-bold text-green-600">{todayAttendance.checkIn}</p>
-                <p className="text-sm text-gray-500">✓ Already checked in</p>
+                <p className="text-sm text-gray-500">✓ Already checked in today</p>
                 {todayAttendance.status === 'late' && (
                   <p className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
                     Late arrival noted
@@ -311,44 +233,46 @@ export function AttendanceTab({ user, loading }) {
             ) : (
               <button
                 onClick={handleCheckIn}
-                disabled={!isOnAllowedNetwork || networkStatus !== 'connected'}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 active:scale-95 font-medium"
               >
                 Check In Now
               </button>
             )}
           </div>
 
+          {/* Check Out */}
           <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-red-400 transition-colors">
             <div className="text-3xl mb-3">🕕</div>
             <h4 className="font-semibold text-gray-900 mb-3">Check Out</h4>
             {todayAttendance?.checkOut ? (
               <div className="space-y-2">
                 <p className="text-xl font-bold text-red-600">{todayAttendance.checkOut}</p>
-                <p className="text-sm text-gray-500">✓ Already checked out</p>
+                <p className="text-sm text-gray-500">✓ Already checked out today</p>
               </div>
             ) : todayAttendance?.checkIn ? (
               <button
                 onClick={handleCheckOut}
-                disabled={!isOnAllowedNetwork || networkStatus !== 'connected'}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95"
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all transform hover:scale-105 active:scale-95 font-medium"
               >
                 Check Out Now
               </button>
             ) : (
-              <p className="text-sm text-gray-500">Please check in first</p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Please check in first</p>
+                <div className="text-xs text-gray-400">You need to check in before you can check out</div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Enhanced Today's Summary */}
+        {/* Today's Summary */}
         {todayAttendance && (
           <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
             <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Today's Summary
             </h5>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="bg-white p-3 rounded-lg">
                 <span className="text-gray-600 block">Check In</span>
                 <span className="font-semibold">{todayAttendance.checkIn || 'Not yet'}</span>
@@ -367,214 +291,175 @@ export function AttendanceTab({ user, loading }) {
                   {todayAttendance.status}
                 </span>
               </div>
-              <div className="bg-white p-3 rounded-lg">
-                <span className="text-gray-600 block">Tasks</span>
-                <span className="font-semibold">{todayAttendance.tasksCompleted || 0}</span>
-              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Enhanced Statistics Dashboard */}
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          {
-            title: 'Attendance Rate',
-            value: `${statistics.presentDays} / ${statistics.totalDays}`,
-            icon: TrendingUp,
-            color: 'bg-green-500',
-            change: '+2.3%',
-            description: 'vs last month'
-          },
-          {
-            title: 'Present Days',
-            value: statistics.presentDays,
-            icon: CheckCircle,
-            color: 'bg-blue-500',
-            change: `+${statistics.lateDays} late`,
-            description: 'this month'
-          },
-          {
-            title: 'Total Hours',
-            value: `${statistics.totalDays}h`,
-            icon: Clock,
-            color: 'bg-purple-500',
-            change: `${statistics.presentDays}h avg`,
-            description: 'per day'
-          },
-          {
-            title: 'Productivity',
-            value: `${statistics.presentDays}h / ${statistics.totalDays}h`,
-            icon: BarChart3,
-            color: 'bg-orange-500',
-            change: '+5.2%',
-            description: 'vs last month'
-          }
-        ].map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center`}>
-                <stat.icon className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-green-600 font-medium">{stat.change}</div>
-                <div className="text-xs text-gray-500">{stat.description}</div>
-              </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Records</p>
+              <p className="text-2xl font-semibold text-gray-900">{attendanceData.length}</p>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Present Days</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {attendanceData.filter(record => record.status === 'present').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Clock className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Late Days</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {attendanceData.filter(record => record.status === 'late').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Absent Days</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {attendanceData.filter(record => record.status === 'absent').length}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Enhanced Attendance History with Search and Filter */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Today's Status */}
+      {todayAttendance && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-600" />
+            Today's Attendance
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <span className="text-gray-600 block text-sm">Check In</span>
+              <span className="font-semibold text-lg">{todayAttendance.checkIn || 'Not recorded'}</span>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <span className="text-gray-600 block text-sm">Check Out</span>
+              <span className="font-semibold text-lg">{todayAttendance.checkOut || 'Not recorded'}</span>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <span className="text-gray-600 block text-sm">Total Hours</span>
+              <span className="font-semibold text-lg">{todayAttendance.totalHours?.toFixed(1) || 0}h</span>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <span className="text-gray-600 block text-sm">Status</span>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusConfig(todayAttendance.status).color}`}>
+                {todayAttendance.status}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance History Table */}
+      {attendanceData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Attendance History</h3>
-            
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by date or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="present">Present</option>
-                <option value="absent">Absent</option>
-                <option value="late">Late</option>
-                <option value="half-day">Half Day</option>
-              </select>
-              
-              <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            </div>
           </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {[
-                  'Date',
-                  'Status', 
-                  'Check In',
-                  'Check Out',
-                  'Total Hours',
-                  'Tasks',
-                  'Productivity',
-                  'Location'
-                ].map(header => (
-                  <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {header}
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAttendanceData.map((record) => {
-                const statusConfig = getStatusConfig(record.status);
-                const StatusIcon = statusConfig.icon;
-                
-                return (
-                  <tr key={record.date} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {new Date(record.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: '2-digit',
-                        year: 'numeric'
-                      })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusConfig.color}`}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {record.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                      {record.checkIn || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                      {record.checkOut || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.totalHours ? `${record.totalHours.toFixed(1)}h` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        {record.tasksCompleted}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center">
-                        <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${record.productivity}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs">{record.productivity}%</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {record.location || '-'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Enhanced Network Information */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Wifi className="w-5 h-5 text-blue-600" />
-          Network & Security Information
-        </h3>
-        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-700 mb-3 font-medium">
-                🔒 Security Features:
-              </p>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Geo-location based attendance tracking</li>
-                <li>• Network IP verification for security</li>
-                <li>• Real-time location monitoring</li>
-                <li>• Encrypted data transmission</li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-sm text-gray-700 mb-3 font-medium">
-                📋 Policies:
-              </p>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Check-in/out only from approved networks</li>
-                <li>• Location data logged for audit purposes</li>
-                <li>• Remote work requires prior approval</li>
-                <li>• Contact mentor for location changes</li>
-              </ul>
-            </div>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check In
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check Out
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Hours
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {attendanceData.map((record, index) => {
+                  const statusConfig = getStatusConfig(record.status);
+                  const StatusIcon = statusConfig.icon;
+                  
+                  return (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {new Date(record.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {record.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                        {record.checkIn || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                        {record.checkOut || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.totalHours ? `${record.totalHours.toFixed(1)}h` : '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        </div>
+      )}
+
+      {/* Instructions for Data Entry */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+          <MapPin className="w-5 h-5" />
+          Ready for Data Integration
+        </h3>
+        <div className="text-blue-800 space-y-2">
+          <p>• The attendance system is now clean and ready for new data</p>
+          <p>• All existing mock data has been removed</p>
+          <p>• The interface will automatically display new attendance records</p>
+          <p>• Data structure supports: date, status, checkIn, checkOut, totalHours</p>
         </div>
       </div>
     </div>
