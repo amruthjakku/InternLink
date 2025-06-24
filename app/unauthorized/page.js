@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { VerificationPending } from '../../components/auth/VerificationPending';
+import SessionRefresh from '../../components/SessionRefresh';
 
 export default function Unauthorized() {
   const { data: session } = useSession();
@@ -36,7 +37,7 @@ export default function Unauthorized() {
           </p>
         </div>
 
-
+        <SessionRefresh />
 
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <div className="text-center space-y-4">

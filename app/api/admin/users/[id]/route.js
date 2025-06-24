@@ -120,12 +120,20 @@ export async function PUT(request, { params }) {
       updateData.college = collegeId;
     }
 
+    // Add token refresh trigger for role/status changes
+    if (updateData.role || updateData.isActive !== undefined) {
+      updateData.lastTokenRefresh = new Date();
+      console.log(`🔄 Triggering token refresh for user update: ${updateData.gitlabUsername || 'unknown'}`);
+    }
+
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
       id,
       updateData,
       { new: true }
     ).populate('college');
+
+    console.log(`✅ User updated: ${updatedUser.gitlabUsername} - Role: ${updatedUser.role}, Active: ${updatedUser.isActive}`);
 
     return NextResponse.json(updatedUser);
 

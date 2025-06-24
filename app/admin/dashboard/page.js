@@ -10,6 +10,7 @@ import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalyti
 import { IPManagement } from '../../../components/admin/IPManagement';
 import { CollegeManagement } from '../../../components/CollegeManagement';
 import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
+import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
@@ -186,7 +187,24 @@ export default function AdminDashboard() {
       // Handle users
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
-        setUsers(usersData.users || []);
+        const usersList = usersData.users || [];
+        setUsers(usersList);
+        
+        // Calculate user stats
+        const userStats = {
+          totalUsers: usersList.length,
+          activeUsers: usersList.filter(user => user.isActive).length,
+          inactiveUsers: usersList.filter(user => !user.isActive).length,
+          totalMentors: usersList.filter(user => user.role === 'mentor' || user.role === 'super-mentor').length,
+          totalInterns: usersList.filter(user => user.role === 'intern').length,
+          pendingUsers: usersList.filter(user => user.role === 'pending').length
+        };
+        
+        // Merge with existing stats
+        setStats(prevStats => ({
+          ...prevStats,
+          ...userStats
+        }));
       } else {
         setUsers([]);
       }
@@ -502,6 +520,7 @@ export default function AdminDashboard() {
               { id: 'attendance-analytics', name: 'Attendance Analytics', icon: '📍' },
               { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
+              { id: 'user-activation', name: 'User Activation', icon: '🔄' },
               { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'college-management', name: 'College Management', icon: '🎓' },
@@ -533,7 +552,7 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900">System Overview</h2>
             
             {/* Enhanced Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <MetricCard
                 title="Total Users"
                 value={stats.totalUsers || 0}
@@ -544,18 +563,32 @@ export default function AdminDashboard() {
               <MetricCard
                 title="Active Users"
                 value={stats.activeUsers || 0}
-            change={3.1}
+                change={3.1}
                 icon="✅"
                 color="green"
-                  />
-       <MetricCard
+              />
+              <MetricCard
+                title="Inactive Users"
+                value={stats.inactiveUsers || 0}
+                change={-2.1}
+                icon="❌"
+                color="red"
+              />
+              <MetricCard
+                title="Pending Users"
+                value={stats.pendingUsers || 0}
+                change={1.2}
+                icon="⏳"
+                color="yellow"
+              />
+              <MetricCard
                 title="System Health"
                 value={`${stats.systemHealth || 0}%`}
                 change={0.5}
                 icon="🖥️"
                 color="purple"
               />
-                     <MetricCard
+              <MetricCard
                 title="Avg Performance"
                 value={`${stats.avgPerformance || 0}%`}
                 change={2.3}
@@ -567,7 +600,7 @@ export default function AdminDashboard() {
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
                   onClick={() => setShowAddUserModal(true)}
                   className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
@@ -595,6 +628,21 @@ export default function AdminDashboard() {
                   <div className="text-center">
                     <span className="text-2xl mb-2 block">📦</span>
                     <span className="text-sm font-medium text-gray-700">Bulk Import</span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('user-activation')}
+                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl mb-2 block">🔄</span>
+                    <span className="text-sm font-medium text-gray-700">User Activation</span>
+                    {stats.inactiveUsers > 0 && (
+                      <div className="text-xs text-orange-600 mt-1">
+                        {stats.inactiveUsers} inactive users
+                      </div>
+                    )}
                   </div>
                 </button>
               </div>
@@ -761,6 +809,9 @@ export default function AdminDashboard() {
 
         {/* User Management Tab */}
         {activeTab === 'user-management' && <AdvancedUserManagement />}
+
+        {/* User Activation Management Tab */}
+        {activeTab === 'user-activation' && <UserActivationManagement />}
 
         {/* Super-Mentor Management Tab */}
         {activeTab === 'super-mentor-management' && <SuperMentorManagement />}

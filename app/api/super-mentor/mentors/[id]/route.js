@@ -35,7 +35,8 @@ export async function PUT(request, { params }) {
       {
         name: updateData.name,
         email: updateData.email,
-        specialization: updateData.specialization
+        specialization: updateData.specialization,
+        lastTokenRefresh: new Date() // Trigger token refresh for profile changes
       },
       { new: true }
     );
@@ -79,7 +80,10 @@ export async function DELETE(request, { params }) {
     }
 
     // Soft delete - set isActive to false
-    await User.findByIdAndUpdate(id, { isActive: false });
+    await User.findByIdAndUpdate(id, { 
+      isActive: false,
+      lastTokenRefresh: new Date() // Trigger token refresh to block access
+    });
 
     return NextResponse.json({ 
       success: true, 

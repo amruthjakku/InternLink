@@ -67,6 +67,18 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  lastTokenRefresh: {
+    type: Date,
+    default: null
+  },
+  sessionVersion: {
+    type: Number,
+    default: 1
+  },
+  lastSessionReset: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

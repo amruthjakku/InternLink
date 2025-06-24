@@ -13,47 +13,44 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { userId, newRole, collegeId } = await request.json();
+    const { username } = await request.json();
     
-    if (!userId || !newRole) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!username) {
+      return NextResponse.json({ error: 'Username required' }, { status: 400 });
     }
     
     await connectToDatabase();
     
-    const updateData = {
-      role: newRole,
-      updatedAt: new Date(),
-      lastTokenRefresh: new Date() // Force token refresh for role change
-    };
-    
-    // Add college if provided
-    if (collegeId) {
-      updateData.college = collegeId;
-    }
-    
-    const user = await User.findByIdAndUpdate(userId, updateData, { new: true }).populate('college');
+    // Find the user and update their record to trigger JWT refresh
+    const user = await User.findByGitLabUsername(username, 'college');
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-    console.log(`✅ Admin ${session.user.gitlabUsername} approved user ${user.gitlabUsername} with role ${newRole}`);
+    // Force update to trigger JWT refresh on next request
+    user.lastTokenRefresh = new Date();
+    user.updatedAt = new Date();
+    await user.save();
+    
+    console.log(`🔄 Admin ${session.user.gitlabUsername} forced session refresh for user: ${username}`);
     
     return NextResponse.json({
-      message: 'User approved successfully',
+      message: `Session refresh triggered for ${username}`,
+      instruction: 'User should refresh their browser or sign out and back in',
       user: {
-        id: user._id.toString(),
         gitlabUsername: user.gitlabUsername,
         role: user.role,
-        college: user.college?.name
+        isActive: user.isActive,
+        college: user.college?.name,
+        lastTokenRefresh: user.lastTokenRefresh
       }
     });
     
   } catch (error) {
-    console.error('Error approving user:', error);
+    console.error('Force refresh session error:', error);
     return NextResponse.json({ 
-      error: 'Failed to approve user',
+      error: 'Failed to force refresh session',
       details: error.message 
     }, { status: 500 });
   }

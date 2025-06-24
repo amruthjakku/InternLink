@@ -117,11 +117,33 @@ export const authOptions = {
 
           
           if (user) {
-            // Update token with latest user info (including role changes)
+            // Check if we need to force refresh based on recent updates or session version
+            const shouldForceRefresh = user.lastTokenRefresh && 
+              (!token.lastRefresh || new Date(user.lastTokenRefresh) > new Date(token.lastRefresh));
+            
+            const sessionVersionChanged = user.sessionVersion && 
+              (!token.sessionVersion || user.sessionVersion > token.sessionVersion);
+            
+            // Always update token with latest user info (including role changes)
+            const roleChanged = token.role !== user.role;
+            const activeChanged = token.isActive !== user.isActive;
+            
+            if (roleChanged || activeChanged || shouldForceRefresh || sessionVersionChanged) {
+              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, activeChanged=${activeChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
+            }
+            
             token.role = user.role;
             token.college = user.college;
             token.assignedBy = user.assignedBy;
             token.userId = user._id.toString();
+            token.isActive = user.isActive;
+            token.sessionVersion = user.sessionVersion;
+            token.lastRefresh = new Date().toISOString();
+            
+            // Clear needsRegistration if user now has a proper role
+            if (user.role !== 'pending') {
+              token.needsRegistration = undefined;
+            }
           }
         } catch (error) {
           console.error('Error refreshing user data in JWT:', error);
@@ -183,6 +205,12 @@ export const authOptions = {
     },
     
     async session({ session, token }) {
+      // CRITICAL: Block access for inactive users
+      if (token.isActive === false) {
+        console.log(`🚫 Blocking session for inactive user: ${token.gitlabUsername}`);
+        return null; // This will end the session
+      }
+      
       // Add custom fields to session
       session.user.role = token.role;
       session.user.gitlabUsername = token.gitlabUsername;
@@ -191,6 +219,7 @@ export const authOptions = {
       session.user.assignedBy = token.assignedBy;
       session.user.id = token.userId;
       session.user.needsRegistration = token.needsRegistration;
+      session.user.isActive = token.isActive;
       
       // Add GitLab access token (server-side only, not exposed to client)
       session.gitlabAccessToken = token.gitlabAccessToken;
