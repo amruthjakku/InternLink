@@ -8,26 +8,6 @@ export function LoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleDemoLogin = (role) => {
-    setLoading(true);
-    
-    const userData = {
-      email: role === 'intern' ? 'intern@democollege.edu' : 'mentor@democollege.edu',
-      username: role,
-      name: role === 'intern' ? 'Demo Intern' : 'Demo Mentor',
-      role: role,
-      college: 'Demo College',
-      is_demo: true,
-      user_id: role === 'intern' ? 'demo_intern_1' : 'demo_mentor_1'
-    };
-
-    // Simulate login delay
-    setTimeout(() => {
-      login(userData);
-      setLoading(false);
-    }, 1000);
-  };
-
   const handleGitLabLogin = () => {
     // In a real implementation, this would redirect to GitLab OAuth
     alert('GitLab OAuth integration would be implemented here. For now, use demo login.');
@@ -62,7 +42,7 @@ export function LoginPage() {
             
             <div className="space-y-3">
               <button
-                onClick={() => handleDemoLogin('intern')}
+                onClick={() => handleGitLabLogin()}
                 disabled={loading}
                 className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
               >
@@ -72,19 +52,6 @@ export function LoginPage() {
                   <span className="mr-2">👨‍💻</span>
                 )}
                 Login as Intern
-              </button>
-              
-              <button
-                onClick={() => handleDemoLogin('mentor')}
-                disabled={loading}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                ) : (
-                  <span className="mr-2">👩‍🏫</span>
-                )}
-                Login as Mentor
               </button>
             </div>
             

@@ -26,7 +26,6 @@ export function AuthProvider({ children }) {
             ...data.user,
             gitlabId: session.user.gitlabId,
             gitlabUsername: session.user.gitlabUsername,
-            is_demo: false
           }));
           
           // Update localStorage with fresh data
@@ -60,7 +59,6 @@ export function AuthProvider({ children }) {
             ...(userData || {}),
             gitlabId: session.user?.gitlabId,
             gitlabUsername: session.user?.gitlabUsername,
-            is_demo: false
           });
           
           // Refresh user data from database to get latest role/info
@@ -81,23 +79,13 @@ export function AuthProvider({ children }) {
           gitlabId: session.user?.gitlabId,
           gitlabUsername: session.user?.gitlabUsername,
           needsOnboarding: true,
-          is_demo: false
         });
       }
+      // Always refresh user data from DB after login
+      // This ensures new users get their correct role and info
+      refreshUserData();
     } else {
-      // Check for demo user session (fallback for development)
-      const storedUser = localStorage.getItem('demo_user');
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error('Error parsing stored demo user:', error);
-          localStorage.removeItem('demo_user');
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
+      setUser(null);
     }
     
     setLoading(false);

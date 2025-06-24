@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { EnhancedBarChart, ActivityHeatmap, MetricCard } from '../Charts';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { getCollegeName } from '../../utils/helpers';
+import UserModal from './UserModal';
 
 export function AdvancedUserManagement() {
   const [users, setUsers] = useState([]);
@@ -22,6 +23,7 @@ export function AdvancedUserManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCollege, setFilterCollege] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [mentors, setMentors] = useState([]);
 
   useEffect(() => {
     fetchUsers();
@@ -29,6 +31,7 @@ export function AdvancedUserManagement() {
     fetchUserSegments();
     fetchActivityLogs();
     fetchPermissions();
+    fetchMentors();
   }, []);
 
   const fetchUsers = async () => {
@@ -127,6 +130,24 @@ export function AdvancedUserManagement() {
     }
   };
 
+  const fetchMentors = async (collegeName = null) => {
+    try {
+      let url = '/api/admin/users?role=mentor';
+      if (collegeName) {
+        url += `&college=${encodeURIComponent(collegeName)}`;
+      }
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setMentors(data.users || []);
+      } else {
+        setMentors([]);
+      }
+    } catch (error) {
+      setMentors([]);
+    }
+  };
+
   const handleSendMessage = async (userId) => {
     console.log('Send message to user:', userId);
     alert('Messaging functionality would be implemented here');
@@ -142,23 +163,37 @@ export function AdvancedUserManagement() {
       gitlabUsername: user.gitlabUsername,
       role: user.role,
       college: user.college,
-      status: user.status
+      status: user.status,
+      assignedMentor: user.assignedMentor || '',
     });
     setShowUserModal(true);
   };
 
+  const handleFormFieldChange = (field, value) => {
+    setEditFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      if ((field === 'college' || field === 'role') && updated.role === 'intern') {
+        fetchMentors(updated.college);
+        updated.assignedMentor = '';
+      }
+      return updated;
+    });
+  };
+
   const handleSaveUser = async (userData) => {
     try {
-      console.log('Saving user data:', userData);
       const url = userData.id ? `/api/admin/users/${userData.id}` : '/api/admin/users';
       const method = userData.id ? 'PUT' : 'POST';
-      
+      const payload = { ...userData };
+      if (payload.role !== 'intern') {
+        delete payload.assignedMentor;
+      }
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(payload),
       });
 
       console.log('Response status:', response.status);
@@ -271,7 +306,8 @@ export function AdvancedUserManagement() {
       gitlabUsername: '',
       role: 'intern',
       college: '',
-      status: 'active'
+      status: 'active',
+      assignedMentor: '',
     });
     setShowUserModal(true);
   };
@@ -374,339 +410,6 @@ export function AdvancedUserManagement() {
       case 'low': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-
-
-  const UserModal = () => {
-    if (!showUserModal) return null;
-
-    const handleFormSubmit = (e) => {
-      e.preventDefault();
-      handleSaveUser(editFormData);
-    };
-
-    const handleCloseModal = () => {
-      setShowUserModal(false);
-      setSelectedUser(null);
-      setIsEditMode(false);
-      setEditFormData({});
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {isEditMode ? (selectedUser ? 'Edit User' : `Add New ${editFormData.role ? editFormData.role.charAt(0).toUpperCase() + editFormData.role.slice(1) : 'User'}`) : selectedUser?.name}
-                </h2>
-                {!isEditMode && selectedUser && (
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span>📧 {selectedUser.email}</span>
-                    <span>🏫 {selectedUser.college}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {selectedUser.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskColor(selectedUser.riskLevel)}`}>
-                      {selectedUser.riskLevel} risk
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {isEditMode ? (
-              <div className="space-y-6">
-                {editFormData.role && (
-                  <div className={`p-4 rounded-lg border-l-4 ${
-                    editFormData.role === 'super-admin' ? 'bg-purple-50 border-purple-400' :
-                    editFormData.role === 'admin' ? 'bg-red-50 border-red-400' :
-                    editFormData.role === 'super-mentor' ? 'bg-yellow-50 border-yellow-400' :
-                    editFormData.role === 'mentor' ? 'bg-green-50 border-green-400' :
-                    'bg-blue-50 border-blue-400'
-                  }`}>
-                    <div className="flex items-center space-x-2">
-                      <span className={`w-3 h-3 rounded-full ${
-                        editFormData.role === 'super-admin' ? 'bg-purple-500' :
-                        editFormData.role === 'admin' ? 'bg-red-500' :
-                        editFormData.role === 'super-mentor' ? 'bg-yellow-500' :
-                        editFormData.role === 'mentor' ? 'bg-green-500' :
-                        'bg-blue-500'
-                      }`}></span>
-                      <span className="font-medium text-gray-900">
-                        Creating {editFormData.role.replace('-', ' ')} account
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {editFormData.role === 'super-admin' ? 'Full system access with all administrative privileges' :
-                       editFormData.role === 'admin' ? 'Administrative access to manage users and system settings' :
-                       editFormData.role === 'super-mentor' ? 'Manage mentors and interns within assigned college' :
-                       editFormData.role === 'mentor' ? 'Guide and manage assigned interns' :
-                       'Learn and complete tasks under mentor guidance'}
-                    </p>
-                  </div>
-                )}
-
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.name || ''}
-                        onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter full name"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        value={editFormData.email || ''}
-                        onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        GitLab Username *
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.gitlabUsername || ''}
-                        onChange={(e) => setEditFormData({...editFormData, gitlabUsername: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="gitlab.username"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Role *
-                      </label>
-                      <select
-                        value={editFormData.role || 'intern'}
-                        onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="intern">Intern</option>
-                        <option value="mentor">Mentor</option>
-                        <option value="super-mentor">Super Mentor</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        College *
-                      </label>
-                      <select
-                        value={editFormData.college || ''}
-                        onChange={(e) => setEditFormData({...editFormData, college: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Select College</option>
-                        {colleges.map(college => (
-                          <option key={college.id} value={college.name}>
-                            {college.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Status *
-                      </label>
-                      <select
-                        value={editFormData.status || 'active'}
-                        onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                  </div>
-                
-                  <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                    <button
-                      type="button"
-                      onClick={handleCloseModal}
-                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    >
-                      <span>{selectedUser ? 'Update User' : 'Create User'}</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">User Statistics</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {selectedUser?.performanceScore || 0}
-                      </div>
-                      <div className="text-sm text-blue-800">Performance Score</div>
-                    </div>
-                    
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {selectedUser?.loginCount || 0}
-                      </div>
-                      <div className="text-sm text-green-800">Total Logins</div>
-                    </div>
-                    
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {selectedUser?.avgSessionTime || 0}m
-                      </div>
-                      <div className="text-sm text-purple-800">Avg Session</div>
-                    </div>
-                    
-                    <div className="bg-orange-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {selectedUser?.role === 'intern' ? `${selectedUser?.tasksCompleted || 0}/${selectedUser?.totalTasks || 0}` : 'N/A'}
-                      </div>
-                      <div className="text-sm text-orange-800">Tasks Completed</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">GitLab Username</span>
-                      <span className="text-sm font-medium text-gray-900">@{selectedUser?.gitlabUsername}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Role</span>
-                      <span className="text-sm font-medium text-gray-900 capitalize">{selectedUser?.role}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Join Date</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {selectedUser?.joinDate ? new Date(selectedUser.joinDate).toLocaleDateString() : 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Last Active</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {selectedUser?.lastActive ? new Date(selectedUser.lastActive).toLocaleDateString() : 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Activity Level</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActivityColor(selectedUser?.activityLevel)}`}>
-                        {selectedUser?.activityLevel}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Recent Activity</h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {activityLogs
-                      .filter(log => log.userId === selectedUser?.id)
-                      .slice(0, 10)
-                      .map(log => (
-                        <div key={log.id} className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
-                          <div className="font-medium">{log.action}</div>
-                          <div className="text-xs text-gray-500">
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'}
-                          </div>
-                        </div>
-                      ))}
-                    {(!activityLogs || activityLogs.filter(log => log.userId === selectedUser?.id).length === 0) && (
-                      <p className="text-gray-500 text-sm">No recent activity</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex flex-wrap gap-3">
-                    <button 
-                      onClick={() => handleSendMessage(selectedUser.id)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Send Message
-                    </button>
-                    <button 
-                      onClick={() => handleEditUser(selectedUser)}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      Edit User
-                    </button>
-                    <button 
-                      onClick={() => handleViewFullActivity(selectedUser.id)}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                    >
-                      View Full Activity
-                    </button>
-                    <button 
-                      onClick={() => handleResetPassword(selectedUser.id)}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                    >
-                      Reset Password
-                    </button>
-                    {selectedUser.status === 'active' ? (
-                      <button 
-                        onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        Deactivate
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleToggleUserStatus(selectedUser.id, selectedUser.status)}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                      >
-                        Activate
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -954,7 +657,56 @@ export function AdvancedUserManagement() {
         </div>
       </div>
 
-      {showUserModal && <UserModal />}
+      <UserModal
+        isOpen={showUserModal}
+        isEditMode={isEditMode}
+        editFormData={editFormData}
+        setEditFormData={setEditFormData}
+        colleges={colleges}
+        mentors={mentors}
+        onClose={() => {
+          setShowUserModal(false);
+          setSelectedUser(null);
+          setIsEditMode(false);
+          setEditFormData({});
+        }}
+        onSave={async (userData) => {
+          try {
+            const url = userData.id ? `/api/admin/users/${userData.id}` : '/api/admin/users';
+            const method = userData.id ? 'PUT' : 'POST';
+            const payload = { ...userData };
+            if (payload.role !== 'intern') {
+              delete payload.assignedMentor;
+            }
+            const response = await fetch(url, {
+              method,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+            if (response.ok) {
+              const result = await response.json();
+              fetchUsers();
+              setShowUserModal(false);
+              setSelectedUser(null);
+              setIsEditMode(false);
+              setEditFormData({});
+              const successMessage = userData.id 
+                ? `✅ User "${userData.name}" updated successfully!\n\n⚠️ Note: If you changed their role, they may need to log out and log back in to see the changes in their dashboard.` 
+                : `🎉 New ${userData.role} "${userData.name}" created successfully!\n📧 Email: ${userData.email}\n🔗 GitLab: ${userData.gitlabUsername}`;
+              alert(successMessage);
+            } else {
+              const error = await response.json();
+              alert(`Error: ${error.error || error.message || 'Failed to save user'}`);
+            }
+          } catch (error) {
+            alert(`Error saving user: ${error.message}`);
+          }
+        }}
+        selectedUser={selectedUser}
+        activityLogs={activityLogs}
+      />
     </div>
   );
 }

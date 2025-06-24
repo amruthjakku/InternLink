@@ -86,7 +86,7 @@ export async function POST(request) {
     const requestBody = await request.json();
     console.log('POST /api/admin/users - Request body:', requestBody);
     
-    const { gitlabUsername, name, email, role, college, assignedBy } = requestBody;
+    const { gitlabUsername, name, email, role, college, assignedBy, assignedMentor } = requestBody;
 
     if (!name || !email || !role) {
       return NextResponse.json({ error: 'Name, email, and role are required' }, { status: 400 });
@@ -139,7 +139,7 @@ export async function POST(request) {
     // Create new user
     const userData = {
       gitlabUsername: gitlabUsername.toLowerCase(),
-      gitlabId: `manual_${Date.now()}`, // Temporary ID for manually created users
+      gitlabId: `manual_${Date.now()}`,
       name,
       email: email.toLowerCase(),
       role,
@@ -149,6 +149,14 @@ export async function POST(request) {
 
     if (collegeId) {
       userData.college = collegeId;
+    }
+
+    // Add assignedMentor for interns
+    if (role === 'intern') {
+      if (!assignedMentor) {
+        return NextResponse.json({ error: 'Assigned mentor is required for interns' }, { status: 400 });
+      }
+      userData.assignedMentor = assignedMentor;
     }
 
     const newUser = new User(userData);

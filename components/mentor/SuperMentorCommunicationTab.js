@@ -816,333 +816,6 @@ export function SuperMentorCommunicationTab() {
     );
   };
 
-  const CreateRoomModal = () => {
-    if (!showCreateRoom) return null;
-
-    return (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Create New Chat Room</h3>
-              <button
-                onClick={() => setShowCreateRoom(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); createChatRoom(); }} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Room Name *</label>
-                  <input
-                    type="text"
-                    value={roomForm.name}
-                    onChange={(e) => setRoomForm({...roomForm, name: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="Enter room name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Room Type *</label>
-                  <select
-                    value={roomForm.type}
-                    onChange={(e) => setRoomForm({...roomForm, type: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="general">General Discussion</option>
-                    <option value="project">Project Specific</option>
-                    <option value="announcement">Announcements</option>
-                    <option value="support">Support & Help</option>
-                    <option value="social">Social & Fun</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  value={roomForm.description}
-                  onChange={(e) => setRoomForm({...roomForm, description: e.target.value})}
-                  rows={3}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Describe the purpose of this room"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Visibility</label>
-                <select
-                  value={roomForm.visibility}
-                  onChange={(e) => setRoomForm({...roomForm, visibility: e.target.value})}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                >
-                  <option value="college-only">College Only</option>
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Participants</label>
-                <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
-                    {mentors.map(mentor => (
-                      <label key={mentor._id} className="flex items-center mb-1">
-                        <input
-                          type="checkbox"
-                          checked={roomForm.participants.includes(mentor._id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: [...roomForm.participants, mentor._id]
-                              });
-                            } else {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: roomForm.participants.filter(id => id !== mentor._id)
-                              });
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{mentor.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
-                    {interns.map(intern => (
-                      <label key={intern._id} className="flex items-center mb-1">
-                        <input
-                          type="checkbox"
-                          checked={roomForm.participants.includes(intern._id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: [...roomForm.participants, intern._id]
-                              });
-                            } else {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: roomForm.participants.filter(id => id !== intern._id)
-                              });
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{intern.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateRoom(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Create Room
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const AnnouncementModal = () => {
-    if (!showAnnouncementModal) return null;
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      const success = await createAnnouncement(roomForm);
-      if (success) {
-        setShowAnnouncementModal(false);
-        setRoomForm({
-          name: '',
-          description: '',
-          type: 'general',
-          visibility: 'college-only',
-          participants: [],
-          settings: {
-            allowFileSharing: true,
-            allowMentions: true,
-            moderationEnabled: false,
-            maxParticipants: 100
-          },
-          tags: [],
-          message: ''
-        });
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Create Announcement</h3>
-              <button
-                onClick={() => setShowAnnouncementModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Announcement Title *</label>
-                <input
-                  type="text"
-                  value={roomForm.name}
-                  onChange={(e) => setRoomForm({...roomForm, name: e.target.value})}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                  placeholder="Enter announcement title"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <input
-                  type="text"
-                  value={roomForm.description}
-                  onChange={(e) => setRoomForm({...roomForm, description: e.target.value})}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                  placeholder="Brief description of the announcement"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Announcement Message *</label>
-                <textarea
-                  value={roomForm.message || ''}
-                  onChange={(e) => setRoomForm({...roomForm, message: e.target.value})}
-                  rows={4}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                  placeholder="Enter your announcement message here..."
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Send to</label>
-                <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
-                    {mentors.map(mentor => (
-                      <label key={mentor._id} className="flex items-center mb-1">
-                        <input
-                          type="checkbox"
-                          checked={roomForm.participants.includes(mentor._id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: [...roomForm.participants, mentor._id]
-                              });
-                            } else {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: roomForm.participants.filter(id => id !== mentor._id)
-                              });
-                            }
-                          }}
-                          className="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{mentor.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
-                    {interns.map(intern => (
-                      <label key={intern._id} className="flex items-center mb-1">
-                        <input
-                          type="checkbox"
-                          checked={roomForm.participants.includes(intern._id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: [...roomForm.participants, intern._id]
-                              });
-                            } else {
-                              setRoomForm({
-                                ...roomForm,
-                                participants: roomForm.participants.filter(id => id !== intern._id)
-                              });
-                            }
-                          }}
-                          className="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{intern.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const allIds = [...mentors.map(m => m._id), ...interns.map(i => i._id)];
-                      setRoomForm({...roomForm, participants: allIds});
-                    }}
-                    className="text-sm text-red-600 hover:text-red-800"
-                  >
-                    Select All
-                  </button>
-                  <span className="mx-2 text-gray-300">|</span>
-                  <button
-                    type="button"
-                    onClick={() => setRoomForm({...roomForm, participants: []})}
-                    className="text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowAnnouncementModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Send Announcement
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       {/* Navigation */}
@@ -1196,8 +869,345 @@ export function SuperMentorCommunicationTab() {
       {activeView === 'analytics' && <AnalyticsView />}
 
       {/* Modals */}
-      <CreateRoomModal />
-      <AnnouncementModal />
+      <CreateRoomModal
+        show={showCreateRoom}
+        onClose={() => setShowCreateRoom(false)}
+        onSubmit={createChatRoom}
+        roomForm={roomForm}
+        setRoomForm={setRoomForm}
+        mentors={mentors}
+        interns={interns}
+      />
+      <AnnouncementModal
+        show={showAnnouncementModal}
+        onClose={() => setShowAnnouncementModal(false)}
+        onSubmit={createAnnouncement}
+        roomForm={roomForm}
+        setRoomForm={setRoomForm}
+        mentors={mentors}
+        interns={interns}
+      />
+    </div>
+  );
+}
+
+// Move CreateRoomModal outside the main component
+function CreateRoomModal({ show, onClose, onSubmit, roomForm, setRoomForm, mentors, interns }) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Create New Chat Room</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+          <form onSubmit={e => { e.preventDefault(); onSubmit(); }} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Room Name *</label>
+                <input
+                  type="text"
+                  value={roomForm.name}
+                  onChange={e => setRoomForm({ ...roomForm, name: e.target.value })}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Enter room name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Room Type *</label>
+                <select
+                  value={roomForm.type}
+                  onChange={e => setRoomForm({ ...roomForm, type: e.target.value })}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="general">General Discussion</option>
+                  <option value="project">Project Specific</option>
+                  <option value="announcement">Announcements</option>
+                  <option value="support">Support & Help</option>
+                  <option value="social">Social & Fun</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={roomForm.description}
+                onChange={e => setRoomForm({ ...roomForm, description: e.target.value })}
+                rows={3}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Describe the purpose of this room"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Visibility</label>
+              <select
+                value={roomForm.visibility}
+                onChange={e => setRoomForm({ ...roomForm, visibility: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="college-only">College Only</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Initial Participants</label>
+              <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
+                  {mentors.map(mentor => (
+                    <label key={mentor._id} className="flex items-center mb-1">
+                      <input
+                        type="checkbox"
+                        checked={roomForm.participants.includes(mentor._id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: [...roomForm.participants, mentor._id]
+                            });
+                          } else {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: roomForm.participants.filter(id => id !== mentor._id)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{mentor.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
+                  {interns.map(intern => (
+                    <label key={intern._id} className="flex items-center mb-1">
+                      <input
+                        type="checkbox"
+                        checked={roomForm.participants.includes(intern._id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: [...roomForm.participants, intern._id]
+                            });
+                          } else {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: roomForm.participants.filter(id => id !== intern._id)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{intern.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create Room
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Move AnnouncementModal outside the main component
+function AnnouncementModal({ show, onClose, onSubmit, roomForm, setRoomForm, mentors, interns }) {
+  if (!show) return null;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const success = await onSubmit(roomForm);
+    if (success) {
+      onClose();
+      setRoomForm({
+        name: '',
+        description: '',
+        type: 'general',
+        visibility: 'college-only',
+        participants: [],
+        settings: {
+          allowFileSharing: true,
+          allowMentions: true,
+          moderationEnabled: false,
+          maxParticipants: 100
+        },
+        tags: [],
+        message: ''
+      });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Create Announcement</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Announcement Title *</label>
+              <input
+                type="text"
+                value={roomForm.name}
+                onChange={(e) => setRoomForm({...roomForm, name: e.target.value})}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                placeholder="Enter announcement title"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <input
+                type="text"
+                value={roomForm.description}
+                onChange={(e) => setRoomForm({...roomForm, description: e.target.value})}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                placeholder="Brief description of the announcement"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Announcement Message *</label>
+              <textarea
+                value={roomForm.message || ''}
+                onChange={(e) => setRoomForm({...roomForm, message: e.target.value})}
+                rows={4}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                placeholder="Enter your announcement message here..."
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Send to</label>
+              <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
+                  {mentors.map(mentor => (
+                    <label key={mentor._id} className="flex items-center mb-1">
+                      <input
+                        type="checkbox"
+                        checked={roomForm.participants.includes(mentor._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: [...roomForm.participants, mentor._id]
+                            });
+                          } else {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: roomForm.participants.filter(id => id !== mentor._id)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{mentor.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
+                  {interns.map(intern => (
+                    <label key={intern._id} className="flex items-center mb-1">
+                      <input
+                        type="checkbox"
+                        checked={roomForm.participants.includes(intern._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: [...roomForm.participants, intern._id]
+                            });
+                          } else {
+                            setRoomForm({
+                              ...roomForm,
+                              participants: roomForm.participants.filter(id => id !== intern._id)
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{intern.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = [...mentors.map(m => m._id), ...interns.map(i => i._id)];
+                    setRoomForm({...roomForm, participants: allIds});
+                  }}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Select All
+                </button>
+                <span className="mx-2 text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => setRoomForm({...roomForm, participants: []})}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Send Announcement
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

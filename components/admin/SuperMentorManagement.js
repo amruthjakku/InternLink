@@ -1,25 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import UserModal from './UserModal';
 
 export function SuperMentorManagement() {
   const [superMentors, setSuperMentors] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingSuperMentor, setEditingSuperMentor] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [collegeFilter, setCollegeFilter] = useState('all');
-  
-  const [newSuperMentor, setNewSuperMentor] = useState({
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState({
     gitlabUsername: '',
     name: '',
     email: '',
     college: '',
-    specialization: ''
+    specialization: '',
+    role: 'super-mentor',
+    status: 'active',
   });
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const [collegeFilter, setCollegeFilter] = useState('all');
+  
   useEffect(() => {
     fetchData();
   }, []);
@@ -48,61 +49,69 @@ export function SuperMentorManagement() {
     }
   };
 
-  const handleAddSuperMentor = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newSuperMentor,
-          role: 'super-mentor',
-          assignedBy: 'admin'
-        })
-      });
-
-      if (response.ok) {
-        setShowAddModal(false);
-        setNewSuperMentor({
-          gitlabUsername: '',
-          name: '',
-          email: '',
-          college: '',
-          specialization: ''
-        });
-        fetchData();
-        alert('Super-Mentor added successfully!');
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('Error adding super-mentor:', error);
-      alert('Failed to add super-mentor');
-    }
+  const handleAddClick = () => {
+    setFormData({
+      gitlabUsername: '',
+      name: '',
+      email: '',
+      college: '',
+      specialization: '',
+      role: 'super-mentor',
+      status: 'active',
+    });
+    setIsEditMode(false);
+    setShowUserModal(true);
   };
 
-  const handleEditSuperMentor = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`/api/admin/users/${editingSuperMentor._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingSuperMentor)
-      });
+  const handleEditClick = (superMentor) => {
+    setFormData({ ...superMentor, role: 'super-mentor' });
+    setIsEditMode(true);
+    setShowUserModal(true);
+  };
 
-      if (response.ok) {
-        setShowEditModal(false);
-        setEditingSuperMentor(null);
-        fetchData();
-        alert('Super-Mentor updated successfully!');
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message}`);
+  const handleSaveSuperMentor = async (data) => {
+    if (isEditMode && data._id) {
+      // Edit
+      try {
+        const response = await fetch(`/api/admin/users/${data._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          setShowUserModal(false);
+          fetchData();
+          alert('Super-Mentor updated successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Error: ${error.message}`);
+        }
+      } catch (error) {
+        console.error('Error updating super-mentor:', error);
+        alert('Failed to update super-mentor');
       }
-    } catch (error) {
-      console.error('Error updating super-mentor:', error);
-      alert('Failed to update super-mentor');
+    } else {
+      // Add
+      try {
+        const response = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          setShowUserModal(false);
+          fetchData();
+          alert('Super-Mentor added successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Error: ${error.message}`);
+        }
+      } catch (error) {
+        console.error('Error adding super-mentor:', error);
+        alert('Failed to add super-mentor');
+      }
     }
   };
 
@@ -188,7 +197,7 @@ export function SuperMentorManagement() {
           <p className="text-gray-600">Manage super-mentors and their college assignments</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleAddClick}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
         >
           <span className="mr-2">➕</span>
@@ -372,10 +381,7 @@ export function SuperMentorManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => {
-                        setEditingSuperMentor(superMentor);
-                        setShowEditModal(true);
-                      }}
+                      onClick={() => handleEditClick(superMentor)}
                       className="text-blue-600 hover:text-blue-900"
                     >
                       Edit
@@ -401,163 +407,17 @@ export function SuperMentorManagement() {
         </div>
       </div>
 
-      {/* Add Super-Mentor Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Super-Mentor</h3>
-              <form onSubmit={handleAddSuperMentor} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">GitLab Username</label>
-                  <input
-                    type="text"
-                    required
-                    value={newSuperMentor.gitlabUsername}
-                    onChange={(e) => setNewSuperMentor({...newSuperMentor, gitlabUsername: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newSuperMentor.name}
-                    onChange={(e) => setNewSuperMentor({...newSuperMentor, name: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={newSuperMentor.email}
-                    onChange={(e) => setNewSuperMentor({...newSuperMentor, email: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Assigned College</label>
-                  <select
-                    required
-                    value={newSuperMentor.college}
-                    onChange={(e) => setNewSuperMentor({...newSuperMentor, college: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="">Select a college...</option>
-                    {colleges.map(college => (
-                      <option key={college._id} value={college._id}>
-                        {college.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Specialization</label>
-                  <input
-                    type="text"
-                    value={newSuperMentor.specialization}
-                    onChange={(e) => setNewSuperMentor({...newSuperMentor, specialization: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="e.g., Technical Leadership, Program Management"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Add Super-Mentor
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Super-Mentor Modal */}
-      {showEditModal && editingSuperMentor && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Super-Mentor</h3>
-              <form onSubmit={handleEditSuperMentor} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingSuperMentor.name}
-                    onChange={(e) => setEditingSuperMentor({...editingSuperMentor, name: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={editingSuperMentor.email}
-                    onChange={(e) => setEditingSuperMentor({...editingSuperMentor, email: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Assigned College</label>
-                  <select
-                    required
-                    value={editingSuperMentor.college}
-                    onChange={(e) => setEditingSuperMentor({...editingSuperMentor, college: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="">Select a college...</option>
-                    {colleges.map(college => (
-                      <option key={college._id} value={college._id}>
-                        {college.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Specialization</label>
-                  <input
-                    type="text"
-                    value={editingSuperMentor.specialization || ''}
-                    onChange={(e) => setEditingSuperMentor({...editingSuperMentor, specialization: e.target.value})}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="e.g., Technical Leadership, Program Management"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Update Super-Mentor
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <UserModal
+        isOpen={showUserModal}
+        isEditMode={isEditMode}
+        formData={formData}
+        setFormData={setFormData}
+        colleges={colleges}
+        onClose={() => setShowUserModal(false)}
+        onSave={handleSaveSuperMentor}
+        mode="super-mentor"
+        title={isEditMode ? 'Edit Super-Mentor' : 'Add New Super-Mentor'}
+      />
     </div>
   );
 }
