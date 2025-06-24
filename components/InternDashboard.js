@@ -7,7 +7,7 @@ import { TasksTab } from './intern/TasksTab';
 import { ProgressTab } from './intern/ProgressTab';
 import { PerformanceTab } from './intern/PerformanceTab';
 import { LeaderboardTab } from './intern/LeaderboardTab';
-import { AttendanceTab } from './intern/AttendanceTab';
+import { UnifiedAttendanceTab } from './intern/UnifiedAttendanceTab';
 import { ChatTab } from './intern/ChatTab';
 import { EnhancedChat } from './EnhancedChat';
 import { AIAssistantTab } from './intern/AIAssistantTab';
@@ -15,7 +15,6 @@ import { ProfileTab } from './intern/ProfileTab';
 import { GitLabTab } from './intern/GitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
-import { AttendanceHistory } from './AttendanceHistory';
 
 export function InternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
@@ -33,7 +32,6 @@ export function InternDashboard() {
     { id: 'profile', name: 'Profile', icon: '👤' },
     { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
     { id: 'attendance', name: 'Attendance', icon: '📍' },
-    { id: 'attendance-history', name: 'Attendance History', icon: '📅' },
     { id: 'chat', name: 'Chat', icon: '💬' },
     { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖' },
   ];
@@ -120,9 +118,7 @@ export function InternDashboard() {
       case 'leaderboard':
         return <LeaderboardTab {...commonProps} />;
       case 'attendance':
-        return <AttendanceTab {...commonProps} />;
-      case 'attendance-history':
-        return <AttendanceHistory />;
+        return <UnifiedAttendanceTab {...commonProps} />;
       case 'chat':
         return <EnhancedChat userRole="intern" />;
       case 'ai-assistant':

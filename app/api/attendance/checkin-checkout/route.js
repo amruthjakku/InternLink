@@ -17,6 +17,19 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid action. Must be checkin or checkout' }, { status: 400 });
     }
 
+    // Automatically get client IP if not provided
+    let userIP = clientIP;
+    if (!userIP) {
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        userIP = ipData.ip;
+      } catch (ipError) {
+        console.error('Error getting IP:', ipError);
+        return NextResponse.json({ error: 'Unable to determine your IP address' }, { status: 400 });
+      }
+    }
+
     // Ensure database connection
     if (!process.env.MONGODB_URI) {
       return NextResponse.json({ 
@@ -36,11 +49,12 @@ export async function POST(request) {
     
     const authorizedIPs = [...envIPs, ...dbIPs.map(ip => ip.ip)];
     
-    // Validate IP address
-    if (!authorizedIPs.includes(clientIP)) {
+    // Validate IP address (skip validation in development)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (!isDevelopment && authorizedIPs.length > 0 && !authorizedIPs.includes(userIP)) {
       return NextResponse.json({ 
         error: 'Unauthorized network. Please connect to an authorized Wi-Fi network to mark attendance.',
-        currentIP: clientIP,
+        currentIP: userIP,
         authorizedIPs: authorizedIPs.length > 0 ? ['Contact admin for authorized networks'] : []
       }, { status: 403 });
     }
@@ -69,21 +83,30 @@ export async function POST(request) {
     if (action === 'checkin') {
       if (hasCheckin) {
         return NextResponse.json({ 
-          error: 'You have already checked in today' 
+          error: 'You have already checked in today',
+          code: 'ALREADY_CHECKED_IN'
         }, { status: 400 });
       }
     } else if (action === 'checkout') {
       if (!hasCheckin) {
         return NextResponse.json({ 
-          error: 'You must check in before checking out' 
+          error: 'You must check in before checking out',
+          code: 'NO_CHECKIN_FOUND'
         }, { status: 400 });
       }
       if (hasCheckout) {
         return NextResponse.json({ 
-          error: 'You have already checked out today' 
+          error: 'You have already checked out today',
+          code: 'ALREADY_CHECKED_OUT' 
         }, { status: 400 });
       }
     }
+
+    // Get device info automatically
+    const finalDeviceInfo = deviceInfo || {
+      userAgent: request.headers.get('user-agent') || 'Unknown',
+      timestamp: new Date().toISOString()
+    };
 
     // Create attendance record
     const attendanceRecord = {
@@ -94,10 +117,11 @@ export async function POST(request) {
       action: action, // 'checkin' or 'checkout'
       timestamp: new Date(),
       date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-      ipAddress: clientIP,
+      ipAddress: userIP,
       location: location || null,
-      deviceInfo: deviceInfo || null,
-      college: session.user.college || null
+      deviceInfo: finalDeviceInfo,
+      college: session.user.college || null,
+      status: 'present' // Mark as present for any successful action
     };
     
     const result = await db.collection('attendance').insertOne(attendanceRecord);
@@ -112,7 +136,8 @@ export async function POST(request) {
       message: `${actionMessage} successfully at ${new Date().toLocaleTimeString()}`,
       attendanceId: result.insertedId,
       timestamp: attendanceRecord.timestamp,
-      action: action
+      action: action,
+      todayStatus: await getTodayAttendanceStatus(db, session.user.id)
     });
     
   } catch (error) {
@@ -120,6 +145,44 @@ export async function POST(request) {
     return NextResponse.json({ 
       error: 'Failed to process attendance' 
     }, { status: 500 });
+  }
+}
+
+// Helper function to get today's attendance status
+async function getTodayAttendanceStatus(db, userId) {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayRecords = await db.collection('attendance')
+      .find({
+        userId: userId,
+        timestamp: { $gte: today, $lt: tomorrow }
+      })
+      .sort({ timestamp: 1 })
+      .toArray();
+
+    const checkinRecord = todayRecords.find(r => r.action === 'checkin');
+    const checkoutRecord = todayRecords.find(r => r.action === 'checkout');
+
+    let totalHours = 0;
+    if (checkinRecord && checkoutRecord) {
+      totalHours = (new Date(checkoutRecord.timestamp) - new Date(checkinRecord.timestamp)) / (1000 * 60 * 60);
+    }
+
+    return {
+      hasCheckedIn: !!checkinRecord,
+      hasCheckedOut: !!checkoutRecord,
+      checkinTime: checkinRecord?.timestamp || null,
+      checkoutTime: checkoutRecord?.timestamp || null,
+      totalHours: totalHours.toFixed(2),
+      status: checkinRecord && checkoutRecord ? 'complete' : checkinRecord ? 'partial' : 'none'
+    };
+  } catch (error) {
+    console.error('Error getting today status:', error);
+    return null;
   }
 }
 
@@ -175,6 +238,30 @@ async function updateUserAttendanceStats(db, userId, action) {
     
   } catch (error) {
     console.error('Error updating user attendance stats:', error);
+  }
+}
+
+export async function GET(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const db = await getDatabase();
+    const todayStatus = await getTodayAttendanceStatus(db, session.user.id);
+    
+    return NextResponse.json({ 
+      success: true,
+      todayStatus: todayStatus
+    });
+    
+  } catch (error) {
+    console.error('Error getting attendance status:', error);
+    return NextResponse.json({ 
+      error: 'Failed to get attendance status' 
+    }, { status: 500 });
   }
 }
 

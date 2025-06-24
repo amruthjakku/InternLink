@@ -7,15 +7,43 @@ import { AuthProvider } from '../../../components/AuthProvider';
 import { MentorDashboard } from '../../../components/MentorDashboard';
 
 export default function MentorDashboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [sessionRefreshed, setSessionRefreshed] = useState(false);
+
+  // Refresh session data on mount to get latest role
+  const refreshSession = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh-session');
+      if (response.ok) {
+        const data = await response.json();
+        // Force session update with fresh data
+        await update({
+          ...session?.user,
+          role: data.user.role,
+          college: data.user.college,
+          assignedBy: data.user.assignedBy
+        });
+        setSessionRefreshed(true);
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+      setSessionRefreshed(true); // Continue with existing session
+    }
+  };
 
   useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {
       router.push('/');
+      return;
+    }
+
+    // Refresh session to get latest role information
+    if (!sessionRefreshed) {
+      refreshSession();
       return;
     }
 
@@ -31,7 +59,7 @@ export default function MentorDashboardPage() {
     }
 
     setLoading(false);
-  }, [session, status, router]);
+  }, [session, status, router, sessionRefreshed]);
 
   if (status === 'loading' || loading) {
     return (

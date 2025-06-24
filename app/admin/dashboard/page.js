@@ -13,7 +13,7 @@ import { SuperMentorManagement } from '../../../components/admin/SuperMentorMana
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [colleges, setColleges] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredColleges, setFilteredColleges] = useState([]);
+  const [sessionRefreshed, setSessionRefreshed] = useState(false);
   
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -46,11 +47,38 @@ export default function AdminDashboard() {
   const [bulkImportData, setBulkImportData] = useState('');
   const [bulkImportResults, setBulkImportResults] = useState(null);
 
+  // Refresh session data on mount to get latest role
+  const refreshSession = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh-session');
+      if (response.ok) {
+        const data = await response.json();
+        // Force session update with fresh data
+        await update({
+          ...session?.user,
+          role: data.user.role,
+          college: data.user.college,
+          assignedBy: data.user.assignedBy
+        });
+        setSessionRefreshed(true);
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+      setSessionRefreshed(true); // Continue with existing session
+    }
+  };
+
   useEffect(() => {
     if (status === 'loading') return;
     
     if (!session) {
       router.push('/');
+      return;
+    }
+
+    // Refresh session to get latest role information
+    if (!sessionRefreshed) {
+      refreshSession();
       return;
     }
 
@@ -66,7 +94,7 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData();
-  }, [session, status]);
+  }, [session, status, sessionRefreshed]);
 
   // Filter users when search or filter changes
   useEffect(() => {
@@ -357,6 +385,40 @@ export default function AdminDashboard() {
     }
   };
 
+  // Debug functions
+  const debugUsers = async () => {
+    try {
+      console.log('🔍 Running debug users...');
+      const response = await fetch('/api/debug/users');
+      const data = await response.json();
+      console.log('🔍 Debug Users Result:', data);
+      alert(`Debug complete! Check console. Found ${data.totalUsers} users, ${data.activeUsers} active`);
+    } catch (error) {
+      console.error('❌ Debug error:', error);
+      alert('Debug failed. Check console for errors.');
+    }
+  };
+
+  const testUserLookup = async () => {
+    const username = prompt('Enter GitLab username to test:');
+    if (!username) return;
+    
+    try {
+      console.log('🔍 Testing username lookup for:', username);
+      const response = await fetch('/api/debug/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      const data = await response.json();
+      console.log('🔍 Username Test Result:', data);
+      alert(`Test complete! Check console for detailed results.`);
+    } catch (error) {
+      console.error('❌ Username test error:', error);
+      alert('Username test failed. Check console for errors.');
+    }
+  };
+
   const exportData = async (type) => {
     try {
       const response = await fetch(`/api/admin/export?type=${type}`);
@@ -428,6 +490,7 @@ export default function AdminDashboard() {
           <nav className="flex space-x-8">
             {[
               { id: 'overview', name: 'Overview', icon: '📊' },
+              { id: 'debug', name: 'Debug Tools', icon: '🔍' },
               { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️' },
               { id: 'advanced-analytics', name: 'Advanced Analytics', icon: '🔬' },
               { id: 'attendance-analytics', name: 'Attendance Analytics', icon: '📍' },
@@ -614,6 +677,65 @@ export default function AdminDashboard() {
                     No colleges found. Add some colleges to get started.
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Debug Tab */}
+        {activeTab === 'debug' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">🔍 Debug Tools</h2>
+              <div className="text-sm text-gray-500">
+                Use these tools to debug authentication issues
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* User Database Debug */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Database Debug</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Check all users in database and their roles
+                </p>
+                <button
+                  onClick={debugUsers}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Debug All Users
+                </button>
+              </div>
+
+              {/* Username Lookup Test */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Username Lookup Test</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Test if a specific GitLab username can be found
+                </p>
+                <button
+                  onClick={testUserLookup}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Test Username Lookup
+                </button>
+              </div>
+            </div>
+
+            {/* Debug Instructions */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-yellow-800 mb-2">🔧 Debug Instructions</h3>
+              <div className="text-sm text-yellow-700 space-y-2">
+                <p><strong>1. Debug All Users:</strong> Shows all users in database with their roles and status</p>
+                <p><strong>2. Test Username Lookup:</strong> Enter a GitLab username to test different query methods</p>
+                <p><strong>3. Check Console:</strong> All debug output goes to browser console (F12)</p>
+                <p><strong>4. Common Issues:</strong></p>
+                <ul className="list-disc ml-6 mt-2 space-y-1">
+                  <li>Username case sensitivity mismatch</li>
+                  <li>User marked as inactive (isActive: false)</li>
+                  <li>User not saved to database properly</li>
+                  <li>GitLab profile username differs from database</li>
+                </ul>
               </div>
             </div>
           </div>

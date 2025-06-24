@@ -8,9 +8,14 @@ export function GitLabDiagnostic() {
   const user = session?.user;
   const [diagnostics, setDiagnostics] = useState({});
   const [testResults, setTestResults] = useState([]);
+  const [timestamp, setTimestamp] = useState('');
+  const [localTime, setLocalTime] = useState('');
 
   useEffect(() => {
     runDiagnostics();
+    // Set timestamps only on client side to avoid hydration mismatch
+    setTimestamp(new Date().toISOString());
+    setLocalTime(new Date().toLocaleString());
   }, []);
 
   const addTestResult = (test, status, message) => {
@@ -102,11 +107,11 @@ export function GitLabDiagnostic() {
           </div>
           <div>
             <strong>Timestamp:</strong><br />
-            {new Date().toISOString()}
+            {timestamp}
           </div>
           <div>
             <strong>Local Time:</strong><br />
-            {new Date().toLocaleString()}
+            {localTime}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../[...nextauth]/route';
 import { connectToDatabase } from '../../../../utils/database';
 import User from '../../../../models/User';
+import College from '../../../../models/College';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET() {
     await connectToDatabase();
     
     // Fetch the latest user data from database
-    const user = await User.findByGitLabUsername(session.user.gitlabUsername).populate('college');
+    const user = await User.findByGitLabUsername(session.user.gitlabUsername, 'college');
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

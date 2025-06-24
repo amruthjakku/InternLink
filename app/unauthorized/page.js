@@ -2,11 +2,13 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { VerificationPending } from '../../components/auth/VerificationPending';
 
 export default function Unauthorized() {
   const { data: session } = useSession();
   const router = useRouter();
+
 
   const handleApprove = () => {
     // In a real app, this would be handled by the admin/mentor
@@ -25,7 +27,7 @@ export default function Unauthorized() {
   // Otherwise show the basic unauthorized page
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-4xl">
         <div className="text-center">
           <div className="text-6xl mb-4">🚫</div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Access Denied</h2>
@@ -33,6 +35,8 @@ export default function Unauthorized() {
             You don't have permission to access this page.
           </p>
         </div>
+
+
 
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <div className="text-center space-y-4">
@@ -49,6 +53,8 @@ export default function Unauthorized() {
             >
               Sign Out
             </button>
+
+
           </div>
         </div>
       </div>

@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, CheckCircle, XCircle, AlertTriangle, BarChart3 } from 'lucide-react';
-import { AttendanceMarker } from '../AttendanceMarker';
+import { EnhancedAttendanceTab } from './EnhancedAttendanceTab';
 
 export function AttendanceTab({ user, loading }) {
+  // Use the new enhanced attendance tab
+  return <EnhancedAttendanceTab user={user} loading={loading} />;
+}
+
+// Legacy component code (kept for reference, but not used)
+function LegacyAttendanceTab({ user, loading }) {
   const [attendanceData, setAttendanceData] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());

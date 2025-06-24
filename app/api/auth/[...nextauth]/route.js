@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import GitLabProvider from 'next-auth/providers/gitlab';
 import { connectToDatabase } from '../../../../utils/database.js';
 import User from '../../../../models/User.js';
+import College from '../../../../models/College.js';
 
 export const authOptions = {
   providers: [
@@ -34,15 +35,30 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
+        console.log('🔍 SignIn Debug - Starting authentication for:', {
+          gitlabUsername: profile.username,
+          gitlabId: profile.id,
+          name: profile.name,
+          email: profile.email
+        });
+
         // Connect to database
         await connectToDatabase();
         
         // Check if user exists in our system by GitLab username
         const existingUser = await User.findByGitLabUsername(profile.username);
         
+        console.log('🔍 SignIn Debug - Database lookup result:', {
+          username: profile.username,
+          found: !!existingUser,
+          userRole: existingUser?.role,
+          userActive: existingUser?.isActive,
+          userId: existingUser?._id?.toString()
+        });
+        
         if (!existingUser) {
           // User not found in our system - they need to be pre-registered
-          console.log(`Unauthorized login attempt by GitLab user: ${profile.username}`);
+          console.log(`❌ Unauthorized login attempt by GitLab user: ${profile.username} - No record found in database`);
           return false; // This will trigger the error page
         }
         
@@ -53,20 +69,69 @@ export const authOptions = {
         existingUser.profileImage = profile.avatar_url || existingUser.profileImage;
         await existingUser.updateLastLogin();
         
-        console.log(`Successful login: ${profile.username} (${existingUser.role})`);
+        console.log(`✅ Successful login: ${profile.username} (${existingUser.role})`);
         return true;
         
       } catch (error) {
-        console.error('Error during sign in:', error);
+        console.error('❌ Error during sign in:', error);
         return false;
       }
     },
     
-    async jwt({ token, account, profile }) {
-      if (account && profile) {
+    async jwt({ token, account, profile, trigger }) {
+      console.log('🔍 JWT Debug - Token refresh trigger:', { 
+        hasAccount: !!account, 
+        hasProfile: !!profile, 
+        trigger,
+        existingUsername: token.gitlabUsername,
+        existingRole: token.role
+      });
+
+      // Always check for role updates on subsequent calls
+      if (!account && !profile && token.gitlabUsername) {
         try {
           await connectToDatabase();
-          let user = await User.findByGitLabUsername(profile.username).populate('college');
+          let user = await User.findByGitLabUsername(token.gitlabUsername, 'college');
+          
+          console.log('🔍 JWT Debug - Token refresh user lookup:', {
+            username: token.gitlabUsername,
+            found: !!user,
+            currentRole: user?.role,
+            tokenRole: token.role,
+            hasCollege: !!user?.college,
+            collegeName: user?.college?.name
+          });
+          
+          if (user) {
+            // Update token with latest user info (including role changes)
+            token.role = user.role;
+            token.college = user.college;
+            token.assignedBy = user.assignedBy;
+            token.userId = user._id.toString();
+          }
+        } catch (error) {
+          console.error('Error refreshing user data in JWT:', error);
+        }
+      }
+      
+      if (account && profile) {
+        try {
+          console.log('🔍 JWT Debug - Processing new login for:', {
+            username: profile.username,
+            id: profile.id,
+            name: profile.name
+          });
+
+          await connectToDatabase();
+          let user = await User.findByGitLabUsername(profile.username, 'college');
+          
+          console.log('🔍 JWT Debug - Database lookup in JWT:', {
+            username: profile.username,
+            found: !!user,
+            userRole: user?.role,
+            userCollege: user?.college?.name,
+            userActive: user?.isActive
+          });
           
           // Store GitLab access token for API calls
           if (account.access_token) {
@@ -84,21 +149,29 @@ export const authOptions = {
             token.assignedBy = user.assignedBy;
             token.userId = user._id.toString();
             
-            // Update last login
-            await user.updateLastLogin();
-            console.log(`Successful login: ${user.gitlabUsername} (${user.role})`);
+            console.log(`✅ JWT - Successful token creation: ${user.gitlabUsername} (${user.role})`);
           } else {
             // New user - mark as pending registration
             token.role = 'pending';
             token.gitlabUsername = profile.username;
             token.gitlabId = profile.id.toString();
             token.needsRegistration = true;
-            console.log(`New user login: ${profile.username} - needs registration`);
+            console.log(`⚠️ JWT - New user needs registration: ${profile.username}`);
           }
         } catch (error) {
-          console.error('Error in JWT callback:', error);
+          console.error('❌ Error in JWT callback:', error);
         }
       }
+      
+      console.log('🔍 JWT Debug - Final token state:', {
+        role: token.role,
+        username: token.gitlabUsername,
+        needsRegistration: token.needsRegistration,
+        hasCollege: !!token.college,
+        collegeId: token.college?._id,
+        collegeName: token.college?.name
+      });
+      
       return token;
     },
     

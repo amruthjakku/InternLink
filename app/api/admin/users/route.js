@@ -159,8 +159,35 @@ export async function POST(request) {
       userData.assignedMentor = assignedMentor;
     }
 
+    console.log('🔍 User Creation Debug - About to create user with data:', {
+      gitlabUsername: userData.gitlabUsername,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      hasCollege: !!userData.college,
+      collegeId: userData.college?.toString(),
+      isActive: userData.isActive,
+      assignedBy: userData.assignedBy
+    });
+
     const newUser = new User(userData);
     await newUser.save();
+    
+    console.log('🔍 User Creation Debug - User saved successfully:', {
+      id: newUser._id.toString(),
+      gitlabUsername: newUser.gitlabUsername,
+      role: newUser.role,
+      isActive: newUser.isActive
+    });
+
+    // Verify the user was saved correctly by fetching it back
+    const verifyUser = await User.findByGitLabUsername(newUser.gitlabUsername);
+    console.log('🔍 User Creation Debug - Verification lookup:', {
+      found: !!verifyUser,
+      role: verifyUser?.role,
+      isActive: verifyUser?.isActive,
+      id: verifyUser?._id?.toString()
+    });
 
     return NextResponse.json({ 
       success: true, 

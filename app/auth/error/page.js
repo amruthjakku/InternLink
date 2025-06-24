@@ -139,19 +139,7 @@ function AuthErrorContent() {
         </div>
       </div>
 
-      {/* Debug Information (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-gray-100 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Debug Information:</h4>
-            <div className="text-xs text-gray-600 space-y-1">
-              <div>Error Type: {error}</div>
-              <div>Search Params: {searchParams.toString()}</div>
-              <div>Timestamp: {new Date().toISOString()}</div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

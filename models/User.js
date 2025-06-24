@@ -96,8 +96,17 @@ userSchema.pre('save', function(next) {
 });
 
 // Static methods
-userSchema.statics.findByGitLabUsername = function(username) {
-  return this.findOne({ gitlabUsername: username.toLowerCase(), isActive: true });
+userSchema.statics.findByGitLabUsername = function(username, populateFields = '') {
+  const query = { gitlabUsername: username.toLowerCase(), isActive: true };
+  
+  let mongooseQuery = this.findOne(query);
+  
+  // Add population if requested
+  if (populateFields) {
+    mongooseQuery = mongooseQuery.populate(populateFields);
+  }
+  
+  return mongooseQuery;
 };
 
 userSchema.statics.findByRole = function(role, collegeId = null) {
