@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { EnhancedBarChart, ActivityHeatmap, MetricCard } from '../Charts';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { getCollegeName } from '../../utils/helpers';
@@ -24,6 +24,8 @@ export function AdvancedUserManagement() {
   const [filterCollege, setFilterCollege] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [mentors, setMentors] = useState([]);
+  const [bulkImportResult, setBulkImportResult] = useState(null);
+  const fileInputRef = useRef();
 
   useEffect(() => {
     fetchUsers();
@@ -234,7 +236,8 @@ export function AdvancedUserManagement() {
         fetchUsers();
         alert('User deleted successfully');
       } else {
-        alert('Failed to delete user');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete user');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -349,6 +352,31 @@ export function AdvancedUserManagement() {
     }
   };
 
+  const handleBulkImport = async (e) => {
+    e.preventDefault();
+    setBulkImportResult(null);
+    const file = fileInputRef.current.files[0];
+    if (!file) {
+      alert('Please select a file to upload.');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await fetch('/api/admin/users/bulk-import', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      setBulkImportResult(result);
+      if (result.success) {
+        fetchUsers();
+      }
+    } catch (error) {
+      setBulkImportResult({ error: error.message });
+    }
+  };
+
   // Filter users
   const filteredUsers = (users && Array.isArray(users)) ? users.filter(user => {
     if (filterRole !== 'all' && user.role !== filterRole) return false;
@@ -412,6 +440,51 @@ export function AdvancedUserManagement() {
     }
   };
 
+  const BulkModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Bulk Operations</h2>
+          <button onClick={() => setShowBulkModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+        </div>
+        <div className="p-6 space-y-8">
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-2">Bulk Import Users</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Import users in bulk from a CSV or Excel file. Download the sample sheet to see the required format. Supported roles: intern, mentor, super-mentor, admin.
+            </p>
+            <div className="flex items-center gap-4 mb-4">
+              <a href="/sample-user-import.csv" download className="px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm">Download Sample CSV</a>
+              <a href="/sample-user-import.xlsx" download className="px-3 py-2 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm">Download Sample Excel</a>
+            </div>
+            <form onSubmit={handleBulkImport} className="space-y-4">
+              <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" ref={fileInputRef} className="block" />
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Upload & Import</button>
+            </form>
+            {bulkImportResult && (
+              <div className="mt-4">
+                {bulkImportResult.error && <div className="text-red-600">Error: {bulkImportResult.error}</div>}
+                {bulkImportResult.success && <div className="text-green-600">{bulkImportResult.message}</div>}
+                {bulkImportResult.details && (
+                  <div className="mt-2 text-sm">
+                    <strong>Import Details:</strong>
+                    <ul className="list-disc ml-6">
+                      {bulkImportResult.details.map((row, idx) => (
+                        <li key={idx} className={row.success ? 'text-green-700' : 'text-red-700'}>
+                          Row {row.row}: {row.success ? '✅' : '❌'} {row.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -452,6 +525,15 @@ export function AdvancedUserManagement() {
               <span>Add User</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowBulkModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+            >
+              <span>Bulk Operations</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m0 0V6m0 6v6" />
               </svg>
             </button>
           </div>
@@ -707,6 +789,8 @@ export function AdvancedUserManagement() {
         selectedUser={selectedUser}
         activityLogs={activityLogs}
       />
+
+      {showBulkModal && <BulkModal />}
     </div>
   );
 }

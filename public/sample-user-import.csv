@@ -1,0 +1,5 @@
+name,email,gitlabUsername,role,college,assignedMentor
+John Doe,john.doe@example.com,johndoe,intern,Example College,mentorGitlabId
+Jane Mentor,,janementor,mentor,Example College,
+Sam Super,sam.super@example.com,samsuper,super-mentor,Example College,
+Alice Admin,,aliceadmin,admin,, 

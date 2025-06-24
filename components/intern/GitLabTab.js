@@ -69,7 +69,8 @@ export function GitLabTab() {
       }
     } catch (error) {
       console.error('Error checking GitLab connection:', error);
-      setError('Failed to check GitLab connection');
+      // Only set error if already connected, otherwise show connect UI
+      if (isConnected) setError('Failed to check GitLab connection');
     } finally {
       setLoading(false);
     }
@@ -80,13 +81,19 @@ export function GitLabTab() {
       const response = await fetch('/api/gitlab/intern-analytics');
       if (response.ok) {
         const data = await response.json();
-        setGitlabData(data);
+        if (data.connected === false || data.error === 'GitLab not connected') {
+          setIsConnected(false);
+          setGitlabData(null);
+          // Do NOT set error, just show connect UI
+        } else {
+          setGitlabData(data);
+        }
       } else {
         throw new Error('Failed to fetch GitLab data');
       }
     } catch (error) {
       console.error('Error fetching GitLab data:', error);
-      setError('Failed to fetch GitLab data');
+      if (isConnected) setError('Failed to fetch GitLab data');
     }
   };
 
@@ -807,7 +814,7 @@ export function GitLabTab() {
         </div>
       )}
 
-      {error && (
+      {isConnected && error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex">
             <div className="text-red-400 text-xl mr-3">⚠️</div>

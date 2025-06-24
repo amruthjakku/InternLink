@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 
 const AuthContext = createContext();
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export function AuthProvider({ children }) {
   const { data: session, status } = useSession();
@@ -14,6 +15,12 @@ export function AuthProvider({ children }) {
   // Function to refresh user data from database
   const refreshUserData = async () => {
     if (!session?.user?.gitlabUsername) return;
+    
+    // Check if we've refreshed recently
+    const now = Date.now();
+    if (lastRefresh && (now - lastRefresh) < REFRESH_INTERVAL) {
+      return; // Skip if refreshed within the last 5 minutes
+    }
     
     try {
       const response = await fetch('/api/auth/refresh-session');
@@ -30,9 +37,7 @@ export function AuthProvider({ children }) {
           
           // Update localStorage with fresh data
           localStorage.setItem(`user_${session.user.gitlabId}`, JSON.stringify(data.user));
-          setLastRefresh(Date.now());
-          
-          console.log('User data refreshed:', data.user.role);
+          setLastRefresh(now);
         }
       }
     } catch (error) {
@@ -61,12 +66,8 @@ export function AuthProvider({ children }) {
             gitlabUsername: session.user?.gitlabUsername,
           });
           
-          // Refresh user data from database to get latest role/info
-          // But only if we haven't refreshed recently (within last 30 seconds)
-          const now = Date.now();
-          if (!lastRefresh || (now - lastRefresh) > 30000) {
-            refreshUserData();
-          }
+          // Refresh user data if needed
+          refreshUserData();
         } catch (error) {
           console.error('Error parsing stored user data:', error);
           localStorage.removeItem(`user_${session.user.gitlabId}`);
@@ -89,7 +90,7 @@ export function AuthProvider({ children }) {
     }
     
     setLoading(false);
-  }, [session, status, lastRefresh]);
+  }, [session, status]); // Removed lastRefresh dependency
 
   const login = (userData) => {
     // For demo login (fallback)

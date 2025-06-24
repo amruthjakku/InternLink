@@ -163,7 +163,7 @@ export async function DELETE(request, { params }) {
 
     // Soft delete by setting isActive to false
     user.isActive = false;
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     return NextResponse.json({ message: 'User deleted successfully' });
 
