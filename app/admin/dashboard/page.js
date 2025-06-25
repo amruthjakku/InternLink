@@ -12,7 +12,9 @@ import { CollegeManagement } from '../../../components/CollegeManagement';
 import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
 import { AttendanceDebugger } from '../../../components/admin/AttendanceDebugger';
+import { CohortManagementTab } from '../../../components/admin/CohortManagementTab';
 import { MetricCard } from '../../../components/Charts';
+import { detectUserRole, detectCohortFromUsername, validateGitlabUsername, getRoleSuggestions } from '../../../utils/roleDetection';
 
 export default function AdminDashboard() {
   const { data: session, status, update } = useSession();
@@ -34,10 +36,16 @@ export default function AdminDashboard() {
   const [showEditCollegeModal, setShowEditCollegeModal] = useState(false);
   
   // Form states
-  const [newUser, setNewUser] = useState({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '' });
+  const [newUser, setNewUser] = useState({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '', cohort: '' });
   const [newCollege, setNewCollege] = useState({ name: '', description: '', location: '', website: '', mentorUsername: '' });
   const [editingUser, setEditingUser] = useState(null);
   const [editingCollege, setEditingCollege] = useState(null);
+  
+  // Role detection states
+  const [roleSuggestions, setRoleSuggestions] = useState(null);
+  const [usernameValidation, setUsernameValidation] = useState({ valid: true, message: '' });
+  const [availableCohorts, setAvailableCohorts] = useState([]);
+  const [autoDetectEnabled, setAutoDetectEnabled] = useState(true);
   
   // Search and filter states
   const [userSearch, setUserSearch] = useState('');
@@ -103,6 +111,61 @@ export default function AdminDashboard() {
 
     fetchDashboardData();
   }, [session, status, sessionRefreshed]);
+
+  // Fetch available cohorts for user assignment
+  const fetchAvailableCohorts = async () => {
+    try {
+      const response = await fetch('/api/admin/cohorts');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableCohorts(data.cohorts || []);
+      }
+    } catch (error) {
+      console.error('Error fetching cohorts:', error);
+    }
+  };
+
+  // Handle username input changes with automatic role detection
+  const handleUsernameChange = (username) => {
+    setNewUser({...newUser, gitlabUsername: username});
+    
+    // Validate username
+    const validation = validateGitlabUsername(username);
+    setUsernameValidation(validation);
+    
+    if (validation.valid && autoDetectEnabled && username.trim()) {
+      // Get role suggestions
+      const suggestions = getRoleSuggestions(username);
+      setRoleSuggestions(suggestions);
+      
+      // Auto-set role if high confidence
+      if (suggestions.confidence > 0.7) {
+        setNewUser(prev => ({...prev, role: suggestions.detectedRole}));
+      }
+      
+      // If it's an intern and we have cohort suggestions, try to find matching cohort
+      if (suggestions.detectedRole === 'intern' && suggestions.cohortInfo) {
+        findOrSuggestCohort(suggestions.cohortInfo);
+      }
+    } else {
+      setRoleSuggestions(null);
+    }
+  };
+
+  // Find or suggest cohort based on username pattern
+  const findOrSuggestCohort = async (cohortInfo) => {
+    if (!availableCohorts.length) await fetchAvailableCohorts();
+    
+    // Try to find existing cohort that matches the pattern
+    const matchingCohort = availableCohorts.find(cohort => 
+      cohort.name.toLowerCase().includes(cohortInfo.identifier.toLowerCase()) ||
+      cohort.name.toLowerCase().includes(cohortInfo.suggestedName.toLowerCase())
+    );
+    
+    if (matchingCohort) {
+      setNewUser(prev => ({...prev, cohort: matchingCohort._id}));
+    }
+  };
 
   // Filter users when search or filter changes
   useEffect(() => {
@@ -240,19 +303,53 @@ export default function AdminDashboard() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    
+    // Validate username first
+    const validation = validateGitlabUsername(newUser.gitlabUsername);
+    if (!validation.valid) {
+      alert(`Invalid username: ${validation.message}`);
+      return;
+    }
+    
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newUser,
-          assignedBy: session?.user?.gitlabUsername || 'admin'
+          assignedBy: session?.user?.gitlabUsername || 'admin',
+          autoDetected: roleSuggestions ? {
+            originalRole: roleSuggestions.detectedRole,
+            confidence: roleSuggestions.confidence,
+            cohortSuggestion: roleSuggestions.cohortInfo
+          } : null
         })
       });
 
       if (response.ok) {
+        const userData = await response.json();
+        
+        // If user is an intern and has a cohort assigned, also assign to cohort
+        if (newUser.role === 'intern' && newUser.cohort) {
+          try {
+            await fetch('/api/admin/assign-intern-cohort', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                internId: userData.userId,
+                cohortId: newUser.cohort
+              })
+            });
+          } catch (cohortError) {
+            console.error('Error assigning cohort:', cohortError);
+            // Don't fail the user creation, just log the cohort assignment failure
+          }
+        }
+        
         setShowAddUserModal(false);
-        setNewUser({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '' });
+        setNewUser({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '', cohort: '' });
+        setRoleSuggestions(null);
+        setUsernameValidation({ valid: true, message: '' });
         fetchDashboardData();
         alert('User added successfully!');
       } else {
@@ -524,6 +621,7 @@ export default function AdminDashboard() {
               { id: 'user-activation', name: 'User Activation', icon: '🔄' },
               { id: 'attendance-debugger', name: 'Attendance Debug', icon: '🔧' },
               { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
+              { id: 'cohort-management', name: 'Cohort Management', icon: '👥' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'college-management', name: 'College Management', icon: '🎓' },
               { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦' },
@@ -820,6 +918,9 @@ export default function AdminDashboard() {
 
         {/* Super-Mentor Management Tab */}
         {activeTab === 'super-mentor-management' && <SuperMentorManagement />}
+        
+        {/* Cohort Management Tab */}
+        {activeTab === 'cohort-management' && <CohortManagementTab />}
 
         {/* Colleges Tab */}
         {activeTab === 'colleges' && (
@@ -1003,51 +1104,85 @@ export default function AdminDashboard() {
       {/* Add User Modal */}
       {showAddUserModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New User</h3>
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add New User</h3>
+              <div className="flex items-center">
+                <label className="text-sm text-gray-600 mr-2">Auto-detect</label>
+                <input
+                  type="checkbox"
+                  checked={autoDetectEnabled}
+                  onChange={(e) => setAutoDetectEnabled(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+            </div>
             <form onSubmit={handleAddUser} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  GitLab Username
+                  GitLab Username <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newUser.gitlabUsername}
-                  onChange={(e) => setNewUser({...newUser, gitlabUsername: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    usernameValidation.valid 
+                      ? 'border-gray-300 focus:ring-blue-500' 
+                      : 'border-red-300 focus:ring-red-500'
+                  }`}
                   required
+                  placeholder="Enter GitLab username"
                 />
+                {!usernameValidation.valid && (
+                  <p className="text-sm text-red-600 mt-1">{usernameValidation.message}</p>
+                )}
+                {roleSuggestions && (
+                  <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                    <p className="text-sm font-medium text-blue-800">Auto-Detection Results:</p>
+                    <div className="text-sm text-blue-700 mt-1">
+                      <p>• Detected role: <span className="font-medium">{roleSuggestions.detectedRole}</span> 
+                         (Confidence: {Math.round(roleSuggestions.confidence * 100)}%)</p>
+                      {roleSuggestions.cohortInfo && (
+                        <p>• Suggested cohort: <span className="font-medium">{roleSuggestions.cohortInfo.suggestedName}</span></p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+                  Full Name (Optional)
                 </label>
                 <input
                   type="text"
                   value={newUser.name}
                   onChange={(e) => setNewUser({...newUser, name: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+                  placeholder="Enter full name"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
+                  Email (Optional)
                 </label>
                 <input
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({...newUser, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+                  placeholder="Enter email address"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
+                  Role <span className="text-red-500">*</span>
+                  {roleSuggestions && autoDetectEnabled && (
+                    <span className="text-sm text-blue-600 ml-2">(Auto-detected)</span>
+                  )}
                 </label>
                 <select
                   value={newUser.role}
@@ -1061,6 +1196,35 @@ export default function AdminDashboard() {
                   <option value="admin">Admin</option>
                 </select>
               </div>
+              
+              {newUser.role === 'intern' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cohort (Optional)
+                    {roleSuggestions?.cohortInfo && (
+                      <span className="text-sm text-blue-600 ml-2">(Auto-suggested)</span>
+                    )}
+                  </label>
+                  <select
+                    value={newUser.cohort}
+                    onChange={(e) => setNewUser({...newUser, cohort: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onFocus={fetchAvailableCohorts}
+                  >
+                    <option value="">Select Cohort (Optional)</option>
+                    {availableCohorts.map((cohort) => (
+                      <option key={cohort._id} value={cohort._id}>
+                        {cohort.name} ({cohort.currentInterns || 0}/{cohort.maxInterns})
+                      </option>
+                    ))}
+                  </select>
+                  {roleSuggestions?.cohortInfo && !newUser.cohort && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      💡 Suggestion: Create or assign to "{roleSuggestions.cohortInfo.suggestedName}"
+                    </p>
+                  )}
+                </div>
+              )}
               
               {(newUser.role === 'intern' || newUser.role === 'mentor' || newUser.role === 'super-mentor') && (
                 <div>
@@ -1094,7 +1258,10 @@ export default function AdminDashboard() {
                   type="button"
                   onClick={() => {
                     setShowAddUserModal(false);
-                    setNewUser({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '' });
+                    setNewUser({ gitlabUsername: '', name: '', email: '', role: 'intern', college: '', cohort: '' });
+                    setRoleSuggestions(null);
+                    setUsernameValidation({ valid: true, message: '' });
+                    setAvailableCohorts([]);
                   }}
                   className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                 >

@@ -1,23 +1,28 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../utils/database';
+import { getDatabase } from '../../../../utils/database';
+import { ObjectId } from 'mongodb';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'mentor' && session.user.role !== 'admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
+    const db = await getDatabase();
+    
+    const cohorts = await db.collection('cohorts')
+      .find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    // In a real implementation, you would fetch cohorts from database
-    // For now, return empty array
-    const cohorts = [];
-
-    return NextResponse.json({ cohorts });
+    return NextResponse.json({ 
+      success: true,
+      cohorts 
+    });
 
   } catch (error) {
     console.error('Error fetching cohorts:', error);
@@ -31,35 +36,41 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user.role !== 'mentor' && session.user.role !== 'admin')) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, collegeId, startDate, endDate, description } = await request.json();
+    const data = await request.json();
+    const { name, description, startDate, endDate, mentorId, maxInterns, createdBy } = data;
 
-    if (!name || !collegeId) {
-      return NextResponse.json({ error: 'Name and college ID are required' }, { status: 400 });
+    if (!name || !startDate || !endDate || !maxInterns) {
+      return NextResponse.json({ 
+        error: 'Name, start date, end date, and max interns are required' 
+      }, { status: 400 });
     }
 
-    await connectToDatabase();
+    const db = await getDatabase();
 
     const cohortData = {
       name,
-      collegeId,
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
       description: description || '',
-      createdBy: session.user.id,
-      createdAt: new Date()
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      mentorId: mentorId || null,
+      maxInterns: parseInt(maxInterns),
+      currentInterns: 0,
+      createdBy: createdBy || session.user.gitlabUsername,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true
     };
 
-    // In a real implementation, save to cohorts collection
-    // const db = await getDatabase();
-    // const result = await db.collection('cohorts').insertOne(cohortData);
+    const result = await db.collection('cohorts').insertOne(cohortData);
 
     return NextResponse.json({ 
       success: true,
-      message: 'Cohort created successfully' 
+      cohortId: result.insertedId,
+      message: 'Cohort created successfully'
     });
 
   } catch (error) {

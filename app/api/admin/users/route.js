@@ -86,14 +86,14 @@ export async function POST(request) {
     const requestBody = await request.json();
     console.log('POST /api/admin/users - Request body:', requestBody);
     
-    const { gitlabUsername, name, email, role, college, assignedBy, assignedMentor } = requestBody;
-
-    if (!name || !email || !role) {
-      return NextResponse.json({ error: 'Name, email, and role are required' }, { status: 400 });
-    }
+    const { gitlabUsername, name, email, role, college, assignedBy, assignedMentor, cohort, autoDetected } = requestBody;
 
     if (!gitlabUsername) {
       return NextResponse.json({ error: 'GitLab username is required' }, { status: 400 });
+    }
+
+    if (!role) {
+      return NextResponse.json({ error: 'Role is required' }, { status: 400 });
     }
 
     if ((role === 'intern' || role === 'mentor' || role === 'super-mentor') && !college) {
@@ -102,20 +102,23 @@ export async function POST(request) {
 
     await connectToDatabase();
 
-    // Check if user already exists
+    // Check if user already exists by GitLab username
     const existingUser = await User.findOne({ 
-      $or: [
-        { email: email.toLowerCase() },
-        { gitlabUsername: gitlabUsername.toLowerCase() }
-      ]
+      gitlabUsername: gitlabUsername.toLowerCase()
     });
 
     if (existingUser) {
-      if (existingUser.email === email.toLowerCase()) {
+      return NextResponse.json({ error: 'GitLab username already exists' }, { status: 400 });
+    }
+
+    // Check email if provided
+    if (email) {
+      const existingEmailUser = await User.findOne({ 
+        email: email.toLowerCase()
+      });
+      
+      if (existingEmailUser) {
         return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
-      }
-      if (existingUser.gitlabUsername === gitlabUsername.toLowerCase()) {
-        return NextResponse.json({ error: 'GitLab username already exists' }, { status: 400 });
       }
     }
 
@@ -140,23 +143,34 @@ export async function POST(request) {
     const userData = {
       gitlabUsername: gitlabUsername.toLowerCase(),
       gitlabId: `manual_${Date.now()}`,
-      name,
-      email: email.toLowerCase(),
+      name: name || gitlabUsername, // Use username as fallback for name
       role,
       assignedBy: assignedBy || session.user.name || session.user.email,
       isActive: true
     };
 
+    // Add email only if provided
+    if (email) {
+      userData.email = email.toLowerCase();
+    }
+
+    // Add auto-detection metadata if available
+    if (autoDetected) {
+      userData.autoDetected = autoDetected;
+    }
+
     if (collegeId) {
       userData.college = collegeId;
     }
 
-    // Add assignedMentor for interns
-    if (role === 'intern') {
-      if (!assignedMentor) {
-        return NextResponse.json({ error: 'Assigned mentor is required for interns' }, { status: 400 });
-      }
+    // Add assignedMentor for interns (optional)
+    if (role === 'intern' && assignedMentor) {
       userData.assignedMentor = assignedMentor;
+    }
+
+    // Add cohort assignment for interns (optional)
+    if (role === 'intern' && cohort) {
+      userData.cohortId = cohort;
     }
 
     console.log('🔍 User Creation Debug - About to create user with data:', {
@@ -192,12 +206,14 @@ export async function POST(request) {
     return NextResponse.json({ 
       success: true, 
       message: 'User created successfully',
+      userId: newUser._id.toString(),
       user: {
         _id: newUser._id,
         gitlabUsername: newUser.gitlabUsername,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        cohortId: newUser.cohortId
       }
     });
 
