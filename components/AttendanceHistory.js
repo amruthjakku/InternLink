@@ -121,11 +121,21 @@ export function AttendanceHistory() {
         await fetchAttendance();
         await fetchTodayAttendance();
       } else {
-        setMessage(`❌ ${data.error || 'Failed to process attendance'}`);
+        if (data.error === 'Unauthorized') {
+          setMessage('❌ Please log in first to mark attendance');
+        } else if (data.error?.includes('network')) {
+          setMessage('❌ Please connect to authorized Wi-Fi network');
+        } else {
+          setMessage(`❌ ${data.error || 'Failed to process attendance'}`);
+        }
       }
     } catch (error) {
       console.error('Error processing attendance:', error);
-      setMessage('❌ Network error. Please try again.');
+      if (error.message.includes('fetch')) {
+        setMessage('❌ Network error. Check your internet connection.');
+      } else {
+        setMessage('❌ System error. Please try again or contact admin.');
+      }
     } finally {
       setProcessing(false);
     }

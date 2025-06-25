@@ -12,12 +12,15 @@ export async function GET(request) {
     }
 
     const db = await getDatabase();
+    
+    // Use userId as string to avoid ObjectId version conflicts
+    const userId = String(session.user.id);
 
     // Get attendance records grouped by date
     const attendance = await db.collection('attendance').aggregate([
       {
         $match: {
-          userId: session.user.id
+          userId: userId
         }
       },
       {

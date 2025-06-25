@@ -11,6 +11,7 @@ import { IPManagement } from '../../../components/admin/IPManagement';
 import { CollegeManagement } from '../../../components/CollegeManagement';
 import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
+import { AttendanceDebugger } from '../../../components/admin/AttendanceDebugger';
 import { MetricCard } from '../../../components/Charts';
 
 export default function AdminDashboard() {
@@ -521,6 +522,7 @@ export default function AdminDashboard() {
               { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
               { id: 'user-activation', name: 'User Activation', icon: '🔄' },
+              { id: 'attendance-debugger', name: 'Attendance Debug', icon: '🔧' },
               { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'college-management', name: 'College Management', icon: '🎓' },
@@ -812,6 +814,9 @@ export default function AdminDashboard() {
 
         {/* User Activation Management Tab */}
         {activeTab === 'user-activation' && <UserActivationManagement />}
+
+        {/* Attendance Debugger Tab */}
+        {activeTab === 'attendance-debugger' && <AttendanceDebugger />}
 
         {/* Super-Mentor Management Tab */}
         {activeTab === 'super-mentor-management' && <SuperMentorManagement />}
