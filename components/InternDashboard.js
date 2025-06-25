@@ -15,6 +15,7 @@ import { ProfileTab } from './intern/ProfileTab';
 import { GitLabTab } from './intern/GitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
+import { ProfileCard } from './ProfileCard';
 
 export function InternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
@@ -237,7 +238,52 @@ export function InternDashboard() {
 
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {renderTabContent()}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {renderTabContent()}
+          </div>
+          
+          {/* Sidebar with Profile Card */}
+          <div className="lg:col-span-1 space-y-6">
+            <ProfileCard user={user} showMilestones={true} />
+            
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setActiveTab('tasks')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                >
+                  <span>📝</span>
+                  <span>View Tasks</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('gitlab')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                >
+                  <span>🦊</span>
+                  <span>GitLab Activity</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('attendance')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                >
+                  <span>📍</span>
+                  <span>Mark Attendance</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('meetings')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                >
+                  <span>📹</span>
+                  <span>Join Meeting</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

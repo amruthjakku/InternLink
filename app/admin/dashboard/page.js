@@ -13,7 +13,10 @@ import { SuperMentorManagement } from '../../../components/admin/SuperMentorMana
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
 import { AttendanceDebugger } from '../../../components/admin/AttendanceDebugger';
 import { CohortManagementTab } from '../../../components/admin/CohortManagementTab';
+import { TaskManagementTab } from '../../../components/admin/TaskManagementTab';
+import { BulkImportTab } from '../../../components/admin/BulkImportTab';
 import { MetricCard } from '../../../components/Charts';
+import { ProfileCard } from '../../../components/ProfileCard';
 import { detectUserRole, detectCohortFromUsername, validateGitlabUsername, getRoleSuggestions } from '../../../utils/roleDetection';
 
 export default function AdminDashboard() {
@@ -622,6 +625,7 @@ export default function AdminDashboard() {
               { id: 'attendance-debugger', name: 'Attendance Debug', icon: '🔧' },
               { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
               { id: 'cohort-management', name: 'Cohort Management', icon: '👥' },
+              { id: 'task-management', name: 'Task Management', icon: '📝' },
               { id: 'colleges', name: 'Colleges', icon: '🏫' },
               { id: 'college-management', name: 'College Management', icon: '🎓' },
               { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦' },
@@ -649,7 +653,9 @@ export default function AdminDashboard() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">System Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-3">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">System Overview</h2>
             
             {/* Enhanced Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -833,6 +839,72 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+              </div>
+              
+              {/* Sidebar with Profile Card */}
+              <div className="lg:col-span-1">
+                <ProfileCard user={session?.user} showMilestones={true} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Debug Tab */}
+        {activeTab === 'debug' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">🔍 Debug Tools</h2>
+              <div className="text-sm text-gray-500">
+                Use these tools to debug authentication issues
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* User Database Debug */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Database Debug</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Check all users in database and their roles
+                </p>
+                <button
+                  onClick={debugUsers}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Debug All Users
+                </button>
+              </div>
+
+              {/* Username Lookup Test */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Username Lookup Test</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Test if a specific GitLab username can be found
+                </p>
+                <button
+                  onClick={testUserLookup}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Test Username Lookup
+                </button>
+              </div>
+            </div>
+
+            {/* Debug Instructions */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-yellow-800 mb-2">🔧 Debug Instructions</h3>
+              <div className="text-sm text-yellow-700 space-y-2">
+                <p><strong>1. Debug All Users:</strong> Shows all users in database with their roles and status</p>
+                <p><strong>2. Test Username Lookup:</strong> Enter a GitLab username to test different query methods</p>
+                <p><strong>3. Check Console:</strong> All debug output goes to browser console (F12)</p>
+                <p><strong>4. Common Issues:</strong></p>
+                <ul className="list-disc ml-6 mt-2 space-y-1">
+                  <li>Username case sensitivity mismatch</li>
+                  <li>User marked as inactive (isActive: false)</li>
+                  <li>User not saved to database properly</li>
+                  <li>GitLab profile username differs from database</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
@@ -921,6 +993,9 @@ export default function AdminDashboard() {
         
         {/* Cohort Management Tab */}
         {activeTab === 'cohort-management' && <CohortManagementTab />}
+        
+        {/* Task Management Tab */}
+        {activeTab === 'task-management' && <TaskManagementTab />}
 
         {/* Colleges Tab */}
         {activeTab === 'colleges' && (
@@ -1016,6 +1091,11 @@ export default function AdminDashboard() {
 
         {/* Bulk Operations Tab */}
         {activeTab === 'bulk-operations' && (
+          <BulkImportTab />
+        )}
+
+        {/* Legacy Bulk Operations Tab */}
+        {activeTab === 'legacy-bulk-operations' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Bulk Operations</h2>
             

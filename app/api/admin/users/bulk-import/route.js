@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../utils/database';
 import User from '../../../../../models/User';
 import College from '../../../../../models/College';

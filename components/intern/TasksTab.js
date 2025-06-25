@@ -14,6 +14,13 @@ export function TasksTab({ user, loading }) {
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar'
   const [newComment, setNewComment] = useState('');
   const [addingComment, setAddingComment] = useState(false);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [submissionData, setSubmissionData] = useState({
+    submissionUrl: '',
+    mergeRequestUrl: '',
+    notes: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -284,6 +291,81 @@ export function TasksTab({ user, loading }) {
     }
   };
 
+  const handleSubmitTask = (task) => {
+    setSelectedTask(task);
+    setSubmissionData({
+      submissionUrl: '',
+      mergeRequestUrl: '',
+      notes: ''
+    });
+    setShowSubmissionModal(true);
+  };
+
+  const handleSubmissionSubmit = async () => {
+    if (!selectedTask || !submissionData.submissionUrl.trim()) {
+      alert('Please provide a submission URL');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/tasks/${selectedTask.id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submissionUrl: submissionData.submissionUrl.trim(),
+          mergeRequestUrl: submissionData.mergeRequestUrl.trim(),
+          notes: submissionData.notes.trim()
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update the task in the tasks array
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === selectedTask.id 
+              ? { ...task, submissions: data.submissions, status: 'review' }
+              : task
+          )
+        );
+
+        // Update selected task
+        setSelectedTask(prev => ({ 
+          ...prev, 
+          submissions: data.submissions, 
+          status: 'review' 
+        }));
+
+        setShowSubmissionModal(false);
+        alert('Task submitted successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to submit task');
+      }
+    } catch (error) {
+      console.error('Error submitting task:', error);
+      alert('Error submitting task');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getSubmissionStatus = (task) => {
+    if (!task.submissions || task.submissions.length === 0) {
+      return null;
+    }
+
+    const userSubmission = task.submissions.find(
+      sub => sub.internId === user?.id || sub.gitlabUsername === user?.gitlabUsername
+    );
+
+    return userSubmission;
+  };
+
   const filteredTasks = tasks.filter(task => {
     if (filterStatus !== 'all' && task.status !== filterStatus) return false;
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
@@ -467,6 +549,82 @@ export function TasksTab({ user, loading }) {
                   </div>
                 </div>
 
+                {/* Submission Status */}
+                {(() => {
+                  const submission = getSubmissionStatus(selectedTask);
+                  if (submission) {
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-3">Submission Status</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Status:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              submission.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              submission.status === 'revision_needed' ? 'bg-yellow-100 text-yellow-800' :
+                              submission.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {submission.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </div>
+                          
+                          <div className="text-sm">
+                            <span className="text-gray-600">Submitted:</span>
+                            <span className="ml-2">{format(new Date(submission.submittedAt), 'MMM dd, yyyy HH:mm')}</span>
+                          </div>
+                          
+                          {submission.submissionUrl && (
+                            <div className="text-sm">
+                              <span className="text-gray-600">Submission:</span>
+                              <a 
+                                href={submission.submissionUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View Submission
+                              </a>
+                            </div>
+                          )}
+                          
+                          {submission.mergeRequestUrl && (
+                            <div className="text-sm">
+                              <span className="text-gray-600">Merge Request:</span>
+                              <a 
+                                href={submission.mergeRequestUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View MR
+                              </a>
+                            </div>
+                          )}
+                          
+                          {submission.grade && (
+                            <div className="text-sm">
+                              <span className="text-gray-600">Grade:</span>
+                              <span className="ml-2 font-medium">{submission.grade}/100</span>
+                            </div>
+                          )}
+                          
+                          {submission.feedback && (
+                            <div className="text-sm">
+                              <span className="text-gray-600">Feedback:</span>
+                              <p className="mt-1 text-gray-800 bg-gray-50 p-2 rounded text-xs">
+                                {submission.feedback}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 {/* Attachments */}
                 {selectedTask.attachments.length > 0 && (
                   <div>
@@ -531,6 +689,13 @@ export function TasksTab({ user, loading }) {
                   className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
                 >
                   Log Time
+                </button>
+                <button 
+                  onClick={() => handleSubmitTask(selectedTask)}
+                  className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+                  disabled={getSubmissionStatus(selectedTask)?.status === 'submitted'}
+                >
+                  {getSubmissionStatus(selectedTask) ? 'Resubmit' : 'Submit Task'}
                 </button>
               </div>
             </div>
@@ -875,6 +1040,98 @@ export function TasksTab({ user, loading }) {
 
       {/* Task Modal */}
       {showTaskModal && <TaskModal />}
+
+      {/* Submission Modal */}
+      {showSubmissionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Submit Task: {selectedTask?.title}
+                </h2>
+                <button
+                  onClick={() => setShowSubmissionModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Submission URL *
+                </label>
+                <input
+                  type="url"
+                  value={submissionData.submissionUrl}
+                  onChange={(e) => setSubmissionData(prev => ({
+                    ...prev,
+                    submissionUrl: e.target.value
+                  }))}
+                  placeholder="https://github.com/username/repo"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Merge Request URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={submissionData.mergeRequestUrl}
+                  onChange={(e) => setSubmissionData(prev => ({
+                    ...prev,
+                    mergeRequestUrl: e.target.value
+                  }))}
+                  placeholder="https://gitlab.com/project/-/merge_requests/123"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={submissionData.notes}
+                  onChange={(e) => setSubmissionData(prev => ({
+                    ...prev,
+                    notes: e.target.value
+                  }))}
+                  placeholder="Any additional information about your submission..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowSubmissionModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmissionSubmit}
+                disabled={submitting || !submissionData.submissionUrl.trim()}
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'Submitting...' : 'Submit Task'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,32 +10,50 @@ const TaskSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['assignment', 'project', 'quiz', 'presentation', 'research', 'coding', 'other'],
+    default: 'assignment'
+  },
   status: {
     type: String,
-    enum: ['not_started', 'in_progress', 'review', 'completed', 'done'],
+    enum: ['not_started', 'in_progress', 'review', 'completed', 'done', 'draft', 'active', 'cancelled'],
     default: 'not_started'
   },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high'],
+    enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   },
   category: {
     type: String,
     required: true
   },
+  // Individual assignment (backward compatibility)
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   },
   assigneeName: {
-    type: String,
-    required: true
+    type: String
   },
   assigneeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  // Cohort assignment (new feature)
+  cohortId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Cohort'
+  },
+  cohortName: {
+    type: String
+  },
+  // Assignment type: 'individual' or 'cohort'
+  assignmentType: {
+    type: String,
+    enum: ['individual', 'cohort'],
+    default: 'individual'
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -47,9 +65,16 @@ const TaskSchema = new mongoose.Schema({
     enum: ['admin', 'super-mentor', 'mentor'],
     required: true
   },
+  assignedBy: {
+    type: String // GitLab username
+  },
   dueDate: {
     type: Date,
     required: true
+  },
+  startDate: {
+    type: Date,
+    default: Date.now
   },
   estimatedHours: {
     type: Number,
@@ -78,6 +103,58 @@ const TaskSchema = new mongoose.Schema({
     url: String,
     type: String
   }],
+  resources: [{
+    name: String,
+    url: String,
+    type: {
+      type: String,
+      enum: ['link', 'file', 'document', 'video', 'tutorial']
+    }
+  }],
+  requirements: [{
+    description: String,
+    completed: {
+      type: Boolean,
+      default: false
+    }
+  }],
+  submissions: [{
+    internId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    gitlabUsername: String,
+    submittedAt: Date,
+    submissionUrl: String,
+    mergeRequestUrl: String,
+    status: {
+      type: String,
+      enum: ['submitted', 'reviewed', 'approved', 'rejected', 'revision_needed'],
+      default: 'submitted'
+    },
+    feedback: String,
+    grade: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+    reviewedBy: String,
+    reviewedAt: Date
+  }],
+  // Task import/copy functionality
+  originalTaskId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task'
+  },
+  importedFrom: {
+    cohortId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Cohort'
+    },
+    cohortName: String,
+    importedAt: Date,
+    importedBy: String
+  },
   comments: [{
     author: {
       type: mongoose.Schema.Types.ObjectId,
@@ -88,7 +165,11 @@ const TaskSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  }
 }, {
   timestamps: true
 });

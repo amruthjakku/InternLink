@@ -11,6 +11,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Function to refresh user data from database
   const refreshUserData = async () => {
@@ -46,7 +52,7 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    if (status === 'loading') {
+    if (!isClient || status === 'loading') {
       setLoading(true);
       return;
     }
@@ -90,7 +96,7 @@ export function AuthProvider({ children }) {
     }
     
     setLoading(false);
-  }, [session, status]); // Removed lastRefresh dependency
+  }, [session, status, isClient]); // Added isClient dependency
 
   const login = (userData) => {
     // For demo login (fallback)
@@ -145,6 +151,18 @@ export function AuthProvider({ children }) {
     isGitLabAuth: !!session
   };
 
+  // Don't render children until we're on the client side and context is ready
+  if (!isClient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
       {children}
@@ -155,6 +173,9 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
+    // More detailed error message for debugging
+    console.error('useAuth hook called outside of AuthProvider context');
+    console.error('Make sure your component is wrapped with AuthProvider');
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

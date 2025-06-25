@@ -23,7 +23,7 @@ export function GitLabTab() {
   });
   const [isConnected, setIsConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [activeView, setActiveView] = useState('overview'); // overview, commits, analytics
+  const [activeView, setActiveView] = useState('overview'); // overview, commits, analytics, merge-requests
   const [successMessage, setSuccessMessage] = useState(null);
   const [showOAuthConnect, setShowOAuthConnect] = useState(false);
   const [oauthAvailable, setOauthAvailable] = useState(false);
@@ -691,6 +691,7 @@ export function GitLabTab() {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'repositories', name: 'Repositories', icon: '📁' },
               { id: 'commits', name: 'Commits', icon: '💾' },
+              { id: 'merge-requests', name: 'Merge Requests', icon: '🔀' },
               { id: 'analytics', name: 'Analytics', icon: '📈' }
             ].map((tab) => (
               <button
@@ -914,6 +915,10 @@ export function GitLabTab() {
         </div>
       )}
 
+      {activeView === 'merge-requests' && (
+        <MergeRequestsView gitlabData={gitlabData} />
+      )}
+
       {activeView === 'analytics' && (
         <div className="space-y-6">
           {/* Language Usage */}
@@ -1018,6 +1023,352 @@ export function GitLabTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Merge Requests View Component
+function MergeRequestsView({ gitlabData }) {
+  const [mergeRequests, setMergeRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all'); // all, opened, merged, closed
+  const [sortBy, setSortBy] = useState('updated'); // updated, created, title
+
+  useEffect(() => {
+    fetchMergeRequests();
+  }, []);
+
+  const fetchMergeRequests = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/gitlab/merge-requests');
+      if (response.ok) {
+        const data = await response.json();
+        setMergeRequests(data.mergeRequests || []);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to fetch merge requests');
+      }
+    } catch (error) {
+      console.error('Error fetching merge requests:', error);
+      setError('Failed to fetch merge requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFilteredAndSortedMRs = () => {
+    let filtered = mergeRequests;
+
+    // Apply filter
+    if (filter !== 'all') {
+      filtered = filtered.filter(mr => mr.state === filter);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'created':
+          return new Date(b.created_at) - new Date(a.created_at);
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'updated':
+        default:
+          return new Date(b.updated_at) - new Date(a.updated_at);
+      }
+    });
+
+    return filtered;
+  };
+
+  const getStatusColor = (state) => {
+    switch (state) {
+      case 'opened':
+        return 'bg-green-100 text-green-800';
+      case 'merged':
+        return 'bg-blue-100 text-blue-800';
+      case 'closed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (state) => {
+    switch (state) {
+      case 'opened':
+        return '🟢';
+      case 'merged':
+        return '🔀';
+      case 'closed':
+        return '🔴';
+      default:
+        return '⚪';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-center">
+          <div className="text-red-400 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Merge Requests</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchMergeRequests}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredMRs = getFilteredAndSortedMRs();
+  const stats = {
+    total: mergeRequests.length,
+    opened: mergeRequests.filter(mr => mr.state === 'opened').length,
+    merged: mergeRequests.filter(mr => mr.state === 'merged').length,
+    closed: mergeRequests.filter(mr => mr.state === 'closed').length
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <span className="text-2xl">🔀</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total MRs</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">🟢</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Open</p>
+              <p className="text-2xl font-semibold text-green-600">{stats.opened}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">✅</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Merged</p>
+              <p className="text-2xl font-semibold text-blue-600">{stats.merged}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <span className="text-2xl">🔴</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Closed</p>
+              <p className="text-2xl font-semibold text-red-600">{stats.closed}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Controls */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="opened">Open</option>
+                <option value="merged">Merged</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="updated">Last Updated</option>
+                <option value="created">Created Date</option>
+                <option value="title">Title</option>
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={fetchMergeRequests}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm flex items-center space-x-2"
+          >
+            <span>🔄</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Merge Requests List */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Merge Requests ({filteredMRs.length})
+          </h3>
+        </div>
+
+        {filteredMRs.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="text-gray-400 text-6xl mb-4">🔀</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No merge requests found</h3>
+            <p className="text-gray-600">
+              {filter === 'all' 
+                ? "You haven't created any merge requests yet." 
+                : `No ${filter} merge requests found.`}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredMRs.map((mr) => (
+              <div key={mr.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-lg">{getStatusIcon(mr.state)}</span>
+                      <h4 className="text-lg font-medium text-gray-900 hover:text-blue-600">
+                        <a 
+                          href={mr.web_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                        >
+                          {mr.title}
+                        </a>
+                      </h4>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(mr.state)}`}>
+                        {mr.state}
+                      </span>
+                    </div>
+
+                    <div className="text-sm text-gray-600 mb-3">
+                      <p className="line-clamp-2">{mr.description || 'No description provided'}</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <span>📁</span>
+                        <span>{mr.source_project?.name || 'Unknown Project'}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>🌿</span>
+                        <span>{mr.source_branch} → {mr.target_branch}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>📅</span>
+                        <span>Created {formatDate(mr.created_at)}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>🔄</span>
+                        <span>Updated {formatDate(mr.updated_at)}</span>
+                      </div>
+                      {mr.merged_at && (
+                        <div className="flex items-center space-x-1">
+                          <span>✅</span>
+                          <span>Merged {formatDate(mr.merged_at)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Additional Info */}
+                    <div className="flex items-center space-x-4 mt-3 text-sm">
+                      {mr.upvotes > 0 && (
+                        <span className="flex items-center space-x-1 text-green-600">
+                          <span>👍</span>
+                          <span>{mr.upvotes}</span>
+                        </span>
+                      )}
+                      {mr.downvotes > 0 && (
+                        <span className="flex items-center space-x-1 text-red-600">
+                          <span>👎</span>
+                          <span>{mr.downvotes}</span>
+                        </span>
+                      )}
+                      {mr.user_notes_count > 0 && (
+                        <span className="flex items-center space-x-1 text-blue-600">
+                          <span>💬</span>
+                          <span>{mr.user_notes_count} comments</span>
+                        </span>
+                      )}
+                      {mr.changes_count && (
+                        <span className="flex items-center space-x-1 text-purple-600">
+                          <span>📝</span>
+                          <span>{mr.changes_count} changes</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="ml-4 flex-shrink-0">
+                    <a
+                      href={mr.web_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <span className="mr-2">🔗</span>
+                      View in GitLab
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
