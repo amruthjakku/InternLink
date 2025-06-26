@@ -106,9 +106,17 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
-            {user?.name?.charAt(0)?.toUpperCase() || '?'}
-          </div>
+          {user?.gitlabAvatarUrl ? (
+            <img
+              src={user.gitlabAvatarUrl}
+              alt={user?.gitlabUsername || user?.name || 'User'}
+              className="w-12 h-12 rounded-full object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+              {user?.name?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
               <h3 className="text-sm font-semibold text-gray-900 truncate">
@@ -120,7 +128,13 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
               </span>
             </div>
             <p className="text-xs text-gray-500 truncate">
-              @{user?.gitlabUsername || 'unknown'}
+              {user?.gitlabUsername ? (
+                <>
+                  🦊 <a href={user?.gitlabProfileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">@{user.gitlabUsername}</a>
+                </>
+              ) : (
+                '@unknown'
+              )}
             </p>
           </div>
         </div>
@@ -132,9 +146,17 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       {/* Header */}
       <div className="flex items-start space-x-4 mb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-          {user?.name?.charAt(0)?.toUpperCase() || '?'}
-        </div>
+        {user?.gitlabAvatarUrl ? (
+          <img
+            src={user.gitlabAvatarUrl}
+            alt={user?.gitlabUsername || user?.name || 'User'}
+            className="w-16 h-16 rounded-full object-cover border border-gray-200"
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+            {user?.name?.charAt(0)?.toUpperCase() || '?'}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3 mb-2">
             <h2 className="text-xl font-bold text-gray-900 truncate">
@@ -148,12 +170,16 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
           <div className="space-y-1 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
               <span>🦊</span>
-              <span>@{user?.gitlabUsername || 'unknown'}</span>
+              {user?.gitlabUsername ? (
+                <a href={user?.gitlabProfileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">@{user.gitlabUsername}</a>
+              ) : (
+                <span>@unknown</span>
+              )}
             </div>
-            {user?.email && (
+            {(user?.gitlabEmail || user?.email) && (
               <div className="flex items-center space-x-2">
                 <span>📧</span>
-                <span className="truncate">{user.email}</span>
+                <span className="truncate">{user.gitlabEmail || user.email}</span>
               </div>
             )}
             {user?.college && (
@@ -174,15 +200,15 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {stats.tasksCompleted || 0}
+            {stats.repositoriesContributed || 0}
           </div>
-          <div className="text-xs text-gray-500">Tasks Done</div>
+          <div className="text-xs text-gray-500">Repositories</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">
             {stats.commitCount || 0}
           </div>
-          <div className="text-xs text-gray-500">Commits</div>
+          <div className="text-xs text-gray-500">Total Commits</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-purple-600">

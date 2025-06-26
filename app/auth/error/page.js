@@ -11,9 +11,30 @@ function AuthErrorContent() {
   useEffect(() => {
     const errorType = searchParams.get('error');
     
+    // Log error details for debugging
+    console.log('Auth Error Page:', {
+      errorType,
+      allParams: Object.fromEntries([...searchParams.entries()])
+    });
+    
     switch (errorType) {
       case 'AccessDenied':
         setError('access_denied');
+        break;
+      case 'OAuthSignin':
+        setError('oauth_signin');
+        break;
+      case 'OAuthCallback':
+        setError('oauth_callback');
+        break;
+      case 'OAuthCreateAccount':
+        setError('oauth_create_account');
+        break;
+      case 'EmailCreateAccount':
+        setError('email_create_account');
+        break;
+      case 'Callback':
+        setError('callback');
         break;
       case 'Configuration':
         setError('configuration');
@@ -35,6 +56,38 @@ function AuthErrorContent() {
           description: 'To gain access to the Internship Tracker platform, you need to be pre-registered by an admin or mentor.',
           icon: '🚫',
           color: 'red'
+        };
+      case 'oauth_signin':
+        return {
+          title: 'GitLab Sign-In Error',
+          message: 'There was a problem starting the GitLab sign-in process.',
+          description: 'Please try again or use a different browser. If the problem persists, contact support.',
+          icon: '🔄',
+          color: 'yellow'
+        };
+      case 'oauth_callback':
+        return {
+          title: 'Authentication Response Error',
+          message: 'There was a problem processing the GitLab authentication response.',
+          description: 'This could be due to an expired session or network issues. Please try signing in again.',
+          icon: '🔄',
+          color: 'yellow'
+        };
+      case 'oauth_create_account':
+        return {
+          title: 'Account Creation Failed',
+          message: 'We couldn\'t create your account using your GitLab profile.',
+          description: 'There might be missing information in your GitLab profile. Please ensure your GitLab profile has a name and email address.',
+          icon: '👤',
+          color: 'red'
+        };
+      case 'callback':
+        return {
+          title: 'Authentication Process Error',
+          message: 'There was an error during the authentication callback process.',
+          description: 'This could be due to network issues or server problems. Please try again later.',
+          icon: '🔄',
+          color: 'yellow'
         };
       case 'configuration':
         return {
@@ -137,6 +190,24 @@ function AuthErrorContent() {
             Need help? Contact your system administrator or mentor for assistance.
           </p>
         </div>
+        
+        {/* Debug Information (only in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-4 bg-gray-100 border border-gray-200 rounded-lg text-xs font-mono">
+            <details>
+              <summary className="cursor-pointer font-medium text-gray-700">Debug Information</summary>
+              <div className="mt-2 overflow-auto max-h-40">
+                <p className="mb-1 text-gray-700">Error Type: <span className="text-red-600">{searchParams.get('error') || 'None'}</span></p>
+                <p className="mb-1 text-gray-700">Error Description: <span className="text-red-600">{searchParams.get('error_description') || 'None'}</span></p>
+                <p className="mb-1 text-gray-700">Error URI: <span className="text-red-600">{searchParams.get('error_uri') || 'None'}</span></p>
+                <p className="mb-1 text-gray-700">All Parameters:</p>
+                <pre className="bg-gray-800 text-green-400 p-2 rounded text-xs">
+                  {JSON.stringify(Object.fromEntries([...searchParams.entries()]), null, 2)}
+                </pre>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
 
 

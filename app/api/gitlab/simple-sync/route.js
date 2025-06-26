@@ -34,7 +34,74 @@ export async function POST(request) {
     }
 
     // Decrypt access token
-    const accessToken = decrypt(integration.accessToken);
+    let accessToken = decrypt(integration.accessToken);
+    if (!accessToken) {
+      return NextResponse.json({ 
+        error: 'Token decryption failed',
+        message: 'Failed to decrypt the GitLab access token'
+      }, { status: 500 });
+    }
+
+    // Check if token is expired and refresh if needed
+    const now = new Date();
+    if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < now) {
+      console.log('🔄 GitLab token has expired, attempting to refresh...');
+      
+      try {
+        const refreshToken = decrypt(integration.refreshToken);
+        if (!refreshToken) {
+          return NextResponse.json({ 
+            error: 'Refresh token invalid',
+            message: 'The refresh token could not be decrypted'
+          }, { status: 401 });
+        }
+        
+        // Get GitLab instance URL
+        const gitlabInstance = integration.gitlabInstance || 'https://code.swecha.org';
+        const tokenUrl = `${gitlabInstance}/oauth/token`;
+        
+        // Make refresh token request
+        const response = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: process.env.GITLAB_CLIENT_ID,
+            client_secret: process.env.GITLAB_CLIENT_SECRET,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+            redirect_uri: process.env.GITLAB_REDIRECT_URI
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Token refresh failed: ${response.status} - ${errorText}`);
+          // Continue with the current token, it might still work
+        } else {
+          const tokens = await response.json();
+          
+          if (tokens.access_token) {
+            // Update tokens in database
+            await GitLabIntegration.updateOne(
+              { _id: integration._id },
+              {
+                accessToken: encrypt(tokens.access_token),
+                refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : integration.refreshToken,
+                tokenExpiresAt: new Date(Date.now() + (tokens.expires_in || 7200) * 1000),
+                updatedAt: new Date()
+              }
+            );
+            
+            accessToken = tokens.access_token;
+            console.log('✅ Token refreshed successfully');
+          }
+        }
+      } catch (refreshError) {
+        console.error('❌ Error refreshing token:', refreshError);
+        // Continue with the current token, it might still work
+      }
+    }
+
     const apiBase = integration.apiBase || process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4';
     
     console.log(`🚀 Starting simple sync for ${integration.gitlabUsername}`);
@@ -50,6 +117,79 @@ export async function POST(request) {
 
     // Step 1: Get user's projects
     console.log('📁 Fetching user projects...');
+    
+    // First, test the connection and check scopes
+    try {
+      // Check token scopes first
+      const scopesResponse = await fetch(`${apiBase}/personal_access_tokens/self`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (scopesResponse.ok) {
+        const tokenData = await scopesResponse.json();
+        console.log(`✅ Token scopes: ${tokenData.scopes?.join(', ') || 'unknown'}`);
+        
+        // Check if we have the required scopes
+        const requiredScopes = ['api', 'read_api', 'read_user', 'read_repository'];
+        const missingScopes = requiredScopes.filter(scope => 
+          !tokenData.scopes?.includes(scope) && 
+          !tokenData.scopes?.includes('api') // 'api' includes all scopes
+        );
+        
+        if (missingScopes.length > 0) {
+          console.warn(`⚠️ Token is missing required scopes: ${missingScopes.join(', ')}`);
+          // We'll continue anyway, but log the warning
+        }
+      } else {
+        console.warn('⚠️ Could not check token scopes, continuing anyway');
+      }
+      
+      // Now test basic user access
+      const testResponse = await fetch(`${apiBase}/user`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        
+        // Check for specific error types
+        if (testResponse.status === 403 && errorText.includes('insufficient_scope')) {
+          throw new Error(`GitLab token has insufficient permissions. Required scopes: api, read_api, read_user, read_repository. Status: ${testResponse.status} - ${errorText}`);
+        }
+        
+        throw new Error(`GitLab API connection test failed: ${testResponse.status} - ${errorText}`);
+      }
+      
+      const user = await testResponse.json();
+      console.log(`✅ Connected to GitLab API as ${user.username}`);
+      
+      // Update the integration with user details if missing
+      if (!integration.gitlabUserId) {
+        await GitLabIntegration.updateOne(
+          { _id: integration._id },
+          { 
+            gitlabUserId: user.id,
+            gitlabUsername: user.username,
+            gitlabName: user.name,
+            gitlabEmail: user.email,
+            gitlabAvatarUrl: user.avatar_url,
+            updatedAt: new Date()
+          }
+        );
+        console.log(`✅ Updated integration with user details for ${user.username}`);
+      }
+    } catch (connectionError) {
+      console.error('❌ Connection test failed:', connectionError);
+      throw new Error(`GitLab API connection failed: ${connectionError.message}`);
+    }
+    
+    // Now fetch projects
     const projectsResponse = await fetch(`${apiBase}/projects?membership=true&per_page=50`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -58,38 +198,119 @@ export async function POST(request) {
     });
 
     if (!projectsResponse.ok) {
-      throw new Error(`Failed to fetch projects: ${projectsResponse.status} ${projectsResponse.statusText}`);
+      const errorText = await projectsResponse.text();
+      throw new Error(`Failed to fetch projects: ${projectsResponse.status} - ${errorText}`);
     }
 
-    const projects = await projectsResponse.json();
+    let projects;
+    try {
+      // First check if the response is empty
+      const text = await projectsResponse.text();
+      
+      if (!text || text.trim() === '') {
+        throw new Error('Empty response when fetching projects');
+      }
+      
+      // Try to parse the text as JSON
+      try {
+        projects = JSON.parse(text);
+      } catch (jsonError) {
+        console.error(`Invalid JSON response for projects: ${jsonError.message}`);
+        console.error(`Response text: ${text.substring(0, 200)}...`);
+        throw new Error(`Failed to parse projects JSON: ${jsonError.message}`);
+      }
+      
+      if (!Array.isArray(projects)) {
+        console.error('Projects response is not an array:', typeof projects);
+        console.error('Response preview:', JSON.stringify(projects).substring(0, 200));
+        throw new Error('GitLab API did not return an array of projects');
+      }
+    } catch (parseError) {
+      throw new Error(`Failed to parse projects response: ${parseError.message}`);
+    }
     results.projectsFound = projects.length;
     console.log(`✅ Found ${projects.length} projects`);
 
     // Step 2: For each project, get ALL commits (no filtering)
-    for (const project of projects.slice(0, 10)) { // Limit to first 10 projects for now
+    // Process all projects, not just the first 10
+    for (const project of projects) {
       console.log(`\n🔍 Processing project: ${project.name}`);
       
       try {
-        // Get commits from this project (last 6 months, no author filter)
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        // Get commits from this project (last 12 months, no author filter)
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         
-        const commitsUrl = `${apiBase}/projects/${project.id}/repository/commits?since=${sixMonthsAgo.toISOString()}&per_page=100`;
+        const commitsUrl = `${apiBase}/projects/${project.id}/repository/commits?since=${oneYearAgo.toISOString()}&per_page=100`;
         console.log(`📡 Fetching commits: ${commitsUrl}`);
         
-        const commitsResponse = await fetch(commitsUrl, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Add timeout to avoid hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        let commits = [];
+        try {
+          const commitsResponse = await fetch(commitsUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
 
-        if (!commitsResponse.ok) {
-          console.log(`⚠️ Failed to fetch commits for ${project.name}: ${commitsResponse.status}`);
+          if (!commitsResponse.ok) {
+            if (commitsResponse.status === 404) {
+              console.log(`⚠️ Project ${project.name} returned 404 - might not have a repository`);
+              continue;
+            }
+            
+            const errorText = await commitsResponse.text();
+            console.log(`⚠️ Failed to fetch commits for ${project.name}: ${commitsResponse.status} - ${errorText}`);
+            continue;
+          }
+
+          try {
+            // First check if the response is empty
+            const text = await commitsResponse.text();
+            
+            if (!text || text.trim() === '') {
+              console.log(`⚠️ Empty response for ${project.name}`);
+              commits = [];
+              continue;
+            }
+            
+            // Try to parse the text as JSON
+            try {
+              commits = JSON.parse(text);
+            } catch (jsonError) {
+              console.log(`⚠️ Invalid JSON response for ${project.name}: ${jsonError.message}`);
+              console.log(`Response text: ${text.substring(0, 100)}...`);
+              commits = [];
+              continue;
+            }
+            
+            if (!Array.isArray(commits)) {
+              console.log(`⚠️ Invalid commits response for ${project.name} - not an array`);
+              commits = [];
+              continue;
+            }
+          } catch (parseError) {
+            console.log(`⚠️ Failed to parse commits for ${project.name}: ${parseError.message}`);
+            commits = [];
+            continue;
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          
+          if (fetchError.name === 'AbortError') {
+            console.log(`⚠️ Timeout fetching commits for ${project.name}`);
+          } else {
+            console.log(`⚠️ Error fetching commits for ${project.name}: ${fetchError.message}`);
+          }
           continue;
         }
-
-        const commits = await commitsResponse.json();
         console.log(`📊 Found ${commits.length} total commits in ${project.name}`);
         results.commitsFound += commits.length;
 
@@ -171,9 +392,43 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('❌ Simple sync error:', error);
+    
+    // Log sync error in the integration record
+    try {
+      if (session?.user?.id) {
+        await GitLabIntegration.updateOne(
+          { userId: session.user.id },
+          { 
+            $push: { 
+              syncErrors: { 
+                error: error.message, 
+                timestamp: new Date(),
+                stack: error.stack
+              } 
+            },
+            lastSyncAt: new Date()
+          }
+        );
+      } else {
+        console.error('Cannot log sync error: session or user ID is missing');
+      }
+    } catch (logError) {
+      console.error('Failed to log sync error:', logError);
+    }
+    
+    // Prepare detailed error response
+    const errorDetails = {
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      url: error.url,
+      status: error.status,
+      responseData: error.responseData,
+      apiBase: process.env.GITLAB_API_BASE || 'https://code.swecha.org/api/v4'
+    };
+    
     return NextResponse.json({ 
       error: 'Sync failed',
-      details: error.message 
+      details: errorDetails
     }, { status: 500 });
   }
 }

@@ -117,6 +117,24 @@ export async function POST(request) {
       integration.lastSuccessfulSyncAt = new Date();
       await integration.save();
 
+      // Trigger initial sync after successful connection
+      let syncWarning = null;
+      let lastSyncAt = null;
+      try {
+        const syncResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/gitlab/simple-sync`, {
+          method: 'POST',
+          headers: { 'Cookie': request.headers.get('cookie') || '' },
+        });
+        if (syncResponse.ok) {
+          const syncData = await syncResponse.json();
+          lastSyncAt = syncData.lastSyncAt || null;
+        } else {
+          syncWarning = 'Initial sync failed. Please try syncing manually.';
+        }
+      } catch (syncError) {
+        syncWarning = 'Initial sync failed. Please try syncing manually.';
+      }
+
       console.log(`GitLab OAuth integration successful for user ${session.user.id}: @${gitlabUser.username}`);
 
       return NextResponse.json({
@@ -128,13 +146,15 @@ export async function POST(request) {
           email: gitlabUser.email,
           repositoriesCount: repositories.length,
           instance: integration.gitlabInstance,
-          connectedAt: integration.connectedAt
+          connectedAt: integration.connectedAt,
+          lastSyncAt
         },
         stats: {
           totalProjects: commitActivity.projects.length,
           totalCommits: commitActivity.totalCommits,
           activeProjects: commitActivity.activeProjects
-        }
+        },
+        warning: syncWarning
       });
 
     } catch (syncError) {

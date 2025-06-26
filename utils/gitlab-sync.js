@@ -4,6 +4,79 @@ import GitLabIntegration from '../models/GitLabIntegration.js';
 import ActivityTracking from '../models/ActivityTracking.js';
 
 /**
+ * Refresh expired GitLab OAuth token
+ * @param {Object} integration - GitLab integration document
+ * @returns {Promise<string|null>} - New access token or null if refresh failed
+ */
+export async function refreshGitLabToken(integration) {
+  try {
+    console.log(`Attempting to refresh token for user ${integration.gitlabUsername}`);
+    
+    // Check if we have a refresh token
+    if (!integration.refreshToken) {
+      console.error('No refresh token available');
+      return null;
+    }
+    
+    const refreshToken = decrypt(integration.refreshToken);
+    if (!refreshToken) {
+      console.error('Failed to decrypt refresh token');
+      return null;
+    }
+    
+    // Get GitLab instance URL
+    const gitlabInstance = integration.gitlabInstance || 'https://code.swecha.org';
+    const tokenUrl = `${gitlabInstance}/oauth/token`;
+    
+    console.log(`Refreshing token using ${tokenUrl}`);
+    
+    // Make refresh token request
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.GITLAB_CLIENT_ID,
+        client_secret: process.env.GITLAB_CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+        redirect_uri: process.env.GITLAB_REDIRECT_URI
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Token refresh failed (${response.status}): ${errorText}`);
+      return null;
+    }
+
+    const tokens = await response.json();
+    
+    if (!tokens.access_token) {
+      console.error('No access token in refresh response');
+      return null;
+    }
+    
+    console.log('Token refreshed successfully, updating in database');
+    
+    // Update tokens in database
+    await GitLabIntegration.updateOne(
+      { _id: integration._id },
+      {
+        accessToken: encrypt(tokens.access_token),
+        refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : integration.refreshToken,
+        tokenExpiresAt: new Date(Date.now() + (tokens.expires_in || 7200) * 1000),
+        updatedAt: new Date()
+      }
+    );
+
+    return tokens.access_token;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
+}
+
+/**
  * GitLab Sync Service
  * Handles synchronization of GitLab data with our database
  */
@@ -114,39 +187,52 @@ export class GitLabSyncService {
     // Process commits
     for (const commit of commits) {
       try {
+        // Defensive: ensure all required fields are present and valid
+        const safeTitle = commit.title || 'No title';
+        const safeProjectId = commit.project_id || 0;
+        const safeProjectName = commit.project_name || 'Unknown Project';
+        const safeProjectUrl = commit.project_url || '';
+        const safeProjectPath = commit.project_path || '';
+        const safeGitlabId = commit.id || commit.sha || '';
+        const safeCreatedAt = commit.created_at ? new Date(commit.created_at) : new Date();
+        // Defensive: clean metadata
+        const metadata = {
+          sha: commit.id,
+          additions: commit.stats?.additions || 0,
+          deletions: commit.stats?.deletions || 0,
+          parentIds: commit.parent_ids || [],
+          branch: commit.refs?.find(ref => ref.type === 'branch')?.name
+        };
+        Object.keys(metadata).forEach(key => {
+          if (metadata[key] === undefined) delete metadata[key];
+        });
+        const updateData = {
+          userId,
+          type: 'commit',
+          gitlabId: safeGitlabId,
+          projectId: safeProjectId,
+          projectName: safeProjectName,
+          projectUrl: safeProjectUrl,
+          projectPath: safeProjectPath,
+          title: safeTitle,
+          description: commit.message || '',
+          url: commit.web_url,
+          activityCreatedAt: safeCreatedAt,
+          metadata,
+          syncedAt: new Date()
+        };
         const result = await ActivityTracking.updateOne(
-          { gitlabId: commit.id, type: 'commit' },
-          {
-            userId,
-            type: 'commit',
-            gitlabId: commit.id,
-            projectId: commit.project_id,
-            projectName: commit.project_name,
-            projectUrl: commit.project_url,
-            projectPath: commit.project_path,
-            title: commit.title,
-            description: commit.message,
-            url: commit.web_url,
-            activityCreatedAt: new Date(commit.created_at),
-            metadata: {
-              sha: commit.id,
-              additions: commit.stats?.additions || 0,
-              deletions: commit.stats?.deletions || 0,
-              parentIds: commit.parent_ids || [],
-              branch: commit.refs?.find(ref => ref.type === 'branch')?.name
-            },
-            syncedAt: new Date()
-          },
+          { gitlabId: safeGitlabId, type: 'commit' },
+          updateData,
           { upsert: true }
         );
-        
         if (result.upsertedCount > 0) {
           results.commits.created++;
         } else if (result.modifiedCount > 0) {
           results.commits.updated++;
         }
       } catch (error) {
-        console.error(`Error processing commit ${commit.id}:`, error);
+        console.error(`Error processing commit ${commit.id}:`, error, '\nCommit data:', JSON.stringify(commit, null, 2));
       }
     }
 

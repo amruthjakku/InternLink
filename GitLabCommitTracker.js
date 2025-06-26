@@ -85,9 +85,7 @@ export function GitLabCommitTracker({ gitlabData }) {
                   <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                     <span>👤 {commit.author_name}</span>
                     <span>📅 {formatDate(commit.created_at)}</span>
-                    {commit.project && (
-                      <span>📁 {typeof commit.project === 'object' ? commit.project.name || commit.project.path || '' : commit.project}</span>
-                    )}
+                    {commit.project && <span>📁 {commit.project}</span>}
                     {commit.stats && (
                       <span className="flex items-center space-x-1">
                         <span className="text-green-600">+{commit.stats.additions || 0}</span>

@@ -128,14 +128,35 @@ export async function POST(request) {
       // Continue even if repository fetch fails
     }
 
+    // Trigger initial sync after successful connection
+    let syncResult = null;
+    let syncWarning = null;
+    let lastSyncAt = null;
+    try {
+      const syncResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/gitlab/simple-sync`, {
+        method: 'POST',
+        headers: { 'Cookie': request.headers.get('cookie') || '' },
+      });
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        lastSyncAt = syncData.lastSyncAt || null;
+      } else {
+        syncWarning = 'Initial sync failed. Please try syncing manually.';
+      }
+    } catch (syncError) {
+      syncWarning = 'Initial sync failed. Please try syncing manually.';
+    }
+
     return NextResponse.json({
       success: true,
       message: 'GitLab account connected successfully',
       integration: {
         username: integration.gitlabUsername,
         repositoriesCount: integration.repositories?.length || 0,
-        connectedAt: integration.connectedAt
-      }
+        connectedAt: integration.connectedAt,
+        lastSyncAt
+      },
+      warning: syncWarning
     });
 
   } catch (error) {

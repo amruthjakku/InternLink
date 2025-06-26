@@ -169,8 +169,9 @@ const ActivityTrackingSchema = new mongoose.Schema({
     // Review-specific fields
     reviewType: {
       type: String,
-      enum: ['approved', 'unapproved', 'commented'],
-      default: null
+      enum: ['approved', 'unapproved', 'commented', null],
+      default: null,
+      required: false
     },
     
     // Additional context
@@ -224,7 +225,7 @@ ActivityTrackingSchema.pre('save', function(next) {
 // Compound indexes for efficient queries
 ActivityTrackingSchema.index({ userId: 1, type: 1, activityCreatedAt: -1 });
 ActivityTrackingSchema.index({ projectId: 1, type: 1 });
-ActivityTrackingSchema.index({ gitlabId: 1, type: 1 }, { unique: true });
+ActivityTrackingSchema.index({ userId: 1, gitlabId: 1, type: 1 }, { unique: true });
 
 // Static methods for analytics
 ActivityTrackingSchema.statics.getUserStats = async function(userId, dateRange = {}) {

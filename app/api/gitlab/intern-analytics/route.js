@@ -51,7 +51,7 @@ export async function GET(request) {
     const includeStats = searchParams.get('includeStats') !== 'false';
 
     try {
-      // Get stored activity tracking data (this is what we actually have)
+      // Show ALL commits for the user's projects, regardless of author
       const storedActivities = await ActivityTracking.find({
         userId: session.user.id,
         type: 'commit',

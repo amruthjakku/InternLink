@@ -34,6 +34,28 @@ export function GitLabTab() {
     checkGitLabConnection();
   }, []);
 
+  // Helper function to safely parse JSON responses
+  const safeJsonParse = async (response, errorContext) => {
+    try {
+      const text = await response.text();
+      
+      if (!text || text.trim() === '') {
+        throw new Error(`Empty response from ${errorContext}`);
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (jsonError) {
+        console.error(`❌ JSON parse error (${errorContext}):`, jsonError);
+        console.error('Response text:', text.substring(0, 200));
+        throw new Error(`Invalid JSON response from ${errorContext}: ${jsonError.message}`);
+      }
+    } catch (error) {
+      console.error(`Error parsing ${errorContext} response:`, error);
+      throw error;
+    }
+  };
+  
   const checkGitLabConnection = async () => {
     try {
       setLoading(true);
@@ -42,14 +64,14 @@ export function GitLabTab() {
       // First check OAuth status
       const oauthResponse = await fetch('/api/gitlab/oauth-connect');
       if (oauthResponse.ok) {
-        const oauthData = await oauthResponse.json();
+        const oauthData = await safeJsonParse(oauthResponse, 'OAuth check');
         setOauthAvailable(oauthData.canConnectViaOAuth);
         
         if (oauthData.canConnectViaOAuth) {
           // User has valid OAuth token, check if already connected
           const statusResponse = await fetch('/api/gitlab/connection-status');
           if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
+            const statusData = await safeJsonParse(statusResponse, 'connection status');
             setIsConnected(statusData.connected);
             if (statusData.connected) {
               await fetchGitLabData();
@@ -58,28 +80,38 @@ export function GitLabTab() {
               setShowOAuthConnect(true);
             }
           } else {
-            const statusError = await statusResponse.json();
-            console.error('Connection status check failed:', statusError);
-            // Only show error if it's not a simple "not connected" case
-            if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
-              setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+            try {
+              const statusError = await safeJsonParse(statusResponse, 'connection status error');
+              console.error('Connection status check failed:', statusError);
+              // Only show error if it's not a simple "not connected" case
+              if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
+                setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+              }
+            } catch (parseError) {
+              // If we can't parse the error response, just log it
+              console.error('Failed to parse connection status error:', parseError);
             }
           }
         } else {
           // No OAuth token, check for existing PAT connection
           const statusResponse = await fetch('/api/gitlab/connection-status');
           if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
+            const statusData = await safeJsonParse(statusResponse, 'connection status');
             setIsConnected(statusData.connected);
             if (statusData.connected) {
               await fetchGitLabData();
             }
           } else {
-            const statusError = await statusResponse.json();
-            console.error('Connection status check failed:', statusError);
-            // Don't show error for first-time users, just show connect UI
-            if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
-              setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+            try {
+              const statusError = await safeJsonParse(statusResponse, 'connection status error');
+              console.error('Connection status check failed:', statusError);
+              // Don't show error for first-time users, just show connect UI
+              if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
+                setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+              }
+            } catch (parseError) {
+              // If we can't parse the error response, just log it
+              console.error('Failed to parse connection status error:', parseError);
             }
           }
         }
@@ -89,7 +121,7 @@ export function GitLabTab() {
         try {
           const statusResponse = await fetch('/api/gitlab/connection-status');
           if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
+            const statusData = await safeJsonParse(statusResponse, 'connection status');
             setIsConnected(statusData.connected);
             if (statusData.connected) {
               await fetchGitLabData();
@@ -106,7 +138,15 @@ export function GitLabTab() {
       console.error('Error checking GitLab connection:', error);
       // Only set error if already connected, otherwise show connect UI
       if (isConnected) {
-        setError(`Connection check failed: ${error.message}`);
+        // Handle specific error messages
+        let errorMessage = error.message;
+        if (error.message.includes('Unexpected end of JSON input')) {
+          errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+        
+        setError(`Connection check failed: ${errorMessage}`);
       } else {
         console.warn('Initial connection check failed, showing connect UI');
       }
@@ -119,7 +159,24 @@ export function GitLabTab() {
     try {
       const response = await fetch('/api/gitlab/intern-analytics');
       if (response.ok) {
-        const data = await response.json();
+        // First get the response as text to handle potential JSON parsing issues
+        const responseText = await response.text();
+        
+        // Check if the response is empty
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        
+        // Try to parse the JSON
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonError) {
+          console.error('❌ JSON parse error:', jsonError);
+          console.error('Response text:', responseText.substring(0, 200));
+          throw new Error(`Invalid JSON response: ${jsonError.message}`);
+        }
+        
         if (data.connected === false || data.error === 'GitLab not connected') {
           setIsConnected(false);
           setGitlabData(null);
@@ -128,11 +185,39 @@ export function GitLabTab() {
           setGitlabData(data);
         }
       } else {
-        throw new Error('Failed to fetch GitLab data');
+        // Handle error response
+        try {
+          const errorText = await response.text();
+          let errorMessage = 'Failed to fetch GitLab data';
+          
+          // Try to parse error as JSON
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorMessage;
+          } catch (jsonError) {
+            // If JSON parsing fails, use the raw text if it's not empty
+            if (errorText && errorText.trim() !== '') {
+              errorMessage = errorText;
+            }
+          }
+          
+          throw new Error(errorMessage);
+        } catch (responseError) {
+          throw new Error(`Failed to fetch GitLab data: ${responseError.message}`);
+        }
       }
     } catch (error) {
       console.error('Error fetching GitLab data:', error);
-      if (isConnected) setError('Failed to fetch GitLab data');
+      
+      // Handle specific error messages
+      let errorMessage = error.message;
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      if (isConnected) setError(`Failed to fetch GitLab data: ${errorMessage}`);
     }
   };
 
@@ -162,25 +247,42 @@ export function GitLabTab() {
         }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
+        const data = await safeJsonParse(response, 'test connection');
         setTestResult({ 
           success: true, 
           message: `✅ Connection successful! Found user: ${data.user?.name} (@${data.user?.username})`,
           user: data.user
         });
       } else {
-        setTestResult({ 
-          success: false, 
-          message: data.error || 'Connection test failed'
-        });
+        try {
+          const errorData = await safeJsonParse(response, 'test connection error');
+          setTestResult({ 
+            success: false, 
+            message: errorData.error || 'Connection test failed'
+          });
+        } catch (parseError) {
+          console.error('Failed to parse test connection error:', parseError);
+          setTestResult({ 
+            success: false, 
+            message: 'Connection test failed: Invalid server response'
+          });
+        }
       }
     } catch (error) {
       console.error('Error testing connection:', error);
+      
+      // Handle specific error messages
+      let errorMessage = `Connection test failed: ${error.message}`;
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
       setTestResult({ 
         success: false, 
-        message: `Connection test failed: ${error.message}`
+        message: errorMessage
       });
     } finally {
       setTestingConnection(false);
@@ -215,7 +317,7 @@ export function GitLabTab() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await safeJsonParse(response, 'token connect');
         setIsConnected(true);
         setShowTokenForm(false);
         setSuccessMessage(`Successfully connected to GitLab as @${data.integration?.username}! Found ${data.integration?.repositoriesCount || 0} repositories.`);
@@ -223,27 +325,41 @@ export function GitLabTab() {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        const errorData = await response.json();
-        let errorMessage = errorData.error || 'Failed to connect GitLab';
-        
-        // Provide more specific error messages
-        if (response.status === 400) {
-          if (errorMessage.includes('Invalid Personal Access Token')) {
-            errorMessage = 'Invalid Personal Access Token. Please check that your token is correct and has the required permissions (read_api, read_repository, read_user).';
-          } else if (errorMessage.includes('username does not match')) {
-            errorMessage = 'The GitLab username does not match the token owner. Please verify both your username and token.';
+        try {
+          const errorData = await safeJsonParse(response, 'token connect error');
+          let errorMessage = errorData.error || 'Failed to connect GitLab';
+          
+          // Provide more specific error messages
+          if (response.status === 400) {
+            if (errorMessage.includes('Invalid Personal Access Token')) {
+              errorMessage = 'Invalid Personal Access Token. Please check that your token is correct and has the required permissions (read_api, read_repository, read_user).';
+            } else if (errorMessage.includes('username does not match')) {
+              errorMessage = 'The GitLab username does not match the token owner. Please verify both your username and token.';
+            }
+          } else if (response.status === 401) {
+            errorMessage = 'Authentication failed. Please check your Personal Access Token and try again.';
+          } else if (response.status === 403) {
+            errorMessage = 'Access denied. Your token may not have the required permissions (read_api, read_repository, read_user).';
           }
-        } else if (response.status === 401) {
-          errorMessage = 'Authentication failed. Please check your Personal Access Token and try again.';
-        } else if (response.status === 403) {
-          errorMessage = 'Access denied. Your token may not have the required permissions (read_api, read_repository, read_user).';
+          
+          setError(errorMessage);
+        } catch (parseError) {
+          console.error('Failed to parse token connect error:', parseError);
+          setError('Failed to connect GitLab: Invalid server response');
         }
-        
-        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error connecting GitLab:', error);
-      setError(`Connection failed: ${error.message}. Please check your internet connection and try again.`);
+      
+      // Handle specific error messages
+      let errorMessage = `Connection failed: ${error.message}`;
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -252,40 +368,87 @@ export function GitLabTab() {
   const handleSync = async (fullSync = false, customDays = null) => {
     setSyncing(true);
     setError(null);
+    setSuccessMessage(null);
+    
     try {
-      let url = '/api/gitlab/sync-commits';
-      const params = new URLSearchParams();
+      console.log('🚀 Starting GitLab sync...');
       
-      if (fullSync) {
-        params.append('fullSync', 'true');
-      } else if (customDays) {
-        params.append('days', customDays.toString());
-      }
-      
-      if (params.toString()) {
-        url += '?' + params.toString();
-      }
-      
-      const response = await fetch(url, {
+      // Use the simple-sync API that we know works
+      const response = await fetch('/api/gitlab/simple-sync', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
-        const data = await response.json();
+        // First get the response as text to handle potential JSON parsing issues
+        const responseText = await response.text();
+        
+        // Check if the response is empty
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        
+        // Try to parse the JSON
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonError) {
+          console.error('❌ JSON parse error:', jsonError);
+          console.error('Response text:', responseText.substring(0, 200));
+          throw new Error(`Invalid JSON response: ${jsonError.message}`);
+        }
+        
+        console.log('✅ Sync completed:', data);
+        
+        // Refresh the GitLab data to show new information
         await fetchGitLabData();
+        
         // Show success message with sync results
-        if (data.syncResults) {
-          const syncType = fullSync ? 'Full sync' : customDays ? `${customDays}-day sync` : 'Sync';
-          setSuccessMessage(`${syncType} completed! Found ${data.syncResults.newCommits} new commits and ${data.syncResults.updatedCommits} updated commits from ${data.syncResults.projectsScanned} projects.`);
-          setTimeout(() => setSuccessMessage(null), 8000);
+        if (data.results) {
+          const { projectsFound, commitsFound, commitsStored } = data.results;
+          setSuccessMessage(
+            `🎉 Sync completed! Found ${commitsFound} commits from ${projectsFound} projects. ` +
+            `Stored ${commitsStored} new commits in your profile.`
+          );
+          setTimeout(() => setSuccessMessage(null), 10000);
+        } else {
+          setSuccessMessage('✅ GitLab sync completed successfully!');
+          setTimeout(() => setSuccessMessage(null), 5000);
         }
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Sync failed');
+        // Handle error response
+        try {
+          const errorText = await response.text();
+          let errorMessage = 'Sync failed';
+          
+          // Try to parse error as JSON
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorMessage;
+          } catch (jsonError) {
+            // If JSON parsing fails, use the raw text
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        } catch (responseError) {
+          throw new Error(`Sync failed: ${responseError.message}`);
+        }
       }
     } catch (error) {
-      console.error('Error syncing GitLab data:', error);
-      setError(`Failed to sync GitLab data: ${error.message}`);
+      console.error('❌ Error syncing GitLab data:', error);
+      
+      // Handle specific error messages
+      let errorMessage = error.message;
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      setError(`Failed to sync GitLab data: ${errorMessage}`);
     } finally {
       setSyncing(false);
     }
@@ -301,19 +464,33 @@ export function GitLabTab() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await safeJsonParse(response, 'OAuth connect');
         setIsConnected(true);
         setShowOAuthConnect(false);
         setSuccessMessage(`Successfully connected to GitLab via OAuth! Found ${data.stats?.totalProjects || 0} projects with ${data.stats?.totalCommits || 0} commits.`);
         await fetchGitLabData();
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to connect via OAuth');
+        try {
+          const errorData = await safeJsonParse(response, 'OAuth connect error');
+          setError(errorData.error || 'Failed to connect via OAuth');
+        } catch (parseError) {
+          console.error('Failed to parse OAuth connect error:', parseError);
+          setError('Failed to connect via OAuth: Invalid server response');
+        }
       }
     } catch (error) {
       console.error('Error connecting via OAuth:', error);
-      setError('Failed to connect via OAuth');
+      
+      // Handle specific error messages
+      let errorMessage = 'Failed to connect via OAuth';
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -331,7 +508,7 @@ export function GitLabTab() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await safeJsonParse(response, 'disconnect');
         setIsConnected(false);
         setGitlabData(null);
         setError(null);
@@ -339,12 +516,26 @@ export function GitLabTab() {
         setSuccessMessage(`GitLab account disconnected successfully. Removed ${data.removedData?.activityRecords || 0} activity records.`);
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to disconnect GitLab account');
+        try {
+          const errorData = await safeJsonParse(response, 'disconnect error');
+          setError(errorData.error || 'Failed to disconnect GitLab account');
+        } catch (parseError) {
+          console.error('Failed to parse disconnect error:', parseError);
+          setError('Failed to disconnect GitLab account: Invalid server response');
+        }
       }
     } catch (error) {
       console.error('Error disconnecting GitLab:', error);
-      setError('Failed to disconnect GitLab account');
+      
+      // Handle specific error messages
+      let errorMessage = 'Failed to disconnect GitLab account';
+      if (error.message.includes('Unexpected end of JSON input')) {
+        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -614,6 +805,36 @@ export function GitLabTab() {
     <div className="space-y-6">
       {/* Debug Information */}
       <GitLabDebugInfo gitlabData={gitlabData} integration={{ gitlabUsername: gitlabData?.username, gitlabEmail: gitlabData?.email }} />
+      
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start">
+          <div className="text-green-500 text-xl mr-3">✅</div>
+          <div>
+            <p className="text-green-800 font-medium">{successMessage}</p>
+            <p className="text-green-600 text-sm mt-1">
+              You can now view your GitLab activity and insights below.
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+          <div className="text-red-500 text-xl mr-3">⚠️</div>
+          <div>
+            <p className="text-red-800 font-medium">Error</p>
+            <p className="text-red-600">{error}</p>
+            <button 
+              onClick={() => setError(null)} 
+              className="text-red-600 underline text-sm mt-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header with Connection Status */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -629,6 +850,9 @@ export function GitLabTab() {
                   <span className="text-sm text-gray-500">as @{gitlabData.username}</span>
                 )}
               </div>
+              {gitlabData?.lastSyncAt && (
+                <div className="text-xs text-gray-500 mt-1">Last Sync: {formatDate(gitlabData.lastSyncAt)}</div>
+              )}
             </div>
           </div>
           
@@ -684,6 +908,17 @@ export function GitLabTab() {
           </div>
         </div>
 
+        {/* Sync Warning */}
+        {gitlabData?.warning && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start mt-2">
+            <div className="text-yellow-500 text-xl mr-3">⚠️</div>
+            <div>
+              <p className="text-yellow-800 font-medium">Sync Warning</p>
+              <p className="text-yellow-700 text-sm mt-1">{gitlabData.warning}</p>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Tabs */}
         <div className="border-b border-gray-200">
           <nav className="flex space-x-6">
@@ -711,8 +946,55 @@ export function GitLabTab() {
         </div>
       </div>
 
-      {/* Content based on active view */}
-      {activeView === 'overview' && (
+      {/* No Data State - Show when connected but no data synced yet */}
+      {(!gitlabData || !gitlabData.summary || gitlabData.summary.totalCommits === 0) && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No GitLab Data Yet</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Your GitLab account is connected, but we haven't synced your data yet.<br/>
+            <b>Troubleshooting:</b>
+            <ul className="list-disc text-left ml-8 mt-2 text-sm text-gray-500">
+              <li>Click the sync button above to fetch your commits and activity.</li>
+              <li>Make sure your token has <code>read_api</code>, <code>read_repository</code>, and <code>read_user</code> permissions.</li>
+              <li>If you see an error, use the Debug tool below for more info.</li>
+              <li>If problems persist, contact your mentor or admin.</li>
+            </ul>
+          </p>
+          
+          <div className="flex justify-center space-x-4">
+            {/* Use full sync for initial data load */}
+            <button
+              onClick={() => handleSync(true)}
+              disabled={syncing}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium flex items-center space-x-2"
+            >
+              <span>{syncing ? '🔄' : '🚀'}</span>
+              <span>{syncing ? 'Syncing Your Data...' : 'Sync My GitLab Data'}</span>
+            </button>
+          </div>
+          
+          {syncing && (
+            <div className="mt-6 text-sm text-gray-600">
+              <div className="flex justify-center mb-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+              <p>This may take a minute or two depending on your GitLab activity.</p>
+              <p className="mt-1">We're fetching your commits from the past year.</p>
+            </div>
+          )}
+          
+          {!syncing && (
+            <div className="mt-4 text-sm text-gray-500">
+              <p>This will fetch your commits, repositories, and contribution data from GitLab.</p>
+              <p className="mt-1">The initial sync may take a minute to complete.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Content based on active view - Only show when we have data */}
+      {gitlabData && gitlabData.summary && gitlabData.summary.totalCommits > 0 && activeView === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Summary Cards */}
           <div className="bg-white rounded-lg shadow p-6">
