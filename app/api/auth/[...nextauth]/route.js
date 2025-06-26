@@ -4,6 +4,59 @@ import { connectToDatabase } from '../../../../utils/database.js';
 import User from '../../../../models/User.js';
 import College from '../../../../models/College.js';
 
+/**
+ * Refresh GitLab OAuth token using refresh token
+ */
+async function refreshGitLabOAuthToken(token) {
+  try {
+    if (!token.gitlabRefreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${process.env.GITLAB_ISSUER}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.GITLAB_CLIENT_ID,
+        client_secret: process.env.GITLAB_CLIENT_SECRET,
+        refresh_token: token.gitlabRefreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Token refresh failed: ${response.status} ${errorText}`);
+    }
+
+    const refreshedTokens = await response.json();
+    
+    // Update the stored integration as well
+    try {
+      await connectToDatabase();
+      const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
+      const { encrypt } = await import('../../../../utils/encryption.js');
+      
+      await GitLabIntegration.updateOne(
+        { gitlabUserId: parseInt(token.gitlabId) },
+        {
+          accessToken: encrypt(refreshedTokens.access_token),
+          refreshToken: refreshedTokens.refresh_token ? encrypt(refreshedTokens.refresh_token) : undefined,
+          tokenExpiresAt: new Date((refreshedTokens.expires_at || (Date.now() / 1000 + refreshedTokens.expires_in)) * 1000),
+          updatedAt: new Date()
+        }
+      );
+    } catch (dbError) {
+      console.warn('Failed to update integration record:', dbError);
+    }
+
+    return refreshedTokens;
+  } catch (error) {
+    console.error('OAuth token refresh error:', error);
+    throw error;
+  }
+}
+
 export const authOptions = {
   providers: [
     {
@@ -112,9 +165,8 @@ export const authOptions = {
       if (!account && !profile && token.gitlabUsername) {
         try {
           await connectToDatabase();
-          let user = await User.findByGitLabUsername(token.gitlabUsername, 'college');
-          
-
+          // Include cohort information in the populate
+          let user = await User.findByGitLabUsername(token.gitlabUsername, 'college cohortId');
           
           if (user) {
             // Check if we need to force refresh based on recent updates or session version
@@ -127,9 +179,10 @@ export const authOptions = {
             // Always update token with latest user info (including role changes)
             const roleChanged = token.role !== user.role;
             const activeChanged = token.isActive !== user.isActive;
+            const cohortChanged = token.cohortId !== (user.cohortId ? user.cohortId.toString() : null);
             
-            if (roleChanged || activeChanged || shouldForceRefresh || sessionVersionChanged) {
-              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, activeChanged=${activeChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
+            if (roleChanged || activeChanged || cohortChanged || shouldForceRefresh || sessionVersionChanged) {
+              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, activeChanged=${activeChanged}, cohortChanged=${cohortChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
             }
             
             token.role = user.role;
@@ -139,6 +192,23 @@ export const authOptions = {
             token.isActive = user.isActive;
             token.sessionVersion = user.sessionVersion;
             token.lastRefresh = new Date().toISOString();
+            
+            // Add cohort information
+            if (user.cohortId) {
+              token.cohortId = user.cohortId.toString();
+              
+              // Try to get cohort name if available
+              try {
+                const { getDatabase } = await import('../../../../utils/database.js');
+                const db = await getDatabase();
+                const cohort = await db.collection('cohorts').findOne({ _id: user.cohortId });
+                if (cohort) {
+                  token.cohortName = cohort.name;
+                }
+              } catch (cohortError) {
+                console.error('Error fetching cohort details:', cohortError);
+              }
+            }
             
             // Clear needsRegistration if user now has a proper role
             if (user.role !== 'pending') {
@@ -159,13 +229,14 @@ export const authOptions = {
           });
 
           await connectToDatabase();
-          let user = await User.findByGitLabUsername(profile.username, 'college');
+          let user = await User.findByGitLabUsername(profile.username, 'college cohortId');
           
           console.log('🔍 JWT Debug - Database lookup in JWT:', {
             username: profile.username,
             found: !!user,
             userRole: user?.role,
             userCollege: user?.college?.name,
+            userCohortId: user?.cohortId,
             userActive: user?.isActive
           });
           
@@ -174,6 +245,42 @@ export const authOptions = {
             token.gitlabAccessToken = account.access_token;
             token.gitlabRefreshToken = account.refresh_token;
             token.gitlabTokenExpires = account.expires_at;
+            
+            // Store OAuth tokens in GitLabIntegration model for API operations
+            try {
+              await connectToDatabase();
+              const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
+              const { encrypt } = await import('../../../../utils/encryption.js');
+              
+              // Create or update GitLab integration record
+              await GitLabIntegration.findOneAndUpdate(
+                { userId: user._id },
+                {
+                  userId: user._id,
+                  gitlabUserId: parseInt(profile.id),
+                  gitlabUsername: profile.username,
+                  gitlabEmail: profile.email,
+                  accessToken: encrypt(account.access_token),
+                  refreshToken: account.refresh_token ? encrypt(account.refresh_token) : null,
+                  tokenType: 'oauth',
+                  tokenExpiresAt: new Date(account.expires_at * 1000),
+                  userProfile: {
+                    name: profile.name,
+                    email: profile.email,
+                    avatarUrl: profile.avatar_url,
+                    webUrl: profile.web_url
+                  },
+                  connectedAt: new Date(),
+                  isActive: true,
+                  isConnected: true
+                },
+                { upsert: true, new: true }
+              );
+              
+              console.log(`✅ OAuth tokens stored for GitLab integration: ${profile.username}`);
+            } catch (integrationError) {
+              console.error('❌ Failed to store GitLab integration tokens:', integrationError);
+            }
           }
           
           if (user) {
@@ -184,6 +291,23 @@ export const authOptions = {
             token.college = user.college;
             token.assignedBy = user.assignedBy;
             token.userId = user._id.toString();
+            
+            // Add cohort information
+            if (user.cohortId) {
+              token.cohortId = user.cohortId.toString();
+              
+              // Try to get cohort name if available
+              try {
+                const { getDatabase } = await import('../../../../utils/database.js');
+                const db = await getDatabase();
+                const cohort = await db.collection('cohorts').findOne({ _id: user.cohortId });
+                if (cohort) {
+                  token.cohortName = cohort.name;
+                }
+              } catch (cohortError) {
+                console.error('Error fetching cohort details:', cohortError);
+              }
+            }
             
             console.log(`✅ JWT - Successful token creation: ${user.gitlabUsername} (${user.role})`);
           } else {
@@ -199,8 +323,30 @@ export const authOptions = {
         }
       }
       
+      // Handle token refresh for existing sessions
+      if (token.gitlabTokenExpires && !account) {
+        const now = Math.floor(Date.now() / 1000);
+        const tokenExpires = token.gitlabTokenExpires;
+        
+        // If token expires within 5 minutes, try to refresh it
+        if (tokenExpires - now < 300) {
+          console.log(`🔄 Token expires soon (${new Date(tokenExpires * 1000)}), attempting refresh...`);
+          
+          try {
+            const refreshedToken = await refreshGitLabOAuthToken(token);
+            if (refreshedToken) {
+              token.gitlabAccessToken = refreshedToken.access_token;
+              token.gitlabRefreshToken = refreshedToken.refresh_token || token.gitlabRefreshToken;
+              token.gitlabTokenExpires = refreshedToken.expires_at || (now + refreshedToken.expires_in);
+              console.log(`✅ Token refreshed successfully, expires: ${new Date(token.gitlabTokenExpires * 1000)}`);
+            }
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            // Don't fail the session, just log the error
+          }
+        }
+      }
 
-      
       return token;
     },
     
@@ -220,6 +366,12 @@ export const authOptions = {
       session.user.id = token.userId;
       session.user.needsRegistration = token.needsRegistration;
       session.user.isActive = token.isActive;
+      
+      // Add cohort information
+      if (token.cohortId) {
+        session.user.cohortId = token.cohortId;
+        session.user.cohortName = token.cohortName;
+      }
       
       // Add GitLab access token (server-side only, not exposed to client)
       session.gitlabAccessToken = token.gitlabAccessToken;

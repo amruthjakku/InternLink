@@ -13,6 +13,7 @@ import { EnhancedChat } from './EnhancedChat';
 import { AIAssistantTab } from './intern/AIAssistantTab';
 import { ProfileTab } from './intern/ProfileTab';
 import { GitLabTab } from './intern/GitLabTab';
+import { EnhancedGitLabTab } from './intern/EnhancedGitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { ProfileCard } from './ProfileCard';
@@ -111,7 +112,7 @@ export function InternDashboard() {
       case 'performance':
         return <PerformanceTab {...commonProps} />;
       case 'gitlab':
-        return <GitLabTab {...commonProps} />;
+        return <EnhancedGitLabTab {...commonProps} />;
       case 'meetings':
         return <Meetings />;
       case 'profile':
@@ -145,6 +146,14 @@ export function InternDashboard() {
                     <span className="inline-flex items-center">
                       <span className="mr-1">🏫</span>
                       {getCollegeName(user.college)}
+                    </span>
+                  </p>
+                )}
+                {user?.cohortId && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    <span className="inline-flex items-center">
+                      <span className="mr-1">👥</span>
+                      Cohort: {user.cohortName || user.cohortId}
                     </span>
                   </p>
                 )}

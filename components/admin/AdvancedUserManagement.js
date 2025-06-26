@@ -9,6 +9,7 @@ import UserModal from './UserModal';
 export function AdvancedUserManagement() {
   const [users, setUsers] = useState([]);
   const [colleges, setColleges] = useState([]);
+  const [cohorts, setCohorts] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [userSegments, setUserSegments] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -30,6 +31,7 @@ export function AdvancedUserManagement() {
   useEffect(() => {
     fetchUsers();
     fetchColleges();
+    fetchCohorts();
     fetchUserSegments();
     fetchActivityLogs();
     fetchPermissions();
@@ -65,6 +67,22 @@ export function AdvancedUserManagement() {
     } catch (error) {
       console.error('Error fetching colleges:', error);
       setColleges([]);
+    }
+  };
+  
+  const fetchCohorts = async () => {
+    try {
+      const response = await fetch('/api/admin/cohorts');
+      if (response.ok) {
+        const data = await response.json();
+        setCohorts(data.cohorts || []);
+      } else {
+        console.error('Failed to fetch cohorts');
+        setCohorts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching cohorts:', error);
+      setCohorts([]);
     }
   };
 

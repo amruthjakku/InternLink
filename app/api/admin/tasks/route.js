@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../utils/database';
+import { connectToDatabase, getDatabase } from '../../../../utils/database';
 import Task from '../../../../models/Task';
+import mongoose from 'mongoose';
+import { ObjectId } from 'mongodb';
 
 export async function GET(request) {
   try {
@@ -32,6 +34,27 @@ export async function GET(request) {
       .populate('cohortId', 'name')
       .populate('createdBy', 'name gitlabUsername')
       .sort({ createdAt: -1 });
+    
+    console.log('Tasks with populated cohorts:', tasks.map(task => ({
+      id: task._id,
+      title: task.title,
+      assignmentType: task.assignmentType,
+      cohortId: task.cohortId,
+      cohortIdRaw: task.cohortId?._id || task.cohortId,
+      cohortName: task.cohortId?.name || task.cohortName
+    })));
+    
+    // Count tasks by cohort
+    const cohortCounts = {};
+    tasks.forEach(task => {
+      const cohortId = task.cohortId?._id || task.cohortId;
+      if (cohortId) {
+        const cohortIdStr = cohortId.toString();
+        cohortCounts[cohortIdStr] = (cohortCounts[cohortIdStr] || 0) + 1;
+      }
+    });
+    
+    console.log('Task counts by cohort:', cohortCounts);
 
     return NextResponse.json({ 
       success: true,
@@ -80,6 +103,34 @@ export async function POST(request) {
 
     await connectToDatabase();
 
+    // Convert cohortId to ObjectId if it's a string
+    let cohortIdObj;
+    try {
+      cohortIdObj = mongoose.Types.ObjectId.isValid(cohortId) 
+        ? new mongoose.Types.ObjectId(cohortId) 
+        : cohortId;
+    } catch (error) {
+      console.error('Error converting cohort ID:', error);
+      return NextResponse.json({ 
+        error: 'Invalid cohort ID format' 
+      }, { status: 400 });
+    }
+    
+    // Get cohort name
+    let cohortName = '';
+    try {
+      const db = await getDatabase();
+      const cohort = await db.collection('cohorts').findOne({ _id: cohortIdObj });
+      if (cohort) {
+        cohortName = cohort.name;
+        console.log(`Found cohort name: ${cohort.name} for ID: ${cohortId}`);
+      } else {
+        console.warn(`Cohort not found for ID: ${cohortId}`);
+      }
+    } catch (error) {
+      console.error(`Error fetching cohort: ${error.message}`);
+    }
+
     const taskData = {
       title,
       description,
@@ -88,7 +139,8 @@ export async function POST(request) {
       priority: priority || 'medium',
       category,
       assignmentType: 'cohort',
-      cohortId,
+      cohortId: cohortIdObj,
+      cohortName,
       createdBy: createdBy || session.user.id,
       createdByRole: createdByRole || session.user.role,
       assignedBy: assignedBy || session.user.gitlabUsername,

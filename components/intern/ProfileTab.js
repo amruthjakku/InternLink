@@ -332,11 +332,16 @@ export function ProfileTab() {
                 ) : (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-900">
-                      {user?.cohort_name || 'Not selected'}
+                      {user?.cohortName || user?.cohort_name || 'Not selected'}
                     </span>
                     {selectedCohort && (
                       <span className="text-xs text-gray-500">
                         📅 {new Date(selectedCohort.start_date).toLocaleDateString()} - {new Date(selectedCohort.end_date).toLocaleDateString()}
+                      </span>
+                    )}
+                    {user?.cohortId && !selectedCohort && (
+                      <span className="text-xs text-gray-500">
+                        ID: {user.cohortId}
                       </span>
                     )}
                   </div>

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../utils/database';
+import { connectToDatabase, getDatabase } from '../../../utils/database';
+import { ObjectId } from 'mongodb';
 import Task from '../../../models/Task';
 import User from '../../../models/User';
 
@@ -24,9 +25,75 @@ export async function GET(request) {
     // Build query based on user role and filters
     let query = {};
     
-    // If user is intern, only show their tasks
+    // If user is intern, show tasks for their cohort
     if (session.user.role === 'intern') {
-      query.assignedTo = session.user.id;
+      query.isActive = true;
+      
+      try {
+        // Get the user with their cohort information
+        const user = await User.findById(session.user.id);
+        
+        if (user && user.cohortId) {
+          console.log(`Intern ${user.name} (${user._id}) is assigned to cohort ${user.cohortId}`);
+          
+          console.log(`Intern's cohort ID: ${user.cohortId}`);
+          
+          // Convert cohortId to ObjectId if it's a string
+          let cohortIdObj;
+          try {
+            cohortIdObj = mongoose.Types.ObjectId.isValid(user.cohortId) 
+              ? new mongoose.Types.ObjectId(user.cohortId) 
+              : user.cohortId;
+            console.log(`Converted cohort ID: ${cohortIdObj}`);
+          } catch (error) {
+            console.error('Error converting cohort ID:', error);
+            cohortIdObj = user.cohortId;
+          }
+          
+          // Show only tasks assigned to the intern's cohort or directly to the intern
+          query.$or = [
+            // Tasks assigned to the intern's cohort
+            { 
+              cohortId: cohortIdObj,
+              assignmentType: 'cohort'
+            },
+            // Tasks assigned directly to the intern
+            { 
+              assignedTo: session.user.id,
+              assignmentType: 'individual'
+            },
+            // Tasks where assigneeId is set to the intern
+            {
+              assigneeId: session.user.id,
+              assignmentType: 'individual'
+            }
+          ];
+          
+          // Add a log to show the exact query being used
+          console.log('Intern tasks query:', JSON.stringify(query, null, 2));
+          
+          console.log('Query for intern tasks:', JSON.stringify(query));
+          
+          console.log('Showing cohort and individual tasks for intern');
+        } else {
+          console.log(`Intern ${user?.name || 'Unknown'} (${session.user.id}) is not assigned to any cohort`);
+          
+          // If intern is not assigned to a cohort, show individually assigned tasks
+          query.$or = [
+            { assignedTo: session.user.id },
+            { assigneeId: session.user.id }
+          ];
+          
+          console.log('Showing only individual tasks for intern (no cohort)');
+        }
+      } catch (error) {
+        console.error('Error getting user cohort:', error);
+        // Fallback to just showing individually assigned tasks
+        query.$or = [
+          { assignedTo: session.user.id },
+          { assigneeId: session.user.id }
+        ];
+      }
     }
     
     // If user is mentor, show tasks they created or are assigned to their interns
@@ -42,10 +109,20 @@ export async function GET(request) {
     if (priority) query.priority = priority;
     if (category) query.category = category;
 
+    console.log('Final query for tasks:', JSON.stringify(query));
+    
     const tasks = await Task.find(query)
       .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email')
+      .populate('cohortId', 'name startDate endDate')
       .sort({ createdAt: -1 });
+      
+    console.log(`Found ${tasks.length} tasks for user ${session.user.id} with role ${session.user.role}`);
+    
+    // Log task details for debugging
+    tasks.forEach(task => {
+      console.log(`Task: ${task.title}, Type: ${task.assignmentType}, Cohort: ${task.cohortId?._id || task.cohortId}, Assigned To: ${task.assignedTo?._id || task.assignedTo}`);
+    });
 
     // Format tasks for frontend
     const formattedTasks = tasks.map(task => ({
@@ -67,7 +144,11 @@ export async function GET(request) {
       tags: task.tags,
       dependencies: task.dependencies,
       attachments: task.attachments,
-      comments: task.comments
+      comments: task.comments,
+      timeTracking: task.timeTracking || [],
+      cohortId: task.cohortId,
+      cohortName: task.cohortName,
+      assignmentType: task.assignmentType
     }));
 
     return NextResponse.json({ 
@@ -101,44 +182,85 @@ export async function POST(request) {
       priority = 'medium',
       category,
       assignedTo,
+      cohortId,
+      assignmentType = 'individual',
       dueDate,
       estimatedHours = 0,
       tags = [],
       dependencies = []
     } = body;
 
-    // Validate required fields
-    if (!title || !description || !category || !assignedTo || !dueDate) {
+    // Validate required fields based on assignment type
+    if (!title || !description || !category || !dueDate) {
       return NextResponse.json({ 
         error: 'Missing required fields' 
       }, { status: 400 });
     }
 
-    // Get assignee details
-    const assignee = await User.findById(assignedTo);
-    if (!assignee) {
+    if (assignmentType === 'individual' && !assignedTo) {
       return NextResponse.json({ 
-        error: 'Assignee not found' 
-      }, { status: 404 });
+        error: 'Individual tasks require an assignee' 
+      }, { status: 400 });
+    }
+
+    if (assignmentType === 'cohort' && !cohortId) {
+      return NextResponse.json({ 
+        error: 'Cohort tasks require a cohort' 
+      }, { status: 400 });
+    }
+
+    let assignee = null;
+    let cohortName = null;
+
+    // Get assignee details if it's an individual assignment
+    if (assignmentType === 'individual' && assignedTo) {
+      assignee = await User.findById(assignedTo);
+      if (!assignee) {
+        return NextResponse.json({ 
+          error: 'Assignee not found' 
+        }, { status: 404 });
+      }
+    }
+
+    // Get cohort details if it's a cohort assignment
+    if (assignmentType === 'cohort' && cohortId) {
+      const db = await getDatabase();
+      const cohort = await db.collection('cohorts').findOne({ _id: new ObjectId(cohortId) });
+      if (!cohort) {
+        return NextResponse.json({ 
+          error: 'Cohort not found' 
+        }, { status: 404 });
+      }
+      cohortName = cohort.name;
     }
 
     // Create new task
-    const task = new Task({
+    const taskData = {
       title,
       description,
       status,
       priority,
       category,
-      assignedTo,
-      assigneeName: assignee.name,
-      assigneeId: assignedTo,
+      assignmentType,
       createdBy: session.user.id,
       createdByRole: session.user.role,
       dueDate: new Date(dueDate),
       estimatedHours,
       tags,
       dependencies
-    });
+    };
+
+    // Add assignment details based on type
+    if (assignmentType === 'individual' && assignee) {
+      taskData.assignedTo = assignedTo;
+      taskData.assigneeName = assignee.name;
+      taskData.assigneeId = assignedTo;
+    } else if (assignmentType === 'cohort' && cohortId) {
+      taskData.cohortId = cohortId;
+      taskData.cohortName = cohortName;
+    }
+
+    const task = new Task(taskData);
 
     await task.save();
 
@@ -146,6 +268,7 @@ export async function POST(request) {
     await task.populate('assignedTo', 'name email');
     await task.populate('createdBy', 'name email');
 
+    // Format the task response based on assignment type
     const formattedTask = {
       id: task._id,
       title: task.title,
@@ -153,18 +276,27 @@ export async function POST(request) {
       status: task.status,
       priority: task.priority,
       category: task.category,
-      assigneeId: task.assignedTo._id,
-      assigneeName: task.assignedTo.name,
-      assigneeEmail: task.assignedTo.email,
-      createdBy: task.createdBy.name,
+      assignmentType: task.assignmentType,
+      createdBy: task.createdBy?.name,
       dueDate: task.dueDate,
       createdDate: task.createdAt,
       estimatedHours: task.estimatedHours,
       actualHours: task.actualHours,
       progress: task.progress,
       tags: task.tags,
-      dependencies: task.dependencies
+      dependencies: task.dependencies,
+      timeTracking: task.timeTracking || []
     };
+
+    // Add assignment-specific details
+    if (task.assignmentType === 'individual' && task.assignedTo) {
+      formattedTask.assigneeId = task.assignedTo._id;
+      formattedTask.assigneeName = task.assignedTo.name;
+      formattedTask.assigneeEmail = task.assignedTo.email;
+    } else if (task.assignmentType === 'cohort') {
+      formattedTask.cohortId = task.cohortId;
+      formattedTask.cohortName = task.cohortName;
+    }
 
     return NextResponse.json({ 
       task: formattedTask,

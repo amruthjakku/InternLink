@@ -31,8 +31,89 @@ export function TasksTab({ user, loading }) {
       const response = await fetch('/api/tasks');
       if (response.ok) {
         const data = await response.json();
-        setTasks(data.tasks || []);
+        console.log('Tasks fetched for intern:', data.tasks);
+        
+        // Log the user's cohort ID
+        console.log('User:', user);
+        console.log('User cohort ID:', user?.cohortId);
+        
+        // Log all tasks for debugging
+        data.tasks.forEach(task => {
+          console.log(`Task: ${task.title}, Type: ${task.assignmentType}, Cohort: ${typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId}`);
+        });
+        
+        // Filter tasks to only show tasks for the intern's cohort or assigned directly to them
+        const filteredTasks = data.tasks.filter(task => {
+          // Extract user's cohort ID
+          const userCohortId = user?.cohortId;
+          const userCohortIdStr = userCohortId ? userCohortId.toString() : '';
+          
+          // For cohort tasks, check if it matches the intern's cohort
+          if (task.assignmentType === 'cohort' || (!task.assignmentType && task.cohortId)) {
+            // Extract cohort IDs for comparison
+            const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+            
+            // Skip if no cohort ID
+            if (!taskCohortId) {
+              console.log(`Task ${task.title} has no cohort ID`);
+              return false;
+            }
+            
+            // Convert to strings for comparison
+            const taskCohortIdStr = taskCohortId.toString();
+            
+            console.log(`Comparing task cohort: ${taskCohortIdStr} with user cohort: ${userCohortIdStr}`);
+            
+            // Only show cohort tasks that match the intern's cohort
+            const matches = taskCohortIdStr === userCohortIdStr;
+            console.log(`Task ${task.title} ${matches ? 'matches' : 'does not match'} user's cohort`);
+            return matches;
+          }
+          
+          // For individual tasks, check if assigned to this intern
+          if (task.assignmentType === 'individual' || (!task.assignmentType && (task.assignedTo || task.assigneeId))) {
+            const isAssignedToIntern = 
+              task.assigneeId === user?.id || 
+              task.assignedTo === user?.id;
+              
+            console.log(`Task ${task.title} is ${isAssignedToIntern ? '' : 'not '}assigned to this intern`);
+            return isAssignedToIntern;
+          }
+          
+          // For tasks without assignment type, check both cohort and individual assignment
+          if (!task.assignmentType) {
+            // Check if assigned to this intern's cohort
+            if (task.cohortId) {
+              const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+              if (taskCohortId) {
+                const taskCohortIdStr = taskCohortId.toString();
+                const matchesCohort = taskCohortIdStr === userCohortIdStr;
+                if (matchesCohort) {
+                  console.log(`Task ${task.title} matches user's cohort (legacy format)`);
+                  return true;
+                }
+              }
+            }
+            
+            // Check if assigned directly to this intern
+            const isAssignedToIntern = 
+              task.assigneeId === user?.id || 
+              task.assignedTo === user?.id;
+            
+            if (isAssignedToIntern) {
+              console.log(`Task ${task.title} is assigned to this intern (legacy format)`);
+              return true;
+            }
+          }
+          
+          console.log(`Task ${task.title} does not match any criteria`);
+          return false;
+        });
+        
+        console.log('Filtered tasks for intern:', filteredTasks);
+        setTasks(filteredTasks || []);
       } else {
+        console.error('Failed to fetch tasks:', response.status);
         setTasks([]);
       }
     } catch (error) {
@@ -422,10 +503,19 @@ export function TasksTab({ user, loading }) {
                 </h2>
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span>📅 Due: {format(new Date(selectedTask.dueDate), 'MMM dd, yyyy')}</span>
-                  <span>👨‍🏫 Mentor: {selectedTask.mentor}</span>
+                  <span>👨‍🏫 Mentor: {selectedTask.mentor || selectedTask.assignedBy || 'Admin'}</span>
                   <span className={`font-medium ${getPriorityColor(selectedTask.priority)}`}>
                     {getPriorityIcon(selectedTask.priority)} {selectedTask.priority} priority
                   </span>
+                </div>
+                <div className="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+                  <span>
+                    {selectedTask.assignmentType === 'cohort' 
+                      ? `👥 Cohort Assignment: ${selectedTask.cohortName || 'Your Cohort'}`
+                      : '👤 Individual Assignment'
+                    }
+                  </span>
+                  <span>📋 Type: {selectedTask.type || 'Assignment'}</span>
                 </div>
               </div>
               <button
@@ -644,7 +734,7 @@ export function TasksTab({ user, loading }) {
                 )}
 
                 {/* Time Tracking */}
-                {selectedTask.timeTracking.length > 0 && (
+                {selectedTask.timeTracking && selectedTask.timeTracking.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">Time Tracking</h3>
                     <div className="space-y-2">
@@ -859,6 +949,15 @@ export function TasksTab({ user, loading }) {
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-xs text-gray-500">
                                     Due: {format(new Date(task.dueDate), 'MMM dd')}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-500">
+                                    {task.assignmentType === 'cohort' 
+                                      ? `Cohort: ${task.cohortName || 'Your Cohort'}`
+                                      : 'Assigned to you'
+                                    }
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     {task.mentor}

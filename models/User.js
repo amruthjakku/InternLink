@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
       return this.role === 'intern' || this.role === 'mentor' || this.role === 'super-mentor';
     }
   },
+  // Add cohortId field to associate users with cohorts
+  cohortId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Cohort'
+  },
   assignedBy: {
     type: String,
     required: true,
@@ -89,11 +94,20 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ college: 1 });
 userSchema.index({ assignedMentor: 1 });
+userSchema.index({ cohortId: 1 }); // Add index for cohortId
 
 // Virtual for college name (populated)
 userSchema.virtual('collegeName', {
   ref: 'College',
   localField: 'college',
+  foreignField: '_id',
+  justOne: true
+});
+
+// Virtual for cohort name (populated)
+userSchema.virtual('cohortName', {
+  ref: 'Cohort',
+  localField: 'cohortId',
   foreignField: '_id',
   justOne: true
 });
@@ -112,9 +126,51 @@ userSchema.statics.findByGitLabUsername = function(username, populateFields = ''
   const query = { gitlabUsername: username.toLowerCase() };
   if (!includeInactive) query.isActive = true;
   let mongooseQuery = this.findOne(query);
+  
+  // Handle populate fields
   if (populateFields) {
-    mongooseQuery = mongooseQuery.populate(populateFields);
+    // If populateFields is a string, split it by spaces to get individual fields
+    if (typeof populateFields === 'string') {
+      const fields = populateFields.split(' ');
+      
+      // Check if cohortId is in the fields to populate
+      if (fields.includes('cohortId')) {
+        try {
+          // Make sure Cohort model is available
+          const Cohort = mongoose.models.Cohort || require('../models/Cohort').default;
+          
+          // Remove cohortId from fields and add it as a separate populate
+          const otherFields = fields.filter(field => field !== 'cohortId');
+          
+          // Populate other fields if any
+          if (otherFields.length > 0) {
+            mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
+          }
+          
+          // Populate cohortId with name and other relevant fields
+          mongooseQuery = mongooseQuery.populate({
+            path: 'cohortId',
+            select: 'name startDate endDate maxInterns currentInterns'
+          });
+        } catch (error) {
+          console.warn('Warning: Could not populate cohortId field:', error.message);
+          
+          // Just populate other fields if any
+          const otherFields = fields.filter(field => field !== 'cohortId');
+          if (otherFields.length > 0) {
+            mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
+          }
+        }
+      } else {
+        // Just populate as requested
+        mongooseQuery = mongooseQuery.populate(populateFields);
+      }
+    } else {
+      // If populateFields is not a string (e.g., an object), just use it
+      mongooseQuery = mongooseQuery.populate(populateFields);
+    }
   }
+  
   return mongooseQuery;
 };
 

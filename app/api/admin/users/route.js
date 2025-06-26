@@ -5,7 +5,7 @@ import { connectToDatabase } from '../../../../utils/database';
 import User from '../../../../models/User';
 import College from '../../../../models/College';
 
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -13,11 +13,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get query parameters
+    const url = new URL(request.url);
+    const role = url.searchParams.get('role');
+    
+    console.log(`GET /api/admin/users - Query parameters:`, { role });
+
     await connectToDatabase();
 
-    const users = await User.find({ isActive: true })
+    // Build query
+    const query = { isActive: true };
+    if (role) {
+      query.role = role;
+      console.log(`Filtering users by role: ${role}`);
+    }
+
+    const users = await User.find(query)
       .populate('college', 'name')
-      .select('gitlabUsername name email role college isActive createdAt lastLoginAt')
+      .select('gitlabUsername name email role college cohortId isActive createdAt lastLoginAt')
       .sort({ createdAt: -1 });
 
     // Format users for frontend with calculated metrics
@@ -46,14 +59,18 @@ export async function GET() {
       if (daysSinceLastLogin > 30) riskLevel = 'high';
       else if (daysSinceLastLogin > 14) riskLevel = 'medium';
       
+      // Log the user ID for debugging
+      console.log(`Processing user: ${user.name}, ID: ${user._id}, Role: ${user.role}`);
+      
       return {
         id: user._id.toString(),
-        _id: user._id,
+        _id: user._id.toString(), // Ensure _id is a string
         gitlabUsername: user.gitlabUsername,
         name: user.name,
         email: user.email,
         role: user.role,
         college: user.college?.name || 'N/A',
+        cohortId: user.cohortId ? user.cohortId.toString() : null,
         status: user.isActive ? 'active' : 'inactive',
         performanceScore: performanceScore,
         activityLevel: activityLevel,

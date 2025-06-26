@@ -1,6 +1,8 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import { connectToDatabase as connectMongoose } from '../lib/mongoose';
 
+// Legacy MongoClient for direct MongoDB operations
+// This is kept for backward compatibility with existing code
 let client;
 let clientPromise;
 
@@ -8,29 +10,60 @@ if (!process.env.MONGODB_URI) {
   throw new Error('MongoDB URI is required. Please set MONGODB_URI in your environment variables.');
 }
 
-client = new MongoClient(process.env.MONGODB_URI);
-clientPromise = client.connect();
+// Configure MongoDB client with better error handling and TLS options
+const mongoOptions = {
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  serverSelectionTimeoutMS: 10000,
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: process.env.NODE_ENV !== 'production',
+  retryWrites: true,
+  retryReads: true,
+  maxPoolSize: 10, // Reduced pool size for M0 cluster
+  maxIdleTimeMS: 60000, // Close idle connections after 1 minute
+};
+
+// Global is used here to maintain a cached connection across hot reloads
+let cached = global.mongodb;
+if (!cached) {
+  cached = global.mongodb = { conn: null, promise: null };
+}
+
+// Initialize MongoDB client connection
+if (!cached.promise) {
+  client = new MongoClient(process.env.MONGODB_URI, mongoOptions);
+  cached.promise = client.connect()
+    .then((client) => {
+      console.log('MongoDB client connected successfully');
+      return client;
+    })
+    .catch(err => {
+      console.error('MongoDB client connection error:', err);
+      cached.promise = null;
+      throw err;
+    });
+}
+
+// Get MongoDB client promise
+clientPromise = async () => {
+  if (cached.conn) {
+    return cached.conn;
+  }
+  
+  cached.conn = await cached.promise;
+  return cached.conn;
+};
 
 // Database helper functions
 export async function getDatabase() {
-  const client = await clientPromise;
+  const client = await clientPromise();
   return client.db('internship_tracker');
 }
 
-// Mongoose connection helper
+// Mongoose connection helper - now uses the centralized connection manager
 export async function connectToDatabase() {
-  if (mongoose.connections[0].readyState) {
-    return mongoose.connections[0];
-  }
-
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB via Mongoose');
-    return mongoose.connections[0];
-  } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
-    throw error;
-  }
+  return connectMongoose();
 }
 
 // User operations

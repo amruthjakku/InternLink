@@ -28,6 +28,8 @@ export function MentorDashboard() {
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  console.log('MentorDashboard component initialized with user:', user?.name, 'role:', user?.role);
 
   // Dynamic tabs based on user role
   const getTabsForRole = (role) => {
@@ -63,28 +65,55 @@ export function MentorDashboard() {
     }
   };
 
-  const tabs = getTabsForRole(user?.role);
+  // Get tabs based on user role, with fallback to regular mentor tabs
+  const tabs = getTabsForRole(user?.role || 'mentor');
+  console.log('Generated tabs for role:', user?.role, 'count:', tabs.length);
 
   useEffect(() => {
-    fetchInterns();
-  }, []);
+    if (user) {
+      // Reset active tab to overview when user changes
+      setActiveTab('overview');
+      fetchInterns();
+    }
+  }, [user]);
 
+  // Import SWR hooks at the top of the file
+  const { useCollegeInterns } = require('../lib/swr-hooks');
+  
+  // Use SWR for fetching interns data
   const fetchInterns = async () => {
     setLoading(true);
     try {
       // Different API endpoints based on role
       let endpoint = '/api/admin/users?role=intern';
+      
+      console.log('Fetching interns for user role:', user?.role);
+      
       if (user?.role === 'mentor') {
         endpoint = '/api/mentor/assigned-interns';
       } else if (user?.role === 'super-mentor') {
         endpoint = '/api/super-mentor/college-interns';
+        console.log('Using super-mentor endpoint for college interns');
       }
       
+      // Use fetch with improved error handling
       const response = await fetch(endpoint);
+      console.log('Fetch response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched interns data:', data);
         setInterns(data.users || data.interns || []);
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch interns:', response.status, errorData.error || 'Unknown error');
+        
+        // If unauthorized, try refreshing user data
+        if (response.status === 401 || response.status === 403) {
+          console.log('Unauthorized, refreshing user data...');
+          await refreshUserData();
+        }
+        
         setInterns([]);
       }
     } catch (error) {

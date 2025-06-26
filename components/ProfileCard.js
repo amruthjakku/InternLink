@@ -188,6 +188,12 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
                 <span>{user.college.name || user.college}</span>
               </div>
             )}
+            {user?.cohortId && (
+              <div className="flex items-center space-x-2">
+                <span>👥</span>
+                <span>Cohort: {user.cohortName || user.cohortId}</span>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <span>📅</span>
               <span>Joined {formatJoinDate(user?.createdAt)}</span>

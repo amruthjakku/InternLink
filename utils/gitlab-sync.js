@@ -1,4 +1,5 @@
 import { GitLabAPI } from './gitlab-api.js';
+import { GitLabOAuthAPI } from './gitlab-oauth-api.js';
 import { decrypt, encrypt } from './encryption.js';
 import GitLabIntegration from '../models/GitLabIntegration.js';
 import ActivityTracking from '../models/ActivityTracking.js';
@@ -88,42 +89,82 @@ export class GitLabSyncService {
     try {
       console.log(`Starting GitLab sync for user: ${userId}`);
       
-      const integration = await GitLabIntegration.findOne({ 
+      // First try to find OAuth integration, then fall back to PAT
+      let integration = await GitLabIntegration.findOne({ 
         userId, 
         isActive: true,
-        tokenExpiresAt: { $gt: new Date() }
+        tokenType: 'oauth'
       });
+      
+      // If no OAuth integration, try PAT
+      if (!integration) {
+        integration = await GitLabIntegration.findOne({ 
+          userId, 
+          isActive: true,
+          tokenType: 'personal_access_token'
+        });
+      }
       
       if (!integration) {
         console.log(`No active GitLab integration found for user: ${userId}`);
         return { success: false, error: 'No active integration' };
       }
-
-      // Decrypt access token
-      const accessToken = decrypt(integration.accessToken);
-      if (!accessToken) {
-        throw new Error('Failed to decrypt access token');
-      }
-
-      const gitlab = new GitLabAPI(accessToken);
       
+      console.log(`Using ${integration.tokenType} integration for user: ${userId}`);
+
       // Determine sync window (last sync or 30 days ago)
       const lastSync = integration.lastSyncAt || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const sinceDate = lastSync.toISOString();
       
       console.log(`Syncing data since: ${sinceDate}`);
 
-      // Sync commits
-      const commits = await gitlab.getUserCommits(integration.gitlabEmail, sinceDate);
-      console.log(`Found ${commits.length} commits`);
-      
-      // Sync issues
-      const issues = await gitlab.getUserIssues(integration.gitlabUserId);
-      console.log(`Found ${issues.length} issues`);
-      
-      // Sync merge requests
-      const mergeRequests = await gitlab.getUserMergeRequests(integration.gitlabUserId);
-      console.log(`Found ${mergeRequests.length} merge requests`);
+      let commits, issues, mergeRequests;
+
+      if (integration.tokenType === 'oauth') {
+        // Use OAuth API
+        const oauthAPI = new GitLabOAuthAPI(userId);
+        
+        // Get commit activity
+        const activity = await oauthAPI.getUserCommitActivity({ since: sinceDate });
+        commits = activity.commits.map(commit => ({
+          id: commit.id,
+          title: commit.title,
+          message: commit.message,
+          created_at: commit.created_at,
+          web_url: commit.web_url,
+          project_id: commit.project.id,
+          project_name: commit.project.name,
+          project_path: commit.project.path,
+          project_url: commit.project.url,
+          stats: commit.stats || { additions: 0, deletions: 0 },
+          parent_ids: commit.parent_ids || []
+        }));
+        
+        // Get issues and merge requests
+        issues = await oauthAPI.getUserIssues();
+        mergeRequests = await oauthAPI.getUserMergeRequests();
+        
+        console.log(`OAuth API - Found ${commits.length} commits, ${issues.length} issues, ${mergeRequests.length} merge requests`);
+      } else {
+        // Use PAT API (legacy)
+        const accessToken = decrypt(integration.accessToken);
+        if (!accessToken) {
+          throw new Error('Failed to decrypt access token');
+        }
+
+        const gitlab = new GitLabAPI(accessToken);
+        
+        // Sync commits
+        commits = await gitlab.getUserCommits(integration.gitlabEmail, sinceDate);
+        
+        // Sync issues
+        issues = await gitlab.getUserIssues(integration.gitlabUserId);
+        
+        // Sync merge requests
+        mergeRequests = await gitlab.getUserMergeRequests(integration.gitlabUserId);
+        
+        console.log(`PAT API - Found ${commits.length} commits, ${issues.length} issues, ${mergeRequests.length} merge requests`);
+      }
 
       // Update activity tracking
       const syncResults = await this.updateActivityTracking(userId, {

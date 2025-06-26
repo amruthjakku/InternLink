@@ -92,11 +92,13 @@ export function TaskManagementTab() {
 
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
+        console.log('Tasks data from API:', tasksData);
         setTasks(tasksData.tasks || []);
       }
 
       if (cohortsRes.ok) {
         const cohortsData = await cohortsRes.json();
+        console.log('Cohorts data from API:', cohortsData);
         setCohorts(cohortsData.cohorts || []);
       }
     } catch (error) {
@@ -127,7 +129,7 @@ export function TaskManagementTab() {
         alert('Task created successfully!');
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message}`);
+        alert(`Error: ${error.error || error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating task:', error);
@@ -138,24 +140,48 @@ export function TaskManagementTab() {
   const handleEditTask = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/admin/tasks/${editingTask._id}`, {
+      // Create a clean copy of the task data for submission
+      const taskData = { ...editingTask };
+      
+      // Make sure cohortId is a string, not an object
+      if (typeof taskData.cohortId === 'object') {
+        taskData.cohortId = taskData.cohortId?._id;
+      }
+      
+      console.log('Updating task with data:', taskData);
+      
+      // Make sure we have the required fields based on assignment type
+      if (taskData.assignmentType === 'cohort' && !taskData.cohortId) {
+        alert('Please select a cohort for this task');
+        return;
+      }
+      
+      if (taskData.assignmentType === 'individual' && !taskData.assignedTo) {
+        alert('Please specify an assignee for this task');
+        return;
+      }
+      
+      const response = await fetch(`/api/admin/tasks/${taskData._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingTask)
+        body: JSON.stringify(taskData)
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('Task update response:', result);
         setShowEditModal(false);
         setEditingTask(null);
         fetchData();
         alert('Task updated successfully!');
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message}`);
+        console.error('Error response from API:', error);
+        alert(`Error: ${error.error || error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Failed to update task');
+      alert('Failed to update task: ' + error.message);
     }
   };
 
@@ -260,13 +286,56 @@ export function TaskManagementTab() {
     let filtered = tasks;
 
     if (selectedCohort !== 'all') {
-      filtered = filtered.filter(task => task.cohortId === selectedCohort);
+      console.log(`Filtering tasks by cohort: ${selectedCohort}`);
+      
+      // Log all tasks and their cohort IDs for debugging
+      filtered.forEach(task => {
+        const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+        console.log(`Task: ${task.title}, Cohort ID: ${taskCohortId}, Assignment Type: ${task.assignmentType}`);
+      });
+      
+      filtered = filtered.filter(task => {
+        // For tasks without assignmentType, check if they have a cohortId
+        const isCohortTask = task.assignmentType === 'cohort' || 
+                            (!task.assignmentType && task.cohortId);
+        
+        // Skip non-cohort tasks
+        if (!isCohortTask) {
+          return false;
+        }
+        
+        // Extract the cohort ID (could be an object or a string)
+        const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+        
+        // Skip tasks without a cohort ID
+        if (!taskCohortId) {
+          return false;
+        }
+        
+        console.log(`Comparing task cohort ID: ${taskCohortId} with selected cohort: ${selectedCohort}`);
+        
+        // Convert both to strings for comparison
+        const taskCohortIdStr = taskCohortId.toString();
+        const selectedCohortStr = selectedCohort.toString();
+        
+        console.log(`String comparison: "${taskCohortIdStr}" === "${selectedCohortStr}"`);
+        const matches = taskCohortIdStr === selectedCohortStr;
+        
+        if (matches) {
+          console.log(`Task ${task.title} matches selected cohort`);
+        }
+        
+        return matches;
+      });
+      
+      console.log(`Found ${filtered.length} tasks for cohort ${selectedCohort}`);
     }
 
     if (taskFilter !== 'all') {
       filtered = filtered.filter(task => task.status === taskFilter);
     }
 
+    console.log(`Filtered tasks: ${filtered.length} out of ${tasks.length}`);
     return filtered;
   };
 
@@ -372,7 +441,7 @@ export function TaskManagementTab() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cohort</label>
             <select
@@ -400,13 +469,50 @@ export function TaskManagementTab() {
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
+          <button
+            onClick={() => { setSelectedCohort('all'); setTaskFilter('all'); }}
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+          >
+            Show All Tasks
+          </button>
         </div>
       </div>
 
       {/* Tasks Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {getFilteredTasks().map((task) => {
-          const cohort = cohorts.find(c => c._id === task.cohortId);
+          console.log('Task data:', task);
+          console.log('Task cohortId:', task.cohortId);
+          console.log('Task cohortId type:', typeof task.cohortId);
+          console.log('Available cohorts:', cohorts);
+          
+          // Extract the cohort ID (could be an object or a string)
+          const cohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+          console.log('Extracted cohort ID:', cohortId);
+          
+          // Find the cohort by ID
+          const cohort = cohorts.find(c => {
+            // Convert both to strings for comparison
+            const cohortIdStr = c._id ? c._id.toString() : '';
+            const taskCohortIdStr = cohortId ? cohortId.toString() : '';
+            
+            console.log(`Comparing cohort ${cohortIdStr} with ${taskCohortIdStr}`);
+            return cohortIdStr === taskCohortIdStr;
+          });
+          console.log('Found cohort:', cohort);
+          
+          // Get the cohort name from various possible sources
+          const cohortName = 
+            // If cohortId is an object with a name property (populated from MongoDB)
+            (typeof task.cohortId === 'object' && task.cohortId?.name) || 
+            // If we found a matching cohort in our local cohorts array
+            cohort?.name || 
+            // If there's a cohortName field directly on the task
+            task.cohortName || 
+            // Default if no cohort info is found
+            'Unassigned';
+          console.log('Cohort name:', cohortName);
+          
           const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed';
 
           return (
@@ -430,9 +536,20 @@ export function TaskManagementTab() {
 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
-                  <span className="mr-2">👥</span>
-                  <span>Cohort: {cohort?.name || 'Unassigned'}</span>
+                  <span className="mr-2">🔄</span>
+                  <span>Assignment: {task.assignmentType === 'cohort' ? 'Cohort' : 'Individual'}</span>
                 </div>
+                {task.assignmentType === 'cohort' ? (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="mr-2">👥</span>
+                    <span>Cohort: {cohortName}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="mr-2">👤</span>
+                    <span>Assigned to: {task.assigneeName || task.assignedTo || 'Unassigned'}</span>
+                  </div>
+                )}
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="mr-2">📅</span>
                   <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
@@ -465,7 +582,16 @@ export function TaskManagementTab() {
               <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
-                    setEditingTask(task);
+                    // Create a clean copy of the task for editing
+                    const taskForEdit = { ...task };
+                    
+                    // Ensure assignmentType is set (default to 'cohort' if not present)
+                    if (!taskForEdit.assignmentType) {
+                      taskForEdit.assignmentType = taskForEdit.cohortId ? 'cohort' : 'individual';
+                    }
+                    
+                    console.log('Setting task for editing:', taskForEdit);
+                    setEditingTask(taskForEdit);
                     setShowEditModal(true);
                   }}
                   className="text-blue-600 hover:text-blue-900 text-sm font-medium"
@@ -783,6 +909,196 @@ export function TaskManagementTab() {
           onImport={handleImportTasks}
           onClose={() => setShowImportModal(false)}
         />
+      )}
+
+      {/* Debug Section: Show raw API response and filters */}
+      <div className="mt-8 p-4 bg-gray-100 rounded">
+        <h3 className="font-bold mb-2 text-gray-700">Debug Info</h3>
+        <div className="text-xs text-gray-700 mb-1">Current Cohort Filter: <span className="font-mono">{selectedCohort}</span></div>
+        <div className="text-xs text-gray-700 mb-1">Current Status Filter: <span className="font-mono">{taskFilter}</span></div>
+        <div className="text-xs text-gray-700">Raw API Response (allTasks):</div>
+        <pre className="bg-white border border-gray-200 rounded p-2 overflow-x-auto text-xs max-h-64">{JSON.stringify(tasks, null, 2)}</pre>
+      </div>
+
+      {/* Edit Task Modal */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Task</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingTask(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleEditTask} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={editingTask.title}
+                    onChange={(e) => setEditingTask({...editingTask, title: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={editingTask.category}
+                    onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={editingTask.description}
+                  onChange={(e) => setEditingTask({...editingTask, description: e.target.value})}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 h-24"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={editingTask.type}
+                    onChange={(e) => setEditingTask({...editingTask, type: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="assignment">Assignment</option>
+                    <option value="project">Project</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="presentation">Presentation</option>
+                    <option value="research">Research</option>
+                    <option value="coding">Coding</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select
+                    value={editingTask.priority}
+                    onChange={(e) => setEditingTask({...editingTask, priority: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={editingTask.status}
+                    onChange={(e) => setEditingTask({...editingTask, status: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Type</label>
+                <select
+                  value={editingTask.assignmentType || 'cohort'}
+                  onChange={(e) => setEditingTask({...editingTask, assignmentType: e.target.value})}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="cohort">Assign to Cohort</option>
+                  <option value="individual">Assign to Individual</option>
+                </select>
+              </div>
+
+              {editingTask.assignmentType === 'cohort' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Cohort</label>
+                  <select
+                    value={typeof editingTask.cohortId === 'object' ? editingTask.cohortId?._id : editingTask.cohortId || ''}
+                    onChange={(e) => setEditingTask({...editingTask, cohortId: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required={editingTask.assignmentType === 'cohort'}
+                  >
+                    <option value="">Select Cohort</option>
+                    {cohorts.map(cohort => (
+                      <option key={cohort._id} value={cohort._id}>{cohort.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Individual</label>
+                  <input
+                    type="text"
+                    value={editingTask.assignedTo || ''}
+                    onChange={(e) => setEditingTask({...editingTask, assignedTo: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="User ID"
+                    required={editingTask.assignmentType === 'individual'}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={editingTask.startDate ? new Date(editingTask.startDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setEditingTask({...editingTask, startDate: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={editingTask.dueDate ? new Date(editingTask.dueDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setEditingTask({...editingTask, dueDate: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingTask(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

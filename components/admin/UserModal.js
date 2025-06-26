@@ -7,6 +7,7 @@ export default function UserModal({
   setEditFormData,
   colleges,
   mentors,
+  cohorts,
   onClose,
   onSave,
   selectedUser,
@@ -148,24 +149,43 @@ export default function UserModal({
                   </select>
                 </div>
                 {editFormData.role === 'intern' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Assigned Mentor *
-                    </label>
-                    <select
-                      value={editFormData.assignedMentor || ''}
-                      onChange={e => handleFormFieldChange('assignedMentor', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Select Mentor</option>
-                      {mentors.map(mentor => (
-                        <option key={mentor.id || mentor._id} value={mentor.id || mentor._id}>
-                          {mentor.name} ({mentor.email})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Assigned Mentor *
+                      </label>
+                      <select
+                        value={editFormData.assignedMentor || ''}
+                        onChange={e => handleFormFieldChange('assignedMentor', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Mentor</option>
+                        {mentors.map(mentor => (
+                          <option key={mentor.id || mentor._id} value={mentor.id || mentor._id}>
+                            {mentor.name} ({mentor.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Assigned Cohort
+                      </label>
+                      <select
+                        value={editFormData.cohort || ''}
+                        onChange={e => handleFormFieldChange('cohort', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select Cohort</option>
+                        {cohorts && cohorts.map(cohort => (
+                          <option key={cohort.id || cohort._id} value={cohort.id || cohort._id}>
+                            {cohort.name} ({cohort.currentInterns || 0}/{cohort.maxInterns || 'unlimited'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
               </div>
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

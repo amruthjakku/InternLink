@@ -14,10 +14,35 @@ export async function GET() {
 
     const db = await getDatabase();
     
-    const cohorts = await db.collection('cohorts')
-      .find({ isActive: true })
+    // First, count all cohorts to see if there are any
+    const totalCohorts = await db.collection('cohorts').countDocuments();
+    console.log(`Total cohorts in database: ${totalCohorts}`);
+    
+    // Get all cohorts, active or not
+    const allCohorts = await db.collection('cohorts')
+      .find({})
       .sort({ createdAt: -1 })
       .toArray();
+    
+    console.log('All cohorts:', allCohorts.map(c => ({
+      id: c._id,
+      name: c.name,
+      isActive: c.isActive
+    })));
+    
+    // Get all cohorts for admin dashboard
+    // We'll return all cohorts, not just active ones
+    const cohorts = await db.collection('cohorts')
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    console.log('Fetched cohorts:', cohorts.map(c => ({
+      id: c._id,
+      name: c.name,
+      startDate: c.startDate,
+      endDate: c.endDate
+    })));
 
     return NextResponse.json({ 
       success: true,

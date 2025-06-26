@@ -166,6 +166,21 @@ const TaskSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  timeTracking: [{
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    hours: {
+      type: Number,
+      required: true
+    },
+    description: String,
+    recordedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  }],
   isActive: {
     type: Boolean,
     default: true
@@ -182,6 +197,8 @@ TaskSchema.index({ dueDate: 1 });
 TaskSchema.index({ status: 1 });
 TaskSchema.index({ priority: 1 });
 TaskSchema.index({ category: 1 });
+TaskSchema.index({ cohortId: 1 }); // Add index for cohort-based queries
+TaskSchema.index({ assignmentType: 1 }); // Add index for assignment type
 
 // Instance methods
 TaskSchema.methods.canBeEditedBy = function(user) {

@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route.js';
 import { connectToDatabase } from '../../../../utils/database.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 import { testGitLabConnection, getUserCommitActivity } from '../../../../utils/gitlab-api.js';
+import { GitLabOAuthAPI } from '../../../../utils/gitlab-oauth-api.js';
 import { encryptToken } from '../../../../utils/encryption.js';
 
 export const dynamic = 'force-dynamic';
