@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
+import { EnhancedUserManagement } from '../../../components/admin/EnhancedUserManagement';
+import { DataIntegrityChecker } from '../../../components/admin/DataIntegrityChecker';
 import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
 import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
 import { IPManagement } from '../../../components/admin/IPManagement';
@@ -643,6 +645,8 @@ export default function AdminDashboard() {
               { id: 'attendance-analytics', name: 'Attendance Analytics', icon: '📍' },
               { id: 'ip-management', name: 'IP Management', icon: '🛡️' },
               { id: 'user-management', name: 'User Management', icon: '👥' },
+              { id: 'enhanced-user-management', name: 'Enhanced Users', icon: '🚀' },
+              { id: 'data-integrity', name: 'Data Integrity', icon: '🔧' },
               { id: 'user-activation', name: 'User Activation', icon: '🔄' },
               { id: 'attendance-debugger', name: 'Attendance Debug', icon: '🔧' },
               { id: 'super-mentor-management', name: 'Super-Mentors', icon: '👨‍🏫' },
@@ -979,6 +983,12 @@ export default function AdminDashboard() {
 
         {/* User Management Tab */}
         {activeTab === 'user-management' && <AdvancedUserManagement />}
+
+        {/* Enhanced User Management Tab */}
+        {activeTab === 'enhanced-user-management' && <EnhancedUserManagement />}
+
+        {/* Data Integrity Checker Tab */}
+        {activeTab === 'data-integrity' && <DataIntegrityChecker />}
 
         {/* User Activation Management Tab */}
         {activeTab === 'user-activation' && <UserActivationManagement />}

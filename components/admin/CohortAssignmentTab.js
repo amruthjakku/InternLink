@@ -103,74 +103,62 @@ export function CohortAssignmentTab() {
     }
 
     setAssigningInterns(true);
-    setSuccessMessage('');
     setErrorMessage('');
+    setSuccessMessage('');
 
-    // Get cohort name for better messaging
-    const selectedCohortName = cohorts.find(c => c._id === selectedCohort)?.name || 'selected cohort';
-    
     try {
-      console.log(`Starting assignment of ${selectedInterns.length} interns to cohort ${selectedCohortName} (${selectedCohort})`);
+      console.log(`🎯 Assigning ${selectedInterns.length} interns to cohort ${selectedCohort}`);
       
-      // Process one intern at a time
-      let successCount = 0;
-      let failCount = 0;
-      let errorMessages = [];
-      
-      for (const internId of selectedInterns) {
-        const internName = interns.find(i => i._id === internId)?.name || internId;
+      const response = await fetch('/api/admin/cohorts/assign-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cohortId: selectedCohort,
+          userIds: selectedInterns,
+          action: 'assign'
+        }),
+      });
+
+      const result = await response.json();
+      console.log('Assignment result:', result);
+
+      if (response.ok) {
+        const { summary, results } = result;
         
-        try {
-          console.log(`Assigning intern ${internName} (${internId}) to cohort ${selectedCohortName}`);
+        let message = `Assignment completed: ${summary.successful} successful`;
+        if (summary.failed > 0) message += `, ${summary.failed} failed`;
+        if (summary.skipped > 0) message += `, ${summary.skipped} skipped`;
+        
+        setSuccessMessage(message);
+        
+        // Show detailed results if there were failures or skips
+        if (summary.failed > 0 || summary.skipped > 0) {
+          console.log('Detailed results:', results);
           
-          const response = await fetch('/api/admin/assign-intern-cohort', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              internId,
-              cohortId: selectedCohort
-            })
-          });
+          const failedUsers = results.failed.map(f => f.username || f.userId).join(', ');
+          const skippedUsers = results.skipped.map(s => s.username || s.userId).join(', ');
           
-          const data = await response.json();
+          let detailMessage = '';
+          if (failedUsers) detailMessage += `Failed: ${failedUsers}. `;
+          if (skippedUsers) detailMessage += `Skipped: ${skippedUsers}.`;
           
-          if (response.ok) {
-            successCount++;
-            console.log(`Successfully assigned intern ${internName} to cohort ${selectedCohortName}`);
-          } else {
-            const errorMsg = data.error || 'Unknown error';
-            console.error(`Failed to assign intern ${internName}:`, errorMsg);
-            errorMessages.push(`${internName}: ${errorMsg}`);
-            failCount++;
+          if (detailMessage) {
+            setErrorMessage(detailMessage);
           }
-        } catch (err) {
-          console.error(`Error assigning intern ${internName}:`, err);
-          errorMessages.push(`${internName}: ${err.message}`);
-          failCount++;
-        }
-      }
-      
-      // Update UI based on results
-      if (successCount > 0) {
-        setSuccessMessage(`Successfully assigned ${successCount} intern(s) to ${selectedCohortName}`);
-        
-        if (failCount > 0) {
-          setErrorMessage(`Failed to assign ${failCount} intern(s). ${errorMessages.slice(0, 3).join('; ')}${errorMessages.length > 3 ? '...' : ''}`);
         }
         
-        // Clear selection for successful assignments
+        // Clear selections and refresh data
         setSelectedInterns([]);
+        await fetchData();
         
-        // Refresh data to show updated assignments
-        fetchData();
-      } else if (failCount > 0) {
-        setErrorMessage(`All assignments failed. ${errorMessages.slice(0, 3).join('; ')}${errorMessages.length > 3 ? '...' : ''}`);
       } else {
-        setErrorMessage('No assignments were processed. Please try again.');
+        setErrorMessage(result.error || 'Failed to assign interns to cohort');
       }
     } catch (error) {
-      console.error('Error in assignment process:', error);
-      setErrorMessage(`Assignment process error: ${error.message}`);
+      console.error('Error assigning interns:', error);
+      setErrorMessage(`Assignment failed: ${error.message}`);
     } finally {
       setAssigningInterns(false);
     }

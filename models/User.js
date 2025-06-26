@@ -57,6 +57,31 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Soft delete tracking fields
+  deactivatedAt: {
+    type: Date,
+    default: null
+  },
+  deactivationReason: {
+    type: String,
+    default: null
+  },
+  deactivatedBy: {
+    type: String,
+    default: null
+  },
+  reactivatedAt: {
+    type: Date,
+    default: null
+  },
+  reactivationReason: {
+    type: String,
+    default: null
+  },
+  reactivatedBy: {
+    type: String,
+    default: null
+  },
   profileImage: {
     type: String,
     default: null
@@ -261,6 +286,169 @@ userSchema.methods.canAccessCollege = function(collegeId) {
 userSchema.methods.updateLastLogin = function() {
   this.lastLoginAt = new Date();
   return this.save();
+};
+
+// Enhanced soft delete methods
+userSchema.methods.softDelete = function(reason = 'Admin action', deletedBy = 'system') {
+  this.isActive = false;
+  this.deactivatedAt = new Date();
+  this.deactivationReason = reason;
+  this.deactivatedBy = deletedBy;
+  this.sessionVersion += 1; // Force session invalidation
+  this.lastSessionReset = new Date();
+  this.updatedAt = new Date();
+  return this.save();
+};
+
+userSchema.methods.reactivate = function(reason = 'Admin action', reactivatedBy = 'system') {
+  // Check for conflicts before reactivating
+  return this.constructor.findOne({
+    $or: [
+      { gitlabUsername: this.gitlabUsername },
+      { email: this.email }
+    ],
+    _id: { $ne: this._id },
+    isActive: true
+  }).then(existingUser => {
+    if (existingUser) {
+      throw new Error(`Cannot reactivate: ${existingUser.gitlabUsername === this.gitlabUsername ? 'GitLab username' : 'Email'} is already in use by another active user`);
+    }
+    
+    // Clear deactivation data and set reactivation data
+    this.isActive = true;
+    this.reactivatedAt = new Date();
+    this.reactivationReason = reason;
+    this.reactivatedBy = reactivatedBy;
+    this.deactivatedAt = null;
+    this.deactivationReason = null;
+    this.deactivatedBy = null;
+    this.sessionVersion += 1; // Force session refresh
+    this.lastTokenRefresh = new Date();
+    this.updatedAt = new Date();
+    
+    return this.save();
+  });
+};
+
+userSchema.methods.assignToCohort = function(cohortId, assignedBy = 'system') {
+  const originalCohortId = this.cohortId;
+  this.cohortId = cohortId;
+  this.updatedAt = new Date();
+  
+  return this.save().then(savedUser => {
+    // Update cohort member counts
+    const updatePromises = [];
+    
+    if (originalCohortId) {
+      updatePromises.push(
+        this.constructor.model('Cohort').findByIdAndUpdate(
+          originalCohortId,
+          { $inc: { memberCount: -1 }, updatedAt: new Date() }
+        )
+      );
+    }
+    
+    if (cohortId) {
+      updatePromises.push(
+        this.constructor.model('Cohort').findByIdAndUpdate(
+          cohortId,
+          { $inc: { memberCount: 1 }, updatedAt: new Date() }
+        )
+      );
+    }
+    
+    return Promise.all(updatePromises).then(() => savedUser);
+  });
+};
+
+userSchema.methods.removeFromCohort = function(removedBy = 'system') {
+  const originalCohortId = this.cohortId;
+  this.cohortId = null;
+  this.updatedAt = new Date();
+  
+  return this.save().then(savedUser => {
+    if (originalCohortId) {
+      return this.constructor.model('Cohort').findByIdAndUpdate(
+        originalCohortId,
+        { $inc: { memberCount: -1 }, updatedAt: new Date() }
+      ).then(() => savedUser);
+    }
+    return savedUser;
+  });
+};
+
+// Static method for safe reactivation with conflict checking
+userSchema.statics.safeReactivate = function(userId, reason = 'Admin action', reactivatedBy = 'system') {
+  return this.findById(userId).then(user => {
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    if (user.isActive) {
+      throw new Error('User is already active');
+    }
+    
+    return user.reactivate(reason, reactivatedBy);
+  });
+};
+
+// Static method for bulk operations with proper error handling
+userSchema.statics.bulkUpdateWithValidation = function(userIds, updateData, updatedBy = 'system') {
+  const results = {
+    successful: [],
+    failed: [],
+    skipped: []
+  };
+  
+  return Promise.all(userIds.map(userId => {
+    return this.findById(userId).then(user => {
+      if (!user) {
+        results.failed.push({
+          userId,
+          error: 'User not found'
+        });
+        return;
+      }
+      
+      // Check if update is needed
+      let needsUpdate = false;
+      const changes = {};
+      
+      Object.keys(updateData).forEach(key => {
+        if (user[key] !== updateData[key]) {
+          needsUpdate = true;
+          changes[key] = updateData[key];
+        }
+      });
+      
+      if (!needsUpdate) {
+        results.skipped.push({
+          userId,
+          username: user.gitlabUsername,
+          reason: 'No changes needed'
+        });
+        return;
+      }
+      
+      // Apply updates
+      Object.assign(user, changes);
+      user.updatedAt = new Date();
+      user.sessionVersion += 1; // Force session refresh
+      
+      return user.save().then(savedUser => {
+        results.successful.push({
+          userId,
+          username: savedUser.gitlabUsername,
+          changes
+        });
+      });
+    }).catch(error => {
+      results.failed.push({
+        userId,
+        error: error.message
+      });
+    });
+  })).then(() => results);
 };
 
 export default mongoose.models.User || mongoose.model('User', userSchema);
