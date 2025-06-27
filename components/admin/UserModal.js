@@ -178,11 +178,19 @@ export default function UserModal({
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select Cohort</option>
-                        {cohorts && cohorts.map(cohort => (
-                          <option key={cohort.id || cohort._id} value={cohort.id || cohort._id}>
-                            {cohort.name} ({cohort.currentInterns || 0}/{cohort.maxInterns || 'unlimited'})
-                          </option>
-                        ))}
+                        {cohorts && cohorts.length > 0 ? (
+                          cohorts.map(cohort => {
+                            const currentCount = cohort.currentInterns || cohort.memberCount || 0;
+                            const maxCount = cohort.maxInterns || cohort.maxMembers || 'unlimited';
+                            return (
+                              <option key={cohort.id || cohort._id} value={cohort.id || cohort._id}>
+                                {cohort.name} ({currentCount}/{maxCount})
+                              </option>
+                            );
+                          })
+                        ) : (
+                          <option disabled>No cohorts available - Click "Refresh Cohorts" button</option>
+                        )}
                       </select>
                     </div>
                   </>

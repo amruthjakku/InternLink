@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Fix - Create Cohorts</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .button { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+        .button:hover { background: #2563eb; }
+        .success { background: #10b981; }
+        .error { background: #ef4444; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success-result { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .error-result { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Quick Fix: Create Cohorts for InternLink</h1>
+    <p>This will create a default cohort and assign all interns to it.</p>
+    
+    <button class="button" onclick="createCohort()">Create Default Cohort</button>
+    <button class="button" onclick="assignInterns()">Assign Interns to Cohort</button>
+    <button class="button success" onclick="doFullFix()">Do Complete Fix</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function createCohort() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Creating cohort...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/setup-cohorts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="result success-result">✅ ${result.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function assignInterns() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Assigning interns...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/quick-assign-cohorts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="result success-result">✅ ${result.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function doFullFix() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Running complete fix...</div>';
+            
+            try {
+                // Step 1: Create cohort
+                const cohortResponse = await fetch('/api/admin/setup-cohorts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const cohortResult = await cohortResponse.json();
+                
+                if (!cohortResponse.ok) {
+                    throw new Error(cohortResult.error || 'Failed to create cohort');
+                }
+                
+                // Step 2: Assign interns
+                const assignResponse = await fetch('/api/admin/quick-assign-cohorts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const assignResult = await assignResponse.json();
+                
+                let message = `✅ ${cohortResult.message}`;
+                if (assignResponse.ok) {
+                    message += `<br>✅ ${assignResult.message}`;
+                } else {
+                    message += `<br>⚠️ ${assignResult.error || 'Some interns may not have been assigned'}`;
+                }
+                
+                resultDiv.innerHTML = `<div class="result success-result">${message}<br><br>🎉 <strong>Fix Complete!</strong> Please refresh your admin dashboard and try adding a new intern.</div>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

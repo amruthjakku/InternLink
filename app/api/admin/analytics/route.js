@@ -46,7 +46,7 @@ export async function GET(request) {
         mentor: users.filter(u => u.role === 'mentor').length,
         intern: users.filter(u => u.role === 'intern').length
       },
-      recentSignups: users.filter(u => new Date(u.createdAt) >= startDate).length,
+      recentSignups: users.filter(u => u.createdAt && new Date(u.createdAt) >= startDate).length,
       activeInPeriod: users.filter(u => u.lastLoginAt && new Date(u.lastLoginAt) >= startDate).length
     };
 
@@ -56,7 +56,7 @@ export async function GET(request) {
       completed: tasks.filter(t => t.status === 'completed' || t.status === 'done').length,
       inProgress: tasks.filter(t => t.status === 'in_progress').length,
       notStarted: tasks.filter(t => t.status === 'not_started').length,
-      overdue: tasks.filter(t => new Date(t.dueDate) < new Date() && !['completed', 'done'].includes(t.status)).length,
+      overdue: tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && !['completed', 'done'].includes(t.status)).length,
       byPriority: {
         high: tasks.filter(t => t.priority === 'high').length,
         medium: tasks.filter(t => t.priority === 'medium').length,
@@ -68,21 +68,87 @@ export async function GET(request) {
         mentor: tasks.filter(t => t.createdByRole === 'mentor').length
       },
       avgProgress: tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / tasks.length) : 0,
-      recentTasks: tasks.filter(t => new Date(t.createdAt) >= startDate).length
+      recentTasks: tasks.filter(t => t.createdAt && new Date(t.createdAt) >= startDate).length
     };
 
-    // Calculate college metrics
-    const collegeMetrics = {
-      total: colleges.length,
-      withUsers: colleges.filter(c => users.some(u => u.college && u.college._id.toString() === c._id.toString())).length,
-      userDistribution: colleges.map(college => ({
-        name: college.name,
-        users: users.filter(u => u.college && u.college._id.toString() === college._id.toString()).length,
-        interns: users.filter(u => u.college && u.college._id.toString() === college._id.toString() && u.role === 'intern').length,
-        mentors: users.filter(u => u.college && u.college._id.toString() === college._id.toString() && u.role === 'mentor').length,
-        superMentors: users.filter(u => u.college && u.college._id.toString() === college._id.toString() && u.role === 'super-mentor').length
-      }))
-    };
+    // Calculate college metrics with better error handling
+    let collegeMetrics;
+    try {
+      // Helper function to safely compare college IDs
+      const isUserInCollege = (user, collegeId) => {
+        try {
+          return user && 
+                 user.college && 
+                 user.college._id && 
+                 collegeId && 
+                 user.college._id.toString() === collegeId.toString();
+        } catch (err) {
+          console.warn('Error comparing college IDs:', err);
+          return false;
+        }
+      };
+
+      collegeMetrics = {
+        total: colleges.length,
+        withUsers: colleges.filter(college => {
+          try {
+            return college._id && users.some(user => isUserInCollege(user, college._id));
+          } catch (err) {
+            console.warn('Error filtering colleges with users:', err);
+            return false;
+          }
+        }).length,
+        userDistribution: colleges.map(college => {
+          try {
+            const collegeId = college._id;
+            const collegeName = college.name || 'Unknown College';
+            
+            if (!collegeId) {
+              return {
+                name: collegeName,
+                users: 0,
+                interns: 0,
+                mentors: 0,
+                superMentors: 0
+              };
+            }
+
+            const collegeUsers = users.filter(user => isUserInCollege(user, collegeId));
+            
+            return {
+              name: collegeName,
+              users: collegeUsers.length,
+              interns: collegeUsers.filter(u => u.role === 'intern').length,
+              mentors: collegeUsers.filter(u => u.role === 'mentor').length,
+              superMentors: collegeUsers.filter(u => u.role === 'super-mentor').length
+            };
+          } catch (err) {
+            console.warn('Error processing college distribution:', err);
+            return {
+              name: college.name || 'Unknown College',
+              users: 0,
+              interns: 0,
+              mentors: 0,
+              superMentors: 0
+            };
+          }
+        })
+      };
+    } catch (error) {
+      console.error('Error calculating college metrics:', error);
+      // Fallback college metrics
+      collegeMetrics = {
+        total: colleges.length,
+        withUsers: 0,
+        userDistribution: colleges.map(college => ({
+          name: college.name || 'Unknown College',
+          users: 0,
+          interns: 0,
+          mentors: 0,
+          superMentors: 0
+        }))
+      };
+    }
 
     // Calculate performance metrics
     const performanceMetrics = {
@@ -93,7 +159,23 @@ export async function GET(request) {
     };
 
     // Generate time series data for charts
-    const timeSeriesData = generateTimeSeriesData(users, tasks, startDate, parseInt(timeRange));
+    let timeSeriesData;
+    try {
+      timeSeriesData = generateTimeSeriesData(users, tasks, startDate, parseInt(timeRange));
+    } catch (error) {
+      console.error('Error generating time series data:', error);
+      // Fallback time series data
+      timeSeriesData = [];
+      for (let i = parseInt(timeRange) - 1; i >= 0; i--) {
+        timeSeriesData.push({
+          date: format(subDays(new Date(), i), 'yyyy-MM-dd'),
+          newUsers: 0,
+          tasksCreated: 0,
+          tasksCompleted: 0,
+          activeUsers: 0
+        });
+      }
+    }
 
     // Calculate system health metrics
     const systemHealth = {
@@ -116,14 +198,16 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Error fetching analytics:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json({ 
-      error: 'Failed to fetch analytics data' 
+      error: 'Failed to fetch analytics data',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }
 
 function calculateGrowthRate(users, startDate) {
-  const recentUsers = users.filter(u => new Date(u.createdAt) >= startDate).length;
+  const recentUsers = users.filter(u => u.createdAt && new Date(u.createdAt) >= startDate).length;
   const totalUsers = users.length;
   const previousPeriodUsers = totalUsers - recentUsers;
   
@@ -144,14 +228,17 @@ function generateTimeSeriesData(users, tasks, startDate, days) {
     return {
       date: format(date, 'yyyy-MM-dd'),
       newUsers: users.filter(u => {
+        if (!u.createdAt) return false;
         const createdAt = new Date(u.createdAt);
         return createdAt >= dayStart && createdAt <= dayEnd;
       }).length,
       tasksCreated: tasks.filter(t => {
+        if (!t.createdAt) return false;
         const createdAt = new Date(t.createdAt);
         return createdAt >= dayStart && createdAt <= dayEnd;
       }).length,
       tasksCompleted: tasks.filter(t => {
+        if (!t.updatedAt) return false;
         const updatedAt = new Date(t.updatedAt);
         return updatedAt >= dayStart && updatedAt <= dayEnd && ['completed', 'done'].includes(t.status);
       }).length,
@@ -165,7 +252,7 @@ function generateTimeSeriesData(users, tasks, startDate, days) {
 }
 
 function calculateCompletionTrend(tasks, startDate) {
-  const recentTasks = tasks.filter(t => new Date(t.createdAt) >= startDate);
+  const recentTasks = tasks.filter(t => t.createdAt && new Date(t.createdAt) >= startDate);
   const completedRecent = recentTasks.filter(t => ['completed', 'done'].includes(t.status)).length;
   
   if (recentTasks.length === 0) return 0;

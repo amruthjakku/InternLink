@@ -17,6 +17,10 @@ export async function GET(request) {
     const role = searchParams.get('role');
     const college = searchParams.get('college');
     
+    console.log('Attendance Analytics - Request params:', {
+      startDate, endDate, role, college
+    });
+    
     // Ensure database connection
     if (!process.env.MONGODB_URI) {
       return NextResponse.json({ 
@@ -25,6 +29,7 @@ export async function GET(request) {
     }
     
     const db = await getDatabase();
+    console.log('Attendance Analytics - Database connected successfully');
     
     // Build query
     let query = {};
@@ -45,10 +50,13 @@ export async function GET(request) {
     }
     
     // Get attendance data
+    console.log('Attendance Analytics - Querying attendance with:', query);
     const attendanceData = await db.collection('attendance')
       .find(query)
       .sort({ date: -1 })
       .toArray();
+    
+    console.log('Attendance Analytics - Found attendance records:', attendanceData.length);
     
     // Get all users for absentee calculation
     let userQuery = {};
@@ -59,19 +67,25 @@ export async function GET(request) {
       userQuery.college = college;
     }
     
+    console.log('Attendance Analytics - Querying users with:', userQuery);
     const allUsers = await db.collection('users')
       .find(userQuery)
       .toArray();
     
+    console.log('Attendance Analytics - Found users:', allUsers.length);
+    
     // Calculate analytics
     const analytics = await calculateAttendanceAnalytics(attendanceData, allUsers, startDate, endDate);
+    console.log('Attendance Analytics - Analytics calculated successfully');
     
     return NextResponse.json(analytics);
     
   } catch (error) {
     console.error('Error fetching attendance analytics:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json({ 
-      error: 'Failed to fetch attendance analytics' 
+      error: 'Failed to fetch attendance analytics',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }
@@ -80,8 +94,16 @@ export async function GET(request) {
 
 
 async function calculateAttendanceAnalytics(attendanceData, allUsers, startDate, endDate) {
-  const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const end = endDate ? new Date(endDate) : new Date();
+  try {
+    console.log('Calculating attendance analytics with:', {
+      attendanceRecords: attendanceData.length,
+      totalUsers: allUsers.length,
+      startDate,
+      endDate
+    });
+    
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
   
   // Daily attendance heatmap
   const dailyHeatmap = {};
@@ -102,18 +124,32 @@ async function calculateAttendanceAnalytics(attendanceData, allUsers, startDate,
   const userDailyAttendance = {};
   
   attendanceData.forEach(record => {
-    const dateKey = record.date || new Date(record.timestamp).toISOString().split('T')[0];
-    const userKey = `${record.userId}_${dateKey}`;
-    
-    if (!userDailyAttendance[userKey]) {
-      userDailyAttendance[userKey] = {
-        userId: record.userId,
-        date: dateKey,
-        records: []
-      };
+    try {
+      let dateKey;
+      if (record.date) {
+        dateKey = typeof record.date === 'string' ? record.date : new Date(record.date).toISOString().split('T')[0];
+      } else if (record.timestamp) {
+        dateKey = new Date(record.timestamp).toISOString().split('T')[0];
+      } else if (record.createdAt) {
+        dateKey = new Date(record.createdAt).toISOString().split('T')[0];
+      } else {
+        dateKey = new Date().toISOString().split('T')[0]; // fallback to today
+      }
+      
+      const userKey = `${record.userId}_${dateKey}`;
+      
+      if (!userDailyAttendance[userKey]) {
+        userDailyAttendance[userKey] = {
+          userId: record.userId,
+          date: dateKey,
+          records: []
+        };
+      }
+      
+      userDailyAttendance[userKey].records.push(record);
+    } catch (err) {
+      console.warn('Error processing attendance record:', err, record);
     }
-    
-    userDailyAttendance[userKey].records.push(record);
   });
   
   // Fill heatmap with unique user-day combinations
@@ -143,30 +179,39 @@ async function calculateAttendanceAnalytics(attendanceData, allUsers, startDate,
   const userStreaks = {};
   
   attendanceData.forEach(record => {
-    if (!userAttendance[record.userId]) {
-      userAttendance[record.userId] = {
-        userId: record.userId,
-        userName: record.userName,
-        userEmail: record.userEmail,
-        userRole: record.userRole,
-        college: record.college,
-        totalDays: 0,
-        presentDays: 0,
-        absentDays: 0,
-        attendanceRate: 0,
-        records: []
-      };
-    }
-    
-    userAttendance[record.userId].records.push({
-      date: record.date,
-      status: record.status,
-      ipAddress: record.ipAddress,
-      location: record.location
-    });
-    
-    if (record.status === 'present') {
-      userAttendance[record.userId].presentDays++;
+    try {
+      if (!record.userId) {
+        console.warn('Attendance record missing userId:', record);
+        return;
+      }
+      
+      if (!userAttendance[record.userId]) {
+        userAttendance[record.userId] = {
+          userId: record.userId,
+          userName: record.userName || 'Unknown User',
+          userEmail: record.userEmail || '',
+          userRole: record.userRole || 'unknown',
+          college: record.college || 'Unknown',
+          totalDays: 0,
+          presentDays: 0,
+          absentDays: 0,
+          attendanceRate: 0,
+          records: []
+        };
+      }
+      
+      userAttendance[record.userId].records.push({
+        date: record.date || record.timestamp || record.createdAt,
+        status: record.status,
+        ipAddress: record.ipAddress,
+        location: record.location
+      });
+      
+      if (record.status === 'present') {
+        userAttendance[record.userId].presentDays++;
+      }
+    } catch (err) {
+      console.warn('Error processing user attendance record:', err, record);
     }
   });
   
@@ -191,11 +236,21 @@ async function calculateAttendanceAnalytics(attendanceData, allUsers, startDate,
   const presentToday = new Set(
     attendanceData
       .filter(record => {
-        const recordDate = new Date(record.date);
-        recordDate.setHours(0, 0, 0, 0);
-        return recordDate.getTime() === today.getTime();
+        try {
+          if (!record.date && !record.timestamp && !record.createdAt) return false;
+          
+          const recordDate = new Date(record.date || record.timestamp || record.createdAt);
+          if (isNaN(recordDate.getTime())) return false;
+          
+          recordDate.setHours(0, 0, 0, 0);
+          return recordDate.getTime() === today.getTime();
+        } catch (err) {
+          console.warn('Error filtering today attendance:', err, record);
+          return false;
+        }
       })
       .map(record => record.userId)
+      .filter(userId => userId) // Remove null/undefined userIds
   );
   
   const absenteesToday = allUsers
@@ -277,27 +332,62 @@ async function calculateAttendanceAnalytics(attendanceData, allUsers, startDate,
     stats.attendanceRate = stats.total > 0 ? (stats.present / stats.total) * 100 : 0;
   });
   
-  return {
-    overview: {
-      totalUsers,
-      presentToday: presentTodayCount,
-      absentToday: absentTodayCount,
-      attendanceRateToday,
-      totalWorkingDays
-    },
-    dailyHeatmap,
-    weeklyHeatmap,
-    userAttendance: Object.values(userAttendance),
-    absenteesToday,
-    topPerformers,
-    streakLeaders,
-    roleStats,
-    collegeStats,
-    dateRange: {
-      start: start.toISOString(),
-      end: end.toISOString()
-    }
-  };
+    return {
+      overview: {
+        totalUsers,
+        presentToday: presentTodayCount,
+        absentToday: absentTodayCount,
+        attendanceRateToday,
+        totalWorkingDays
+      },
+      dailyHeatmap,
+      weeklyHeatmap,
+      userAttendance: Object.values(userAttendance),
+      absenteesToday,
+      topPerformers,
+      streakLeaders,
+      roleStats,
+      collegeStats,
+      dateRange: {
+        start: start.toISOString(),
+        end: end.toISOString()
+      }
+    };
+  } catch (error) {
+    console.error('Error in calculateAttendanceAnalytics:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Return fallback analytics data
+    return {
+      overview: {
+        totalUsers: allUsers.length,
+        presentToday: 0,
+        absentToday: allUsers.length,
+        attendanceRateToday: 0,
+        totalWorkingDays: 0
+      },
+      dailyHeatmap: {},
+      weeklyHeatmap: {},
+      userAttendance: [],
+      absenteesToday: allUsers.map(user => ({
+        userId: user._id?.toString() || user.id,
+        userName: user.name || 'Unknown',
+        userEmail: user.email || '',
+        userRole: user.role || 'unknown',
+        college: user.college || 'Unknown',
+        lastAttendance: null,
+        attendanceStreak: 0
+      })),
+      topPerformers: [],
+      streakLeaders: [],
+      roleStats: {},
+      collegeStats: {},
+      dateRange: {
+        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        end: new Date().toISOString()
+      }
+    };
+  }
 }
 
 function getWeekKey(date) {

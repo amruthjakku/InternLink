@@ -341,7 +341,7 @@ export function ProfileTab() {
                     )}
                     {user?.cohortId && !selectedCohort && (
                       <span className="text-xs text-gray-500">
-                        ID: {user.cohortId}
+                        ID: {typeof user.cohortId === 'object' ? user.cohortId._id : user.cohortId}
                       </span>
                     )}
                   </div>

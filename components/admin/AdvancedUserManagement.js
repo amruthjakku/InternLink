@@ -26,6 +26,9 @@ export function AdvancedUserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [mentors, setMentors] = useState([]);
   const [bulkImportResult, setBulkImportResult] = useState(null);
+  const [creatingCohort, setCreatingCohort] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef();
 
   useEffect(() => {
@@ -75,13 +78,17 @@ export function AdvancedUserManagement() {
       const response = await fetch('/api/admin/cohorts');
       if (response.ok) {
         const data = await response.json();
+        console.log('AdvancedUserManagement - Cohorts API response:', data);
         setCohorts(data.cohorts || []);
+        console.log('AdvancedUserManagement - Set cohorts state:', data.cohorts || []);
       } else {
-        console.error('Failed to fetch cohorts');
+        console.error('AdvancedUserManagement - Failed to fetch cohorts:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('AdvancedUserManagement - Cohorts API error:', errorData);
         setCohorts([]);
       }
     } catch (error) {
-      console.error('Error fetching cohorts:', error);
+      console.error('AdvancedUserManagement - Error fetching cohorts:', error);
       setCohorts([]);
     }
   };
@@ -327,10 +334,54 @@ export function AdvancedUserManagement() {
       gitlabUsername: '',
       role: 'intern',
       college: '',
+      cohort: '',
       status: 'active',
       assignedMentor: '',
     });
     setShowUserModal(true);
+  };
+
+  const createDefaultCohort = async () => {
+    setCreatingCohort(true);
+    try {
+      const response = await fetch('/api/admin/setup-cohorts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setSuccessMessage(result.message);
+        
+        // Refresh cohorts data
+        await fetchCohorts();
+        
+        // Auto-assign interns to the new cohort
+        const assignResponse = await fetch('/api/admin/quick-assign-cohorts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (assignResponse.ok) {
+          const assignResult = await assignResponse.json();
+          setSuccessMessage(`${result.message}. ${assignResult.message}`);
+          // Refresh users data to show updated cohort assignments
+          await fetchUsers();
+        }
+      } else {
+        const error = await response.json();
+        setErrorMessage(error.error || 'Failed to create default cohort');
+      }
+    } catch (error) {
+      console.error('Error creating default cohort:', error);
+      setErrorMessage('Failed to create default cohort');
+    } finally {
+      setCreatingCohort(false);
+    }
   };
 
   const handleQuickAddUser = (role = 'intern') => {
@@ -342,6 +393,7 @@ export function AdvancedUserManagement() {
       gitlabUsername: '',
       role: role,
       college: '',
+      cohort: '',
       status: 'active'
     });
     setShowUserModal(true);
@@ -557,6 +609,129 @@ export function AdvancedUserManagement() {
           </div>
         </div>
 
+        {/* Messages */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700">{successMessage}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setSuccessMessage('')}
+                  className="text-green-400 hover:text-green-600"
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{errorMessage}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setErrorMessage('')}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cohorts Status */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Cohorts Status</h3>
+                <p className="mt-1 text-sm text-blue-700">
+                  {cohorts.length === 0 ? (
+                    'No cohorts available. Create one to assign interns.'
+                  ) : (
+                    `${cohorts.length} cohort(s) available: ${cohorts.map(c => c.name).join(', ')}`
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={fetchCohorts}
+                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              >
+                Refresh Cohorts
+              </button>
+              <button
+                onClick={async () => {
+                  console.log('=== COHORT DEBUG INFO ===');
+                  console.log('Current cohorts state:', cohorts);
+                  console.log('Cohorts length:', cohorts.length);
+                  
+                  // Test direct API call
+                  try {
+                    const response = await fetch('/api/test/cohorts');
+                    const data = await response.json();
+                    console.log('Direct API test result:', data);
+                  } catch (error) {
+                    console.error('Direct API test failed:', error);
+                  }
+                  
+                  // Test admin API call
+                  try {
+                    const response = await fetch('/api/admin/cohorts');
+                    const data = await response.json();
+                    console.log('Admin API test result:', data);
+                  } catch (error) {
+                    console.error('Admin API test failed:', error);
+                  }
+                  
+                  alert('Check browser console for debug info');
+                }}
+                className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+              >
+                Debug Cohorts
+              </button>
+              {cohorts.length === 0 && (
+                <button
+                  onClick={createDefaultCohort}
+                  disabled={creatingCohort}
+                  className="px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {creatingCohort ? 'Creating...' : 'Create Default Cohort'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -764,6 +939,7 @@ export function AdvancedUserManagement() {
         setEditFormData={setEditFormData}
         colleges={colleges}
         mentors={mentors}
+        cohorts={cohorts}
         onClose={() => {
           setShowUserModal(false);
           setSelectedUser(null);

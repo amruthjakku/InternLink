@@ -41,8 +41,8 @@ export async function GET(request) {
           // Convert cohortId to ObjectId if it's a string
           let cohortIdObj;
           try {
-            cohortIdObj = mongoose.Types.ObjectId.isValid(user.cohortId) 
-              ? new mongoose.Types.ObjectId(user.cohortId) 
+            cohortIdObj = ObjectId.isValid(user.cohortId) 
+              ? new ObjectId(user.cohortId) 
               : user.cohortId;
             console.log(`Converted cohort ID: ${cohortIdObj}`);
           } catch (error) {
@@ -85,6 +85,8 @@ export async function GET(request) {
           ];
           
           console.log('Showing only individual tasks for intern (no cohort)');
+          console.log('💡 SOLUTION: This intern needs to be assigned to a cohort to see cohort-based tasks');
+          console.log('💡 Admin can assign this intern to a cohort through the User Management section');
         }
       } catch (error) {
         console.error('Error getting user cohort:', error);

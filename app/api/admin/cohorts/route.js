@@ -41,8 +41,11 @@ export async function GET() {
       id: c._id,
       name: c.name,
       startDate: c.startDate,
-      endDate: c.endDate
+      endDate: c.endDate,
+      isActive: c.isActive
     })));
+
+    console.log('Returning cohorts response:', { success: true, cohorts: cohorts.length });
 
     return NextResponse.json({ 
       success: true,

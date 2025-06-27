@@ -11,6 +11,17 @@ export function getCollegeName(college) {
 }
 
 /**
+ * Safely render cohort name from cohort object or string
+ * @param {Object|string} cohort - Cohort object or string
+ * @param {string} fallback - Fallback text if no cohort
+ * @returns {string} Cohort name
+ */
+export function getCohortName(cohort, fallback = 'Not assigned') {
+  if (!cohort) return fallback;
+  return typeof cohort === 'object' ? cohort.name : cohort;
+}
+
+/**
  * Safely render college location from college object
  * @param {Object|string} college - College object or string
  * @returns {string} College location
