@@ -102,7 +102,8 @@ export async function POST(request) {
       location,
       website: website || '',
       mentorUsername: mentorUsername ? mentorUsername.toLowerCase() : '',
-      isActive: true
+      isActive: true,
+      createdBy: session.user.gitlabUsername || session.user.email || 'admin'
     });
 
     await newCollege.save();

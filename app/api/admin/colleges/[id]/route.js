@@ -9,6 +9,10 @@ import User from '../../../../../models/User.js';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+export async function PATCH(request, { params }) {
+  return PUT(request, { params });
+}
+
 export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
