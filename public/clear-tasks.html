@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear All Tasks - Week-wise Task Setup</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px 0; font-size: 16px; }
+        .button:hover { background: #2563eb; }
+        .danger { background: #ef4444; }
+        .danger:hover { background: #dc2626; }
+        .success { background: #10b981; }
+        .warning { background: #f59e0b; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 6px; }
+        .success-result { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .error-result { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .info-result { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+        .warning-result { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .task-list { background: #f9fafb; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .task-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; font-family: monospace; }
+        .task-item:last-child { border-bottom: none; }
+        .confirmation { background: #fee2e2; border: 2px solid #ef4444; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .checkbox { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🗑️ Clear All Tasks - Week-wise Task Setup</h1>
+    <p>This tool will remove all existing tasks from the database to prepare for a new week-wise task assignment system.</p>
+    
+    <div class="warning-result">
+        <h3>⚠️ Important Notice</h3>
+        <ul>
+            <li><strong>This action is IRREVERSIBLE</strong></li>
+            <li>All existing tasks will be permanently deleted</li>
+            <li>All task submissions and progress will be lost</li>
+            <li>Only use this if you want to start completely fresh</li>
+        </ul>
+    </div>
+    
+    <button class="button" onclick="checkCurrentTasks()">Check Current Tasks</button>
+    
+    <div id="result"></div>
+    
+    <div id="confirmationSection" style="display: none;">
+        <div class="confirmation">
+            <h3>🚨 DANGER ZONE - Confirm Task Deletion</h3>
+            <p><strong>You are about to delete ALL tasks from the database!</strong></p>
+            
+            <div class="checkbox">
+                <input type="checkbox" id="confirm1" onchange="updateDeleteButton()">
+                <label for="confirm1">I understand this will delete all existing tasks</label>
+            </div>
+            
+            <div class="checkbox">
+                <input type="checkbox" id="confirm2" onchange="updateDeleteButton()">
+                <label for="confirm2">I understand this will delete all task submissions</label>
+            </div>
+            
+            <div class="checkbox">
+                <input type="checkbox" id="confirm3" onchange="updateDeleteButton()">
+                <label for="confirm3">I understand this action cannot be undone</label>
+            </div>
+            
+            <div class="checkbox">
+                <input type="checkbox" id="confirm4" onchange="updateDeleteButton()">
+                <label for="confirm4">I want to proceed with deleting all tasks</label>
+            </div>
+            
+            <button id="deleteButton" class="button danger" onclick="clearAllTasks()" disabled>
+                🗑️ DELETE ALL TASKS
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        let currentTaskData = null;
+        
+        async function checkCurrentTasks() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Checking current tasks...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/clear-tasks');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentTaskData = data;
+                    
+                    let html = `
+                        <div class="result info-result">
+                            <h3>📊 Current Database Status</h3>
+                            <p><strong>Total Tasks:</strong> ${data.currentTaskCount}</p>
+                            <p><strong>Total Submissions:</strong> ${data.currentSubmissionCount}</p>
+                    `;
+                    
+                    if (data.sampleTasks.length > 0) {
+                        html += `
+                            <h4>📝 Sample Tasks (showing first 10):</h4>
+                            <div class="task-list">
+                                ${data.sampleTasks.map(task => `
+                                    <div class="task-item">
+                                        • ${task.title} 
+                                        (${task.assignmentType || 'no type'}) 
+                                        - ${task.isActive ? 'Active' : 'Inactive'}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.currentTaskCount > 0) {
+                        html += `
+                            <p><strong>⚠️ ${data.currentTaskCount} tasks will be deleted!</strong></p>
+                            <button class="button warning" onclick="showConfirmation()">
+                                Proceed to Delete All Tasks
+                            </button>
+                        `;
+                    } else {
+                        html += `<p><strong>✅ Database is already clean - no tasks to delete!</strong></p>`;
+                    }
+                    
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function showConfirmation() {
+            document.getElementById('confirmationSection').style.display = 'block';
+        }
+        
+        function updateDeleteButton() {
+            const checkboxes = ['confirm1', 'confirm2', 'confirm3', 'confirm4'];
+            const allChecked = checkboxes.every(id => document.getElementById(id).checked);
+            document.getElementById('deleteButton').disabled = !allChecked;
+        }
+        
+        async function clearAllTasks() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">🗑️ Deleting all tasks... This may take a moment...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/clear-tasks', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('confirmationSection').style.display = 'none';
+                    
+                    let html = `
+                        <div class="result success-result">
+                            <h3>✅ Tasks Cleared Successfully!</h3>
+                            <p><strong>Tasks Deleted:</strong> ${result.tasksDeleted}</p>
+                            <p><strong>Submissions Deleted:</strong> ${result.submissionsDeleted}</p>
+                            
+                            <h4>🎯 Next Steps for Week-wise Task System:</h4>
+                            <ol>
+                                <li><strong>Create Weekly Task Structure:</strong> Set up tasks organized by weeks</li>
+                                <li><strong>Define Week Periods:</strong> Specify start/end dates for each week</li>
+                                <li><strong>Assign Tasks to Cohorts:</strong> Create tasks for specific weeks and cohorts</li>
+                                <li><strong>Set Activation Schedule:</strong> Configure when each week's tasks become available</li>
+                            </ol>
+                            
+                            <p><strong>✨ Database is now clean and ready for week-wise task setup!</strong></p>
+                        </div>
+                    `;
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-check tasks on page load
+        window.onload = function() {
+            checkCurrentTasks();
+        };
+    </script>
+</body>
+</html>

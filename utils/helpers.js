@@ -18,7 +18,44 @@ export function getCollegeName(college) {
  */
 export function getCohortName(cohort, fallback = 'Not assigned') {
   if (!cohort) return fallback;
-  return typeof cohort === 'object' ? cohort.name : cohort;
+  
+  // Handle string case
+  if (typeof cohort === 'string') {
+    // If it's a string that looks like a serialized object, try to extract name
+    if (cohort.includes('_id:') && cohort.includes('name:')) {
+      try {
+        // Try to extract name from object string using various patterns
+        const patterns = [
+          /name:\s*'([^']+)'/,
+          /name:\s*"([^"]+)"/,
+          /name:\s*([^,}]+)/,
+          /'name':\s*'([^']+)'/,
+          /"name":\s*"([^"]+)"/
+        ];
+        
+        for (const pattern of patterns) {
+          const match = cohort.match(pattern);
+          if (match && match[1]) {
+            return match[1].trim();
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse cohort string:', e);
+      }
+    }
+    return cohort;
+  }
+  
+  // Handle object case
+  if (typeof cohort === 'object') {
+    // Handle null case
+    if (cohort === null) return fallback;
+    
+    // Try to get name from various possible properties
+    return cohort.name || cohort.cohortName || cohort._id || 'Unknown cohort';
+  }
+  
+  return fallback;
 }
 
 /**

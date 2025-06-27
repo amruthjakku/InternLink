@@ -5,6 +5,36 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { MetricCard } from '../Charts';
 import { format, addDays, subDays } from 'date-fns';
 
+// Helper function to calculate weekly statistics
+const calculateWeeklyStats = (tasks) => {
+  const weekStats = {};
+  
+  tasks.forEach(task => {
+    const week = task.weekNumber || 'Other';
+    if (!weekStats[week]) {
+      weekStats[week] = {
+        total: 0,
+        completed: 0,
+        inProgress: 0,
+        totalPoints: 0,
+        tasks: []
+      };
+    }
+    
+    weekStats[week].total += 1;
+    weekStats[week].totalPoints += task.points || 0;
+    weekStats[week].tasks.push(task);
+    
+    if (task.status === 'done' || task.status === 'completed') {
+      weekStats[week].completed += 1;
+    } else if (task.status === 'in_progress') {
+      weekStats[week].inProgress += 1;
+    }
+  });
+  
+  return weekStats;
+};
+
 export function TasksTab({ user, loading }) {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -21,6 +51,8 @@ export function TasksTab({ user, loading }) {
     notes: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [taskType, setTaskType] = useState('regular'); // 'weekly' or 'regular'
+  const [weeklyStats, setWeeklyStats] = useState({});
 
   useEffect(() => {
     fetchTasks();
@@ -33,9 +65,16 @@ export function TasksTab({ user, loading }) {
         const data = await response.json();
         console.log('Tasks fetched for intern:', data.tasks);
         
-        // Log the user's cohort ID
-        console.log('User:', user);
-        console.log('User cohort ID:', user?.cohortId);
+        // Set task type and handle weekly tasks
+        setTaskType(data.taskType || 'regular');
+        
+        // Calculate weekly stats if we have weekly tasks
+        if (data.taskType === 'weekly' && data.tasks) {
+          const stats = calculateWeeklyStats(data.tasks);
+          setWeeklyStats(stats);
+        }
+        
+
         
         // Log all tasks for debugging
         data.tasks.forEach(task => {
@@ -44,29 +83,38 @@ export function TasksTab({ user, loading }) {
         
         // Filter tasks to only show tasks for the intern's cohort or assigned directly to them
         const filteredTasks = data.tasks.filter(task => {
-          // Extract user's cohort ID
-          const userCohortId = user?.cohortId;
-          const userCohortIdStr = userCohortId ? userCohortId.toString() : '';
+          // Extract user's cohort ID - handle both string and object formats
+          let userCohortIdStr = '';
+          if (user?.cohortId) {
+            if (typeof user.cohortId === 'object') {
+              userCohortIdStr = user.cohortId._id || user.cohortId.toString();
+            } else {
+              userCohortIdStr = user.cohortId.toString();
+            }
+          }
+          
+
           
           // For cohort tasks, check if it matches the intern's cohort
           if (task.assignmentType === 'cohort' || (!task.assignmentType && task.cohortId)) {
-            // Extract cohort IDs for comparison
-            const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
+            // Extract cohort IDs for comparison - handle multiple formats
+            let taskCohortIdStr = '';
+            if (task.cohortId) {
+              if (typeof task.cohortId === 'object') {
+                taskCohortIdStr = task.cohortId._id || task.cohortId.toString();
+              } else {
+                taskCohortIdStr = task.cohortId.toString();
+              }
+            }
             
             // Skip if no cohort ID
-            if (!taskCohortId) {
+            if (!taskCohortIdStr) {
               console.log(`Task ${task.title} has no cohort ID`);
               return false;
             }
             
-            // Convert to strings for comparison
-            const taskCohortIdStr = taskCohortId.toString();
-            
-            console.log(`Comparing task cohort: ${taskCohortIdStr} with user cohort: ${userCohortIdStr}`);
-            
             // Only show cohort tasks that match the intern's cohort
             const matches = taskCohortIdStr === userCohortIdStr;
-            console.log(`Task ${task.title} ${matches ? 'matches' : 'does not match'} user's cohort`);
             return matches;
           }
           
@@ -111,7 +159,16 @@ export function TasksTab({ user, loading }) {
         });
         
         console.log('Filtered tasks for intern:', filteredTasks);
-        setTasks(filteredTasks || []);
+        
+        // If filtering resulted in no tasks but API returned tasks, 
+        // it might be a filtering issue - use API results as fallback
+        if (filteredTasks.length === 0 && data.tasks.length > 0) {
+          console.warn('⚠️ Client-side filtering removed all tasks! Using API results as fallback.');
+          console.log('This suggests a cohort ID format mismatch between user and tasks.');
+          setTasks(data.tasks || []);
+        } else {
+          setTasks(filteredTasks || []);
+        }
       } else {
         console.error('Failed to fetch tasks:', response.status);
         setTasks([]);
@@ -516,6 +573,24 @@ export function TasksTab({ user, loading }) {
                     }
                   </span>
                   <span>📋 Type: {selectedTask.type || 'Assignment'}</span>
+                  {/* Weekly Task Info */}
+                  {taskType === 'weekly' && selectedTask.weekNumber && (
+                    <>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        📅 Week {selectedTask.weekNumber}
+                      </span>
+                      {selectedTask.points && (
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                          🏆 {selectedTask.points} points
+                        </span>
+                      )}
+                      {selectedTask.estimatedHours && (
+                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                          ⏱️ {selectedTask.estimatedHours}h
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               <button
@@ -816,6 +891,43 @@ export function TasksTab({ user, loading }) {
 
   return (
     <div className="space-y-6">
+      {/* Weekly Task Stats - Only show for weekly tasks */}
+      {taskType === 'weekly' && Object.keys(weeklyStats).length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            📅 Weekly Progress Overview
+            <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+              Week-based Tasks
+            </span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(weeklyStats).map(([week, stats]) => (
+              <div key={week} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-gray-900">
+                    {week === 'Other' ? '📋 Other Tasks' : `📅 Week ${week}`}
+                  </h4>
+                  <span className="text-xs text-gray-500">{stats.totalPoints} pts</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-green-600">✅ {stats.completed}</span>
+                  <span className="text-blue-600">⏳ {stats.inProgress}</span>
+                  <span className="text-gray-600">📝 {stats.total}</span>
+                </div>
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
@@ -846,7 +958,21 @@ export function TasksTab({ user, loading }) {
 
       {/* Header with View Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            My Tasks
+            {taskType === 'weekly' && (
+              <span className="ml-3 bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                📅 Weekly System
+              </span>
+            )}
+          </h2>
+          {taskType === 'weekly' && (
+            <p className="text-sm text-gray-600 mt-1">
+              Your tasks are organized by week for structured learning
+            </p>
+          )}
+        </div>
         
         <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Selector */}
@@ -936,7 +1062,22 @@ export function TasksTab({ user, loading }) {
                                 }}
                               >
                                 <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
+                                    {/* Weekly Task Badge */}
+                                    {taskType === 'weekly' && task.weekNumber && (
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                          📅 Week {task.weekNumber}
+                                        </span>
+                                        {task.points && (
+                                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                                            🏆 {task.points} pts
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                   <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
                                     {getPriorityIcon(task.priority)}
                                   </span>
@@ -1014,6 +1155,11 @@ export function TasksTab({ user, loading }) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Task
                   </th>
+                  {taskType === 'weekly' && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Week
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -1047,6 +1193,20 @@ export function TasksTab({ user, loading }) {
                         <div className="text-sm text-gray-500">{task.category}</div>
                       </div>
                     </td>
+                    {taskType === 'weekly' && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            Week {task.weekNumber || 'N/A'}
+                          </span>
+                          {task.points && (
+                            <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                              {task.points} pts
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         task.status === 'done' ? 'bg-green-100 text-green-800' :

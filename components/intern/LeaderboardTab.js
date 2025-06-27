@@ -8,14 +8,15 @@ export function LeaderboardTab({ user }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
   const [selectedMetric, setSelectedMetric] = useState('completion-rate');
+  const [selectedScope, setSelectedScope] = useState('cohort'); // 'cohort', 'college', 'global'
 
   useEffect(() => {
     fetchLeaderboardData();
-  }, [user, selectedPeriod, selectedMetric]);
+  }, [user, selectedPeriod, selectedMetric, selectedScope]);
 
   const fetchLeaderboardData = async () => {
     try {
-      const response = await fetch(`/api/leaderboard?period=${selectedPeriod}&metric=${selectedMetric}`);
+      const response = await fetch(`/api/leaderboard?period=${selectedPeriod}&metric=${selectedMetric}&scope=${selectedScope}`);
       if (response.ok) {
         const data = await response.json();
         setLeaderboardData(data.leaderboard || []);
@@ -52,13 +53,36 @@ export function LeaderboardTab({ user }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Leaderboard</h2>
-        <div className="flex space-x-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            Leaderboard
+            {selectedScope === 'cohort' && user?.cohortName && (
+              <span className="ml-3 bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                👥 {user.cohortName}
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {selectedScope === 'cohort' && 'Competing with your cohort peers'}
+            {selectedScope === 'college' && 'Competing with your college'}
+            {selectedScope === 'global' && 'Competing globally'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <select
+            value={selectedScope}
+            onChange={(e) => setSelectedScope(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="cohort">👥 My Cohort</option>
+            <option value="college">🏫 My College</option>
+            <option value="global">🌍 Global</option>
+          </select>
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
             <option value="all-time">All Time</option>
             <option value="this-month">This Month</option>
@@ -67,7 +91,7 @@ export function LeaderboardTab({ user }) {
           <select
             value={selectedMetric}
             onChange={(e) => setSelectedMetric(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
             <option value="completion-rate">Completion Rate</option>
             <option value="tasks-completed">Tasks Completed</option>

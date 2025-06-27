@@ -11,10 +11,58 @@ export function ProgressTab({ user, tasks, loading }) {
   const [activityData, setActivityData] = useState([]);
   const [streakData, setStreakData] = useState({ current: 0, longest: 0, history: [] });
   const [milestones, setMilestones] = useState([]);
+  const [taskType, setTaskType] = useState('regular'); // Track if tasks are weekly
+  const [weeklyProgress, setWeeklyProgress] = useState({});
 
   useEffect(() => {
     fetchProgressData();
   }, []);
+
+  useEffect(() => {
+    // Check if tasks are weekly and calculate weekly progress
+    if (tasks && tasks.length > 0) {
+      const hasWeeklyTasks = tasks.some(task => task.weekNumber);
+      if (hasWeeklyTasks) {
+        setTaskType('weekly');
+        calculateWeeklyProgress(tasks);
+      } else {
+        setTaskType('regular');
+      }
+    }
+  }, [tasks]);
+
+  const calculateWeeklyProgress = (tasks) => {
+    const weeklyStats = {};
+    
+    tasks.forEach(task => {
+      if (task.weekNumber) {
+        const week = task.weekNumber;
+        if (!weeklyStats[week]) {
+          weeklyStats[week] = {
+            total: 0,
+            completed: 0,
+            inProgress: 0,
+            totalPoints: 0,
+            earnedPoints: 0,
+            tasks: []
+          };
+        }
+        
+        weeklyStats[week].total += 1;
+        weeklyStats[week].totalPoints += task.points || 0;
+        weeklyStats[week].tasks.push(task);
+        
+        if (task.status === 'done' || task.status === 'completed') {
+          weeklyStats[week].completed += 1;
+          weeklyStats[week].earnedPoints += task.points || 0;
+        } else if (task.status === 'in_progress') {
+          weeklyStats[week].inProgress += 1;
+        }
+      }
+    });
+    
+    setWeeklyProgress(weeklyStats);
+  };
 
   const fetchProgressData = async () => {
     try {
@@ -165,6 +213,83 @@ export function ProgressTab({ user, tasks, loading }) {
           color="purple"
         />
       </div>
+
+      {/* Weekly Progress Section - Only show for weekly tasks */}
+      {taskType === 'weekly' && Object.keys(weeklyProgress).length > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              📅 Weekly Learning Progress
+              <span className="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full">
+                {user?.cohortName || user?.cohort_name || 'Your Cohort'}
+              </span>
+            </h3>
+            <div className="text-sm text-gray-600">
+              {Object.values(weeklyProgress).reduce((sum, week) => sum + week.earnedPoints, 0)} / {Object.values(weeklyProgress).reduce((sum, week) => sum + week.totalPoints, 0)} points earned
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(weeklyProgress)
+              .sort(([a], [b]) => parseInt(a) - parseInt(b))
+              .map(([week, stats]) => {
+                const progressPercentage = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+                const pointsPercentage = stats.totalPoints > 0 ? (stats.earnedPoints / stats.totalPoints) * 100 : 0;
+                
+                return (
+                  <div key={week} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-900 flex items-center">
+                        📅 Week {week}
+                        {progressPercentage === 100 && (
+                          <span className="ml-2 text-green-500">🎉</span>
+                        )}
+                      </h4>
+                      <span className="text-xs text-gray-500">
+                        {stats.earnedPoints}/{stats.totalPoints} pts
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 mb-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tasks:</span>
+                        <span className="font-medium">{stats.completed}/{stats.total}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-500 ${
+                            progressPercentage === 100 ? 'bg-green-500' : 
+                            progressPercentage > 50 ? 'bg-blue-500' : 'bg-orange-500'
+                          }`}
+                          style={{ width: `${progressPercentage}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Points:</span>
+                        <span className="font-medium">{pointsPercentage.toFixed(0)}%</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                        Done: {stats.completed}
+                      </span>
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                        Active: {stats.inProgress}
+                      </span>
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
+                        Pending: {stats.total - stats.completed - stats.inProgress}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Progress Chart */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

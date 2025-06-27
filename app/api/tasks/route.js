@@ -15,6 +15,8 @@ export async function GET(request) {
     }
 
     await connectToDatabase();
+    const { getDatabase } = require('../../../utils/database');
+    const db = await getDatabase();
 
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assignedTo');
@@ -27,6 +29,64 @@ export async function GET(request) {
     
     // If user is intern, show tasks for their cohort
     if (session.user.role === 'intern') {
+      // First, try to get weekly tasks
+      console.log('Checking for weekly tasks...');
+      try {
+        const weeklyTasks = await db.collection('weeklytasks').find({
+          isActive: true,
+          isPublished: true,
+          $or: [
+            { assignmentType: 'all' },
+            { assignmentType: 'cohort', cohortId: new ObjectId(session.user.cohortId) },
+            { assignmentType: 'individual', assignedTo: new ObjectId(session.user.id) }
+          ]
+        }).toArray();
+        
+        console.log(`Found ${weeklyTasks.length} weekly tasks for user`);
+        
+        // If we have weekly tasks, return them instead of old format tasks
+        if (weeklyTasks.length > 0) {
+          // Convert weekly tasks to the format expected by frontend
+          const formattedTasks = weeklyTasks.map(task => ({
+            _id: task._id,
+            title: task.title,
+            description: task.description,
+            instructions: task.instructions,
+            assignmentType: task.assignmentType,
+            cohortId: task.cohortId,
+            assignedTo: task.assignedTo,
+            isActive: task.isActive,
+            status: 'active',
+            difficulty: task.difficulty,
+            points: task.points,
+            estimatedHours: task.estimatedHours,
+            category: task.category,
+            weekNumber: task.weekNumber,
+            weekStartDate: task.weekStartDate,
+            weekEndDate: task.weekEndDate,
+            dueDate: task.dueDate,
+            prerequisites: task.prerequisites,
+            deliverables: task.deliverables,
+            resources: task.resources,
+            tags: task.tags,
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt
+          }));
+          
+          console.log(`Returning ${formattedTasks.length} weekly tasks`);
+          
+          return NextResponse.json({
+            success: true,
+            tasks: formattedTasks,
+            taskType: 'weekly',
+            totalTasks: formattedTasks.length
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching weekly tasks:', error);
+        // Continue with regular tasks if weekly tasks fail
+      }
+      
       query.isActive = true;
       
       try {
@@ -120,6 +180,28 @@ export async function GET(request) {
       .sort({ createdAt: -1 });
       
     console.log(`Found ${tasks.length} tasks for user ${session.user.id} with role ${session.user.role}`);
+    
+    // Enhanced debugging for cohort task matching
+    if (session.user.role === 'intern') {
+      console.log('=== INTERN TASK DEBUG ===');
+      console.log('Session user ID:', session.user.id);
+      console.log('Session cohort ID:', session.user.cohortId);
+      console.log('Query used:', JSON.stringify(query, null, 2));
+      
+      // Get all tasks for this cohort (including inactive ones) for comparison
+      const db = await getDatabase();
+      const allCohortTasks = await db.collection('tasks').find({
+        cohortId: query.$or?.[0]?.cohortId,
+        assignmentType: 'cohort'
+      }).toArray();
+      
+      console.log(`Total tasks for cohort ${query.$or?.[0]?.cohortId}: ${allCohortTasks.length}`);
+      allCohortTasks.forEach(task => {
+        console.log(`- ${task.title}: isActive=${task.isActive}, status=${task.status}`);
+      });
+      
+      console.log('=== RETURNED TASKS ===');
+    }
     
     // Log task details for debugging
     tasks.forEach(task => {

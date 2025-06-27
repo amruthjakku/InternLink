@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Weekly Tasks</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px 0; font-size: 16px; }
+        .button:hover { background: #2563eb; }
+        .success { background: #10b981; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 6px; }
+        .success-result { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .error-result { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .info-result { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+        .task-list { background: #f9fafb; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .task-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+        .task-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Setup Weekly Task System</h1>
+    <p>This will clear all existing tasks and create a new week-based task structure.</p>
+    
+    <div class="info-result">
+        <h3>📋 What This Will Do:</h3>
+        <ul>
+            <li>Clear all existing tasks and submissions</li>
+            <li>Create Week 1: Git & GitHub Basics (3 tasks)</li>
+            <li>Create Week 2: HTML & CSS Fundamentals (2 tasks)</li>
+            <li>Assign all tasks to the primary cohort</li>
+            <li>Set proper due dates and categories</li>
+        </ul>
+    </div>
+    
+    <button class="button success" onclick="setupWeeklyTasks()">🚀 Setup Weekly Tasks</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function setupWeeklyTasks() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">🔄 Setting up weekly tasks...</div>';
+            
+            try {
+                const response = await fetch('/api/setup-weekly', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let html = `
+                        <div class="result success-result">
+                            <h3>✅ Weekly Task System Setup Complete!</h3>
+                            <p><strong>Tasks Cleared:</strong> ${data.tasksCleared}</p>
+                            <p><strong>Submissions Cleared:</strong> ${data.submissionsCleared}</p>
+                            <p><strong>New Tasks Created:</strong> ${data.tasksCreated}</p>
+                            <p><strong>Assigned to Cohort:</strong> ${data.cohort.name}</p>
+                            
+                            <h4>📅 Created Tasks:</h4>
+                            <div class="task-list">
+                                ${data.tasks.map(task => `
+                                    <div class="task-item">
+                                        <strong>${task.title}</strong><br>
+                                        <small>Category: ${task.category} | Points: ${task.points} | Due: ${new Date(task.dueDate).toLocaleDateString()}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <h4>🎯 Next Steps:</h4>
+                            <ol>
+                                <li><strong>✅ Ask intern to refresh their dashboard</strong></li>
+                                <li><strong>📋 Check Tasks tab - should show 5 tasks</strong></li>
+                                <li><strong>📊 Tasks are organized by Week 1 and Week 2</strong></li>
+                                <li><strong>🔧 Use Admin Dashboard to manage tasks</strong></li>
+                            </ol>
+                            
+                            <p><strong>🎉 Interns should now see their weekly tasks!</strong></p>
+                        </div>
+                    `;
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error-result">
+                            <h3>❌ Setup Failed</h3>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            ${data.details ? `<p><strong>Details:</strong> ${data.details}</p>` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error-result">
+                        <h3>❌ Network Error</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

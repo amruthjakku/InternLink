@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../utils/database';
+import { connectToDatabase, getDatabase } from '../../../../utils/database';
 import User from '../../../../models/User';
 import Task from '../../../../models/Task';
 
@@ -41,6 +41,12 @@ async function generateMilestones(user) {
   const now = new Date();
 
   try {
+    // Ensure user has required properties
+    if (!user._id) {
+      console.error('User object missing _id property:', user);
+      return milestones; // Return empty array if user is invalid
+    }
+
     // Task-based milestones
     const completedTasks = await Task.countDocuments({
       $or: [
@@ -99,7 +105,6 @@ async function generateMilestones(user) {
       });
 
       // Check for commit milestones from activity records
-      const { getDatabase } = require('../../../../utils/database');
       const db = await getDatabase();
       
       const commitCount = await db.collection('activityrecords').countDocuments({

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Milestones API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px 0; font-size: 16px; }
+        .button:hover { background: #2563eb; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 6px; }
+        .success-result { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .error-result { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .code { background: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Milestones API</h1>
+    <p>This will test if the milestones API is working properly.</p>
+    
+    <button class="button" onclick="testMilestones()">Test Milestones API</button>
+    <button class="button" onclick="testTasks()">Test Tasks API</button>
+    <button class="button" onclick="testStats()">Test Stats API</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testMilestones() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Testing milestones API...</div>';
+            
+            try {
+                const response = await fetch('/api/profile/milestones');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success-result">
+                            <h3>✅ Milestones API Working</h3>
+                            <p><strong>Milestones count:</strong> ${data.milestones.length}</p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error-result">
+                            <h3>❌ Milestones API Error</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error-result">
+                        <h3>❌ Network Error</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testTasks() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Testing tasks API...</div>';
+            
+            try {
+                const response = await fetch('/api/tasks');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success-result">
+                            <h3>✅ Tasks API Working</h3>
+                            <p><strong>Tasks count:</strong> ${data.tasks.length}</p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error-result">
+                            <h3>❌ Tasks API Error</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error-result">
+                        <h3>❌ Network Error</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testStats() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Testing stats API...</div>';
+            
+            try {
+                const response = await fetch('/api/profile/stats');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success-result">
+                            <h3>✅ Stats API Working</h3>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error-result">
+                            <h3>❌ Stats API Error</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error-result">
+                        <h3>❌ Network Error</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

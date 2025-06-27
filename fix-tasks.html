@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Tasks - Activate Inactive Cohort Tasks</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px 0; font-size: 16px; }
+        .button:hover { background: #2563eb; }
+        .success { background: #10b981; }
+        .error { background: #ef4444; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 6px; }
+        .success-result { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .error-result { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .info-result { background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
+        .task-list { background: #f9fafb; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .task-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+        .task-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Tasks - Activate Inactive Cohort Tasks</h1>
+    <p>This tool will activate all inactive cohort tasks so interns can see them in their dashboard.</p>
+    
+    <div class="info-result">
+        <h3>📊 Current Status</h3>
+        <p>Based on the analysis:</p>
+        <ul>
+            <li><strong>Total Tasks:</strong> 5</li>
+            <li><strong>Cohort Tasks:</strong> 5</li>
+            <li><strong>Active Tasks:</strong> 3</li>
+            <li><strong>Inactive Tasks:</strong> 2</li>
+        </ul>
+        <p><strong>Issue:</strong> 2 cohort tasks are marked as inactive, so interns can't see them.</p>
+    </div>
+    
+    <button class="button" onclick="checkTaskStatus()">Check Current Task Status</button>
+    <button class="button success" onclick="fixTasks()">Activate All Inactive Cohort Tasks</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function checkTaskStatus() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Checking task status...</div>';
+            
+            try {
+                const response = await fetch('/api/test/tasks-status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const inactiveTasks = data.tasks.filter(t => !t.isActive && t.assignmentType === 'cohort');
+                    const activeTasks = data.tasks.filter(t => t.isActive && t.assignmentType === 'cohort');
+                    
+                    let html = `
+                        <div class="result info-result">
+                            <h3>📊 Task Status Report</h3>
+                            <p><strong>Total Tasks:</strong> ${data.summary.totalTasks}</p>
+                            <p><strong>Active Cohort Tasks:</strong> ${activeTasks.length}</p>
+                            <p><strong>Inactive Cohort Tasks:</strong> ${inactiveTasks.length}</p>
+                            
+                            ${activeTasks.length > 0 ? `
+                                <div class="task-list">
+                                    <h4>✅ Active Tasks (Visible to Interns):</h4>
+                                    ${activeTasks.map(t => `<div class="task-item">• ${t.title}</div>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${inactiveTasks.length > 0 ? `
+                                <div class="task-list">
+                                    <h4>❌ Inactive Tasks (Hidden from Interns):</h4>
+                                    ${inactiveTasks.map(t => `<div class="task-item">• ${t.title}</div>`).join('')}
+                                </div>
+                                <p><strong>⚠️ These ${inactiveTasks.length} tasks need to be activated!</strong></p>
+                            ` : '<p><strong>✅ All cohort tasks are active!</strong></p>'}
+                        </div>
+                    `;
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function fixTasks() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Activating inactive tasks...</div>';
+            
+            try {
+                const response = await fetch('/api/admin/fix-tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let html = `
+                        <div class="result success-result">
+                            <h3>✅ Tasks Fixed Successfully!</h3>
+                            <p><strong>Tasks Found:</strong> ${result.tasksFound}</p>
+                            <p><strong>Tasks Activated:</strong> ${result.tasksActivated}</p>
+                            
+                            ${result.activatedTasks.length > 0 ? `
+                                <div class="task-list">
+                                    <h4>🎉 Activated Tasks:</h4>
+                                    ${result.activatedTasks.map(t => `<div class="task-item">• ${t.title}</div>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <p><strong>🎯 Next Steps:</strong></p>
+                            <ol>
+                                <li>Ask the intern to refresh their dashboard</li>
+                                <li>They should now see all ${result.tasksActivated} tasks in their Tasks tab</li>
+                                <li>Tasks will appear under "Cohort Tasks" section</li>
+                            </ol>
+                        </div>
+                    `;
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error-result">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error-result">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-check status on page load
+        window.onload = function() {
+            checkTaskStatus();
+        };
+    </script>
+</body>
+</html>

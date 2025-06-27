@@ -21,6 +21,8 @@ import { CollegeLogo } from './CollegeLogo';
 
 export function InternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
+  
+
   const [activeTab, setActiveTab] = useState('progress');
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
