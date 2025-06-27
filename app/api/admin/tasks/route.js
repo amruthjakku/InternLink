@@ -95,7 +95,7 @@ export async function POST(request) {
       assignedBy
     } = data;
 
-    if (!title || !description || !category || !cohortId || !dueDate) {
+    if (!title || !description || !category || !cohortId || cohortId === '' || !dueDate) {
       return NextResponse.json({ 
         error: 'Title, description, category, cohort, and due date are required' 
       }, { status: 400 });

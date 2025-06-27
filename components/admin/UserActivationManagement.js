@@ -177,7 +177,7 @@ export function UserActivationManagement() {
       setSelectedUsers(new Set());
       setSelectAll(false);
     } else {
-      const allUsernames = filteredUsers.map(user => user.username);
+      const allUsernames = filteredUsers.map(user => user.username).filter(Boolean);
       setSelectedUsers(new Set(allUsernames));
       setSelectAll(true);
     }
@@ -222,8 +222,8 @@ export function UserActivationManagement() {
 
   // Filter users based on search and filters
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.college.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.college || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && user.isActive) ||
@@ -240,7 +240,7 @@ export function UserActivationManagement() {
   // Update selectAll state when filters change
   useEffect(() => {
     const currentlySelected = Array.from(selectedUsers).filter(username => 
-      filteredUsers.some(user => user.username === username)
+      filteredUsers.some(user => user.username === username && user.username)
     );
     setSelectedUsers(new Set(currentlySelected));
     setSelectAll(currentlySelected.length === filteredUsers.length && filteredUsers.length > 0);
@@ -505,16 +505,16 @@ export function UserActivationManagement() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredUsers.map((user) => (
-                <tr key={user.username} className={`${
+                <tr key={user.username || user.id || Math.random()} className={`${
                   !user.isActive ? 'bg-red-50' : 
                   user.needsRefresh ? 'bg-yellow-50' : ''
                 } ${selectedUsers.has(user.username) ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
-                      checked={selectedUsers.has(user.username)}
-                      onChange={() => handleSelectUser(user.username)}
-                      disabled={user.username === session?.user?.gitlabUsername}
+                      checked={user.username && selectedUsers.has(user.username)}
+                      onChange={() => user.username && handleSelectUser(user.username)}
+                      disabled={!user.username || user.username === session?.user?.gitlabUsername}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
                     />
                   </td>
@@ -522,7 +522,7 @@ export function UserActivationManagement() {
                     <div className="flex items-center">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {user.username}
+                          {user.username || 'No username'}
                         </div>
                         <div className="text-sm text-gray-500">
                           {user.username === session?.user?.gitlabUsername && (
@@ -568,27 +568,29 @@ export function UserActivationManagement() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => toggleUserActivation(user.username, user.isActive)}
-                        disabled={activating || user.username === session?.user?.gitlabUsername}
+                        onClick={() => user.username && toggleUserActivation(user.username, user.isActive)}
+                        disabled={!user.username || activating || user.username === session?.user?.gitlabUsername}
                         className={`px-3 py-1 rounded text-xs font-medium ${
                           user.isActive ? 
                           'bg-red-600 text-white hover:bg-red-700' : 
                           'bg-green-600 text-white hover:bg-green-700'
-                        } disabled:opacity-50`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {activating ? '⏳' : user.isActive ? '🚫 Deactivate' : '✅ Activate'}
                       </button>
                       
                       <button
-                        onClick={() => forceRefreshSession(user.username)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                        onClick={() => user.username && forceRefreshSession(user.username)}
+                        disabled={!user.username}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🔄 Refresh
                       </button>
                       
                       <button
-                        onClick={() => testUserLogin(user.username)}
-                        className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+                        onClick={() => user.username && testUserLogin(user.username)}
+                        disabled={!user.username}
+                        className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🧪 Test Login
                       </button>

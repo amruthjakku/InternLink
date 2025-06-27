@@ -46,7 +46,7 @@ export default function UserModal({
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                {isEditMode ? (selectedUser ? 'Edit User' : `Add New ${editFormData.role ? editFormData.role.charAt(0).toUpperCase() + editFormData.role.slice(1) : 'User'}`) : selectedUser?.name}
+                {isEditMode ? (selectedUser ? 'Edit User' : `Add New ${editFormData?.role ? editFormData.role.charAt(0).toUpperCase() + editFormData.role.slice(1) : 'User'}`) : selectedUser?.name}
               </h2>
             </div>
             <button
@@ -68,7 +68,7 @@ export default function UserModal({
                   <input
                     type="text"
                     ref={nameInputRef}
-                    value={editFormData.name || ''}
+                    value={editFormData?.name || ''}
                     onChange={e => handleFormFieldChange('name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter full name"
@@ -81,7 +81,7 @@ export default function UserModal({
                   </label>
                   <input
                     type="email"
-                    value={editFormData.email || ''}
+                    value={editFormData?.email || ''}
                     onChange={e => handleFormFieldChange('email', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -93,7 +93,7 @@ export default function UserModal({
                   </label>
                   <input
                     type="text"
-                    value={editFormData.gitlabUsername || ''}
+                    value={editFormData?.gitlabUsername || ''}
                     onChange={e => handleFormFieldChange('gitlabUsername', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="gitlab.username"
@@ -105,7 +105,7 @@ export default function UserModal({
                     Role *
                   </label>
                   <select
-                    value={editFormData.role || 'intern'}
+                    value={editFormData?.role || 'intern'}
                     onChange={e => handleFormFieldChange('role', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -121,7 +121,7 @@ export default function UserModal({
                     College *
                   </label>
                   <select
-                    value={editFormData.college || ''}
+                    value={editFormData?.college || ''}
                     onChange={e => handleFormFieldChange('college', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -139,7 +139,7 @@ export default function UserModal({
                     Status *
                   </label>
                   <select
-                    value={editFormData.status || 'active'}
+                    value={editFormData?.status || 'active'}
                     onChange={e => handleFormFieldChange('status', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -148,14 +148,14 @@ export default function UserModal({
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                {editFormData.role === 'intern' && (
+                {editFormData?.role === 'intern' && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Assigned Mentor *
                       </label>
                       <select
-                        value={editFormData.assignedMentor || ''}
+                        value={editFormData?.assignedMentor || ''}
                         onChange={e => handleFormFieldChange('assignedMentor', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
@@ -173,7 +173,7 @@ export default function UserModal({
                         Assigned Cohort
                       </label>
                       <select
-                        value={editFormData.cohort || ''}
+                        value={editFormData?.cohort || ''}
                         onChange={e => handleFormFieldChange('cohort', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >

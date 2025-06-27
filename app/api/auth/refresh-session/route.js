@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../[...nextauth]/route';
-import { connectToDatabase } from '../../../../lib/mongoose';
+import { connectToDatabase } from '../../../../utils/database';
 
 // Cache for user data to reduce database queries
 const USER_CACHE = new Map();

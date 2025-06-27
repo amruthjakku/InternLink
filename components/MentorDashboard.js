@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-// Removed mockData import - using real API calls
+// Using real API calls - no mock data
 import { InternManagementTab } from './mentor/InternManagementTab';
 import { AdvancedTaskManagement } from './mentor/AdvancedTaskManagement';
 import { CategoriesTab } from './mentor/CategoriesTab';

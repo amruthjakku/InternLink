@@ -1,7 +1,122 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../../utils/database';
-import User from '../../../../models/User';
-import College from '../../../../models/College';
+import { connectToDatabase } from '../../../../utils/database.js';
+import User from '../../../../models/User.js';
+import College from '../../../../models/College.js';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/debug/fix-user?username=amruth_jakku
+ * Check and fix user account status
+ */
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get('username');
+    
+    if (!username) {
+      return NextResponse.json({ 
+        error: 'Username parameter is required',
+        usage: 'GET /api/debug/fix-user?username=your-gitlab-username'
+      }, { status: 400 });
+    }
+
+    await connectToDatabase();
+
+    console.log(`🔍 Checking user: ${username}`);
+    
+    let user = await User.findByGitLabUsername(username);
+    
+    if (!user) {
+      return NextResponse.json({
+        found: false,
+        message: `User '${username}' not found in database`,
+        suggestion: 'Try signing in first to auto-register your account'
+      });
+    }
+
+    const currentStatus = {
+      id: user._id.toString(),
+      gitlabUsername: user.gitlabUsername,
+      gitlabId: user.gitlabId,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      college: user.college,
+      cohortId: user.cohortId?.toString(),
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt
+    };
+
+    console.log(`✅ User found:`, currentStatus);
+
+    // Check if user needs fixing
+    const needsFix = !user.isActive || user.role === 'pending';
+    
+    if (needsFix) {
+      console.log(`🔧 User needs activation - fixing...`);
+      
+      const oldStatus = {
+        role: user.role,
+        isActive: user.isActive
+      };
+      
+      user.role = 'intern';
+      user.isActive = true;
+      user.lastTokenRefresh = new Date();
+      user.sessionVersion = (user.sessionVersion || 0) + 1;
+      
+      await user.save();
+      
+      console.log(`✅ User activated:`, {
+        before: oldStatus,
+        after: {
+          role: user.role,
+          isActive: user.isActive
+        }
+      });
+
+      return NextResponse.json({
+        found: true,
+        fixed: true,
+        message: `User ${username} has been activated successfully!`,
+        changes: {
+          before: oldStatus,
+          after: {
+            role: user.role,
+            isActive: user.isActive
+          }
+        },
+        currentStatus: {
+          ...currentStatus,
+          role: user.role,
+          isActive: user.isActive
+        },
+        nextSteps: [
+          'Sign out of the application',
+          'Sign back in to refresh your session',
+          'You should now have access to the platform'
+        ]
+      });
+    } else {
+      return NextResponse.json({
+        found: true,
+        fixed: false,
+        message: `User ${username} is already active`,
+        currentStatus,
+        note: 'If you\'re still getting access denied errors, try signing out and signing back in to refresh your session.'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error checking/fixing user:', error);
+    return NextResponse.json({ 
+      error: 'Failed to check/fix user',
+      details: error.message 
+    }, { status: 500 });
+  }
+}
 
 export async function POST(request) {
   try {

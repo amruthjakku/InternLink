@@ -16,8 +16,9 @@ export async function GET(request) {
     // Get query parameters
     const url = new URL(request.url);
     const role = url.searchParams.get('role');
+    const cohortId = url.searchParams.get('cohortId');
     
-    console.log(`GET /api/admin/users - Query parameters:`, { role });
+    console.log(`GET /api/admin/users - Query parameters:`, { role, cohortId });
 
     await connectToDatabase();
 
@@ -26,6 +27,14 @@ export async function GET(request) {
     if (role) {
       query.role = role;
       console.log(`Filtering users by role: ${role}`);
+    }
+    if (cohortId) {
+      if (cohortId === 'none') {
+        query.cohortId = null;
+      } else {
+        query.cohortId = cohortId;
+      }
+      console.log(`Filtering users by cohortId: ${cohortId}`);
     }
 
     const users = await User.find(query)
@@ -63,14 +72,14 @@ export async function GET(request) {
       console.log(`Processing user: ${user.name}, ID: ${user._id}, Role: ${user.role}`);
       
       return {
-        id: user._id.toString(),
-        _id: user._id.toString(), // Ensure _id is a string
+        id: user._id?.toString() || `temp-${Date.now()}-${Math.random()}`,
+        _id: user._id?.toString() || `temp-${Date.now()}-${Math.random()}`, // Ensure _id is a string
         gitlabUsername: user.gitlabUsername,
         name: user.name,
         email: user.email,
         role: user.role,
         college: user.college?.name || 'N/A',
-        cohortId: user.cohortId ? user.cohortId.toString() : null,
+        cohortId: user.cohortId?.toString() || null,
         status: user.isActive ? 'active' : 'inactive',
         performanceScore: performanceScore,
         activityLevel: activityLevel,

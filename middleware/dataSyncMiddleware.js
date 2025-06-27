@@ -223,10 +223,13 @@ export class DataSyncMiddleware {
 
     // Update cohort member count if user has a cohort
     if (updatedUser.cohortId) {
+      const cohortId = typeof updatedUser.cohortId === 'string' 
+        ? updatedUser.cohortId 
+        : updatedUser.cohortId._id;
       this.queueSync({
         type: 'cohort_member_count',
-        id: updatedUser.cohortId._id,
-        cohortId: updatedUser.cohortId._id
+        id: cohortId,
+        cohortId: cohortId
       });
     }
 

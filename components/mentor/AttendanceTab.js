@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, subDays, parseISO, eachDayOfInterval } from 'date-fns';
 import { CollegeBadge } from '../CollegeLogo';
-// Removed mockData import - using real API calls
+// Using real API calls - no mock data
 
 export function AttendanceTab({ userRole = 'mentor' }) {
   const [attendance, setAttendance] = useState([]);

@@ -26,7 +26,21 @@ async function refreshGitLabOAuthToken(token) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Token refresh failed: ${response.status} ${errorText}`);
+      let errorMessage = `Token refresh failed: ${response.status} ${errorText}`;
+      
+      // Provide more specific error messages
+      if (response.status === 400) {
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error === 'invalid_grant') {
+            errorMessage = 'OAuth refresh token has expired or been revoked. User needs to re-authenticate.';
+          }
+        } catch (parseError) {
+          // Keep original error message if JSON parsing fails
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const refreshedTokens = await response.json();
@@ -329,7 +343,8 @@ export const authOptions = {
         const tokenExpires = token.gitlabTokenExpires;
         
         // If token expires within 5 minutes, try to refresh it
-        if (tokenExpires - now < 300) {
+        // But only if we have a valid refresh token
+        if (tokenExpires - now < 300 && token.gitlabRefreshToken) {
           console.log(`🔄 Token expires soon (${new Date(tokenExpires * 1000)}), attempting refresh...`);
           
           try {
@@ -342,7 +357,41 @@ export const authOptions = {
             }
           } catch (refreshError) {
             console.error('❌ Token refresh failed:', refreshError);
-            // Don't fail the session, just log the error
+            
+            // If refresh token is invalid, clear GitLab tokens to prevent repeated failures
+            if (refreshError.message.includes('invalid_grant') || refreshError.message.includes('invalid_token')) {
+              console.log('🧹 Clearing invalid GitLab tokens from session');
+              
+              // Store gitlabId before clearing it
+              const gitlabIdToUpdate = token.gitlabId;
+              
+              token.gitlabAccessToken = null;
+              token.gitlabRefreshToken = null;
+              token.gitlabTokenExpires = null;
+              token.gitlabId = null;
+              token.gitlabUsername = null;
+              
+              // Also clear from database if we have a gitlabId
+              if (gitlabIdToUpdate) {
+                try {
+                  await connectToDatabase();
+                  const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
+                  await GitLabIntegration.updateOne(
+                    { gitlabUserId: parseInt(gitlabIdToUpdate) },
+                    {
+                      accessToken: null,
+                      refreshToken: null,
+                      tokenExpiresAt: null,
+                      isActive: false,
+                      updatedAt: new Date()
+                    }
+                  );
+                  console.log('🧹 Cleared invalid GitLab integration from database');
+                } catch (dbError) {
+                  console.warn('Failed to clear GitLab integration from database:', dbError);
+                }
+              }
+            }
           }
         }
       }

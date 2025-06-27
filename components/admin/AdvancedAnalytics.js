@@ -438,19 +438,19 @@ export function AdvancedAnalytics() {
                       {collegeMetrics.userDistribution.map((college, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <CollegeCard college={{ name: college.name }} size="sm" showLocation={false} />
+                            <CollegeCard college={{ name: college?.name || 'Unknown College' }} size="sm" showLocation={false} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {college.users}
+                            {college?.users || 0}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {college.interns}
+                            {college?.interns || 0}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {college.mentors}
+                            {college?.mentors || 0}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {college.superMentors}
+                            {college?.superMentors || 0}
                           </td>
                         </tr>
                       ))}

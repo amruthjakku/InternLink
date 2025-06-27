@@ -1171,15 +1171,15 @@ export default function AdminDashboard() {
                 </button>
               </div>
               <div className="space-y-3">
-                {colleges.slice(0, 3).map((college) => (
-                  <div key={college._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                {colleges.slice(0, 3).map((college, index) => (
+                  <div key={college?._id || `college-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                         🏫
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{college.name}</p>
-                        <p className="text-xs text-gray-500">{college.location}</p>
+                        <p className="text-sm font-medium text-gray-900">{college?.name || 'Unknown College'}</p>
+                        <p className="text-xs text-gray-500">{college?.location || 'No location'}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -1396,22 +1396,22 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredColleges.map((college) => (
-                    <tr key={college._id}>
+                  {filteredColleges.map((college, index) => (
+                    <tr key={college?._id || `college-${index}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{college.name}</div>
-                          <div className="text-sm text-gray-500">{college.description}</div>
+                          <div className="text-sm font-medium text-gray-900">{college?.name || 'Unknown College'}</div>
+                          <div className="text-sm text-gray-500">{college?.description || 'No description'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {college.location}
+                        {college?.location || 'No location'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {college.mentorUsername}
+                        {college?.mentorUsername || 'No mentor'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(college.createdAt).toLocaleDateString()}
+                        {college?.createdAt ? new Date(college.createdAt).toLocaleDateString() : 'Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -1670,9 +1670,9 @@ export default function AdminDashboard() {
                     required={newUser.role === 'intern' || newUser.role === 'mentor' || newUser.role === 'super-mentor'}
                   >
                     <option value="">Select College</option>
-                    {colleges.map((college) => (
-                      <option key={college._id} value={college._id}>
-                        {college.name}
+                    {colleges.map((college, index) => (
+                      <option key={college?._id || `college-new-${index}`} value={college?._id || ''}>
+                        {college?.name || 'Unknown College'}
                       </option>
                     ))}
                   </select>
@@ -1764,14 +1764,14 @@ export default function AdminDashboard() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mentor Username (Optional)
+                  Super-mentor Username (Optional)
                 </label>
                 <input
                   type="text"
                   value={newCollege.mentorUsername}
                   onChange={(e) => setNewCollege({...newCollege, mentorUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="GitLab username of assigned mentor"
+                  placeholder="GitLab username of assigned super-mentor"
                 />
               </div>
               
@@ -1859,9 +1859,9 @@ export default function AdminDashboard() {
                     required={editingUser.role === 'intern' || editingUser.role === 'mentor' || editingUser.role === 'super-mentor'}
                   >
                     <option value="">Select College</option>
-                    {colleges.map((college) => (
-                      <option key={college._id} value={college._id}>
-                        {college.name}
+                    {colleges.map((college, index) => (
+                      <option key={college?._id || `college-edit-${index}`} value={college?._id || ''}>
+                        {college?.name || 'Unknown College'}
                       </option>
                     ))}
                   </select>
@@ -1950,7 +1950,7 @@ export default function AdminDashboard() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mentor Username
+                  Super-mentor Username
                 </label>
                 <input
                   type="text"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CollegeBadge } from '../CollegeLogo';
-// Removed mockData import - using real API calls
+// Using real API calls - no mock data
 
 export function LeaderboardTab() {
   const [interns, setInterns] = useState([]);

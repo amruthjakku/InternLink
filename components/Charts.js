@@ -346,7 +346,7 @@ export function ProgressRing({ progress, size = 120, strokeWidth = 8, color = "#
 }
 
 // Metric Card Component
-export function MetricCard({ title, value, change, icon, color = "blue" }) {
+export function MetricCard({ title, value, change, icon, color = "blue", subtitle }) {
   const colorClasses = {
     blue: "from-blue-400 to-blue-600",
     green: "from-green-400 to-green-600",
@@ -354,22 +354,28 @@ export function MetricCard({ title, value, change, icon, color = "blue" }) {
     orange: "from-orange-400 to-orange-600",
     pink: "from-pink-400 to-pink-600",
     red: "from-red-400 to-red-600",
+    teal: "from-teal-400 to-teal-600",
+    indigo: "from-indigo-400 to-indigo-600",
+    emerald: "from-emerald-400 to-emerald-600",
   };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
       <div className="flex items-center">
         <div className="flex-shrink-0">
-          <div className={`w-12 h-12 bg-gradient-to-r ${colorClasses[color]} rounded-xl flex items-center justify-center`}>
+          <div className={`w-12 h-12 bg-gradient-to-r ${colorClasses[color]} rounded-xl flex items-center justify-center shadow-lg`}>
             <span className="text-white text-lg">{icon}</span>
           </div>
         </div>
         <div className="ml-4 flex-1">
           <p className="text-sm font-medium text-gray-500">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {change && (
-            <p className={`text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {change >= 0 ? '↗️' : '↘️'} {Math.abs(change)}%
+          {subtitle && (
+            <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+          )}
+          {change !== undefined && change !== null && (
+            <p className={`text-sm mt-1 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {change >= 0 ? '↗️' : '↘️'} {Math.abs(change)}{typeof change === 'number' && change < 100 ? '%' : ''}
             </p>
           )}
         </div>

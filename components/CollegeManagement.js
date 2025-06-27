@@ -23,12 +23,35 @@ export function CollegeManagement() {
         const colleges = collegesData.colleges || [];
         const users = usersData.users || [];
         
+        console.log('📊 College Analytics Debug:');
+        console.log(`Total colleges fetched: ${colleges.length}`);
+        console.log(`Total users fetched: ${users.length}`);
+        console.log('Colleges:', colleges.map(c => ({ id: c._id, name: c.name })));
+        console.log('Interns:', users.filter(u => u.role === 'intern').map(u => ({ 
+          id: u._id, 
+          name: u.name, 
+          college: u.college, 
+          collegeId: u.college?._id || u.college,
+          isActive: u.isActive 
+        })));
+        
         // Calculate statistics for each college
         const collegesWithStats = colleges.map(college => {
-          const collegeInterns = users.filter(user => 
-            user.role === 'intern' && 
-            user.college === college._id
-          );
+          const collegeInterns = users.filter(user => {
+            if (user.role !== 'intern') return false;
+            
+            // Handle different formats of college ID comparison
+            const userCollegeId = user.college?._id || user.college;
+            const collegeId = college._id;
+            
+            // Convert both to strings for comparison
+            const userCollegeStr = userCollegeId?.toString();
+            const collegeIdStr = collegeId?.toString();
+            
+            console.log(`Comparing user college: ${userCollegeStr} with college: ${collegeIdStr}`);
+            
+            return userCollegeStr === collegeIdStr;
+          });
           
           const activeInterns = collegeInterns.filter(intern => intern.isActive);
           const totalInterns = collegeInterns.length;
@@ -148,31 +171,31 @@ export function CollegeManagement() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {colleges.map((college) => (
-            <div key={college._id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+          {colleges.map((college, index) => (
+            <div key={college?._id || `college-${index}`} className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <CollegeCard college={college} size="md" />
                 <div className="text-right">
-                  <div className="text-xs text-gray-500">ID: {college._id.slice(-6)}</div>
+                  <div className="text-xs text-gray-500">ID: {college?._id?.slice(-6) || 'N/A'}</div>
                 </div>
               </div>
               
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{college.totalInterns}</div>
+                  <div className="text-lg font-bold text-gray-900">{college?.totalInterns || 0}</div>
                   <div className="text-xs text-gray-600">Total Interns</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">{college.activeInterns}</div>
+                  <div className="text-lg font-bold text-green-600">{college?.activeInterns || 0}</div>
                   <div className="text-xs text-gray-600">Active</div>
                 </div>
                 <div className="text-center">
                   <div className={`text-lg font-bold ${
-                    college.completionRate >= 90 ? 'text-green-600' :
-                    college.completionRate >= 80 ? 'text-blue-600' :
-                    college.completionRate >= 70 ? 'text-yellow-600' : 'text-red-600'
+                    (college?.completionRate || 0) >= 90 ? 'text-green-600' :
+                    (college?.completionRate || 0) >= 80 ? 'text-blue-600' :
+                    (college?.completionRate || 0) >= 70 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
-                    {college.completionRate}%
+                    {college?.completionRate || 0}%
                   </div>
                   <div className="text-xs text-gray-600">Active Rate</div>
                 </div>
@@ -192,7 +215,7 @@ export function CollegeManagement() {
               
               {/* Additional Info */}
               <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Mentor: {college.mentorName || 'Unassigned'}</span>
+                <span>Super-mentor: {college.superMentorName || 'Unassigned'}</span>
                 <span>Added: {new Date(college.createdAt).toLocaleDateString()}</span>
               </div>
             </div>

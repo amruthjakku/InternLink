@@ -22,7 +22,7 @@ const collegeSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-  mentorUsername: {
+  superMentorUsername: {
     type: String,
     required: false,
     trim: true,
@@ -52,13 +52,13 @@ const collegeSchema = new mongoose.Schema({
 
 // Indexes
 // Note: name already has unique index from schema definition
-collegeSchema.index({ mentorUsername: 1 });
+collegeSchema.index({ superMentorUsername: 1 });
 collegeSchema.index({ isActive: 1 });
 
-// Virtual for mentor details
-collegeSchema.virtual('mentor', {
+// Virtual for super-mentor details
+collegeSchema.virtual('superMentor', {
   ref: 'User',
-  localField: 'mentorUsername',
+  localField: 'superMentorUsername',
   foreignField: 'gitlabUsername',
   justOne: true
 });
@@ -82,16 +82,16 @@ collegeSchema.pre('save', function(next) {
 });
 
 // Static methods
-collegeSchema.statics.findByMentor = function(mentorUsername) {
+collegeSchema.statics.findBySuperMentor = function(superMentorUsername) {
   return this.findOne({ 
-    mentorUsername: mentorUsername.toLowerCase(), 
+    superMentorUsername: superMentorUsername.toLowerCase(), 
     isActive: true 
-  }).populate('mentor');
+  }).populate('superMentor');
 };
 
 collegeSchema.statics.getAllActive = function() {
   return this.find({ isActive: true })
-    .populate('mentor')
+    .populate('superMentor')
     .populate('internsCount');
 };
 

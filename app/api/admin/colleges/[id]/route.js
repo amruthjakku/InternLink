@@ -23,7 +23,7 @@ export async function PUT(request, { params }) {
     await connectToDatabase();
 
     const { id } = params;
-    const { name, description, location, website, mentorUsername } = await request.json();
+    const { name, description, location, website, superMentorUsername } = await request.json();
 
     // Validate required fields
     if (!name) {
@@ -51,50 +51,50 @@ export async function PUT(request, { params }) {
       }, { status: 400 });
     }
 
-    let mentor = null;
+    let superMentor = null;
     
-    // If mentor username is provided and different from current, validate it
-    if (mentorUsername && mentorUsername.trim() && mentorUsername !== college.mentorUsername) {
-      // Check if mentor exists and is available
-      mentor = await User.findOne({ 
-        gitlabUsername: mentorUsername.toLowerCase(),
-        role: 'mentor',
+    // If super-mentor username is provided and different from current, validate it
+    if (superMentorUsername && superMentorUsername.trim() && superMentorUsername !== college.superMentorUsername) {
+      // Check if super-mentor exists and is available
+      superMentor = await User.findOne({ 
+        gitlabUsername: superMentorUsername.toLowerCase(),
+        role: 'super-mentor',
         isActive: true 
       });
 
-      if (!mentor) {
+      if (!superMentor) {
         return NextResponse.json({ 
-          error: 'Mentor not found or not available' 
+          error: 'Super-mentor not found or not available' 
         }, { status: 400 });
       }
 
-      // Check if mentor is already assigned to another college
+      // Check if super-mentor is already assigned to another college
       const existingAssignment = await College.findOne({ 
-        mentorUsername: mentorUsername.toLowerCase(),
+        superMentorUsername: superMentorUsername.toLowerCase(),
         isActive: true,
         _id: { $ne: id }
       });
 
       if (existingAssignment) {
         return NextResponse.json({ 
-          error: 'This mentor is already assigned to another college' 
+          error: 'This super-mentor is already assigned to another college' 
         }, { status: 400 });
       }
 
-      // Update mentor's college assignment
-      mentor.college = id;
-      await mentor.save();
+      // Update super-mentor's college assignment
+      superMentor.college = id;
+      await superMentor.save();
 
-      // If there was a previous mentor, remove their college assignment
-      if (college.mentorUsername && college.mentorUsername !== 'unassigned') {
-        const previousMentor = await User.findOne({
-          gitlabUsername: college.mentorUsername,
-          role: 'mentor',
+      // If there was a previous super-mentor, remove their college assignment
+      if (college.superMentorUsername && college.superMentorUsername !== 'unassigned') {
+        const previousSuperMentor = await User.findOne({
+          gitlabUsername: college.superMentorUsername,
+          role: 'super-mentor',
           isActive: true
         });
-        if (previousMentor) {
-          previousMentor.college = undefined;
-          await previousMentor.save();
+        if (previousSuperMentor) {
+          previousSuperMentor.college = undefined;
+          await previousSuperMentor.save();
         }
       }
     }
@@ -107,11 +107,11 @@ export async function PUT(request, { params }) {
         description: description?.trim() || '',
         location: location?.trim() || '',
         website: website?.trim() || '',
-        mentorUsername: mentorUsername ? mentorUsername.toLowerCase() : 'unassigned',
+        superMentorUsername: superMentorUsername ? superMentorUsername.toLowerCase() : 'unassigned',
         updatedAt: new Date()
       },
       { new: true }
-    ).populate('mentor');
+    );
 
     return NextResponse.json(updatedCollege);
 

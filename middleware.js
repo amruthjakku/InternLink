@@ -43,13 +43,13 @@ export async function middleware(request) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // Mentor routes
-    if (pathname.startsWith('/mentor') && !['admin', 'mentor'].includes(token.role)) {
+    // Mentor routes (accessible by mentors and super-mentors)
+    if (pathname.startsWith('/mentor') && !['admin', 'mentor', 'super-mentor'].includes(token.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // Intern routes
-    if (pathname.startsWith('/intern') && !['admin', 'mentor', 'intern'].includes(token.role)) {
+    // Intern routes (accessible by interns, mentors, and super-mentors for supervision)
+    if (pathname.startsWith('/intern') && !['admin', 'mentor', 'super-mentor', 'intern'].includes(token.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

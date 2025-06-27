@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// Removed mockData import - using real API calls
+// Using real API calls - no mock data
 
 export function CollegesTab() {
   const [colleges, setColleges] = useState([]);

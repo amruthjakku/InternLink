@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthProvider';
 import { GitLabCommitTracker } from '../GitLabCommitTracker';
 import { GitLabDebugInfo } from './GitLabDebugInfo';
+import { ClearGitLabTokens } from '../ClearGitLabTokens';
 
 export function GitLabTab() {
   const { user } = useAuth();
@@ -61,101 +62,92 @@ export function GitLabTab() {
       setLoading(true);
       setError(null); // Clear any previous errors
       
-      // First check OAuth status
-      const oauthResponse = await fetch('/api/gitlab/oauth-connect');
-      if (oauthResponse.ok) {
-        const oauthData = await safeJsonParse(oauthResponse, 'OAuth check');
-        setOauthAvailable(oauthData.canConnectViaOAuth);
-        
-        if (oauthData.canConnectViaOAuth) {
-          // User has valid OAuth token, check if already connected
-          const statusResponse = await fetch('/api/gitlab/connection-status');
-          if (statusResponse.ok) {
-            const statusData = await safeJsonParse(statusResponse, 'connection status');
-            setIsConnected(statusData.connected);
-            if (statusData.connected) {
-              await fetchGitLabData();
-            } else {
-              // Has OAuth token but not connected, show OAuth connect option
-              setShowOAuthConnect(true);
-            }
-          } else {
-            try {
-              const statusError = await safeJsonParse(statusResponse, 'connection status error');
-              console.error('Connection status check failed:', statusError);
-              // Only show error if it's not a simple "not connected" case
-              if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
-                setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
+      // First check OAuth status - but don't fail if this doesn't work
+      try {
+        const oauthResponse = await fetch('/api/gitlab/oauth-connect');
+        if (oauthResponse.ok) {
+          const oauthData = await safeJsonParse(oauthResponse, 'OAuth check');
+          setOauthAvailable(oauthData.canConnectViaOAuth);
+          
+          if (oauthData.canConnectViaOAuth) {
+            // User has valid OAuth token, check if already connected
+            const statusResponse = await fetch('/api/gitlab/connection-status');
+            if (statusResponse.ok) {
+              const statusData = await safeJsonParse(statusResponse, 'connection status');
+              setIsConnected(statusData.connected);
+              if (statusData.connected) {
+                // Only fetch data if we're actually connected
+                try {
+                  await fetchGitLabData();
+                } catch (fetchError) {
+                  console.log('Failed to fetch GitLab data during OAuth check:', fetchError.message);
+                  // Don't fail the whole connection check if data fetch fails
+                }
+              } else {
+                // Has OAuth token but not connected, show OAuth connect option
+                setShowOAuthConnect(true);
               }
-            } catch (parseError) {
-              // If we can't parse the error response, just log it
-              console.error('Failed to parse connection status error:', parseError);
+              return; // Exit early if OAuth path worked
             }
           }
+        }
+      } catch (oauthError) {
+        console.log('OAuth check failed (this is normal for first-time users):', oauthError.message);
+        // Continue to PAT check
+      }
+      
+      // Check for existing PAT connection
+      try {
+        const statusResponse = await fetch('/api/gitlab/connection-status');
+        if (statusResponse.ok) {
+          const statusData = await safeJsonParse(statusResponse, 'connection status');
+          setIsConnected(statusData.connected);
+          if (statusData.connected) {
+            // Only fetch data if we're actually connected
+            try {
+              await fetchGitLabData();
+            } catch (fetchError) {
+              console.log('Failed to fetch GitLab data during PAT check:', fetchError.message);
+              // Don't fail the whole connection check if data fetch fails
+            }
+          }
+        } else if (statusResponse.status === 401) {
+          // 401 is expected for users without any connection - not an error
+          console.log('No existing GitLab connection found (401 - expected for new users)');
+          setIsConnected(false);
         } else {
-          // No OAuth token, check for existing PAT connection
-          const statusResponse = await fetch('/api/gitlab/connection-status');
-          if (statusResponse.ok) {
-            const statusData = await safeJsonParse(statusResponse, 'connection status');
-            setIsConnected(statusData.connected);
-            if (statusData.connected) {
-              await fetchGitLabData();
-            }
-          } else {
-            try {
-              const statusError = await safeJsonParse(statusResponse, 'connection status error');
-              console.error('Connection status check failed:', statusError);
-              // Don't show error for first-time users, just show connect UI
-              if (statusResponse.status !== 401 && !statusError.error?.includes('not connected')) {
-                setError(`Failed to check connection status: ${statusError.error || 'Unknown error'}`);
-              }
-            } catch (parseError) {
-              // If we can't parse the error response, just log it
-              console.error('Failed to parse connection status error:', parseError);
-            }
-          }
+          // Other status codes might indicate real issues
+          console.warn(`Connection status check returned ${statusResponse.status}, but continuing...`);
+          setIsConnected(false);
         }
-      } else {
-        // OAuth check failed, try to check PAT connection status
-        console.warn('OAuth check failed, checking for existing PAT connection');
-        try {
-          const statusResponse = await fetch('/api/gitlab/connection-status');
-          if (statusResponse.ok) {
-            const statusData = await safeJsonParse(statusResponse, 'connection status');
-            setIsConnected(statusData.connected);
-            if (statusData.connected) {
-              await fetchGitLabData();
-            }
-          } else {
-            // Both OAuth and PAT checks failed, but don't show error for first-time users
-            console.log('No existing GitLab connection found, showing connect UI');
-          }
-        } catch (fallbackError) {
-          console.warn('Fallback connection check also failed:', fallbackError);
-        }
+      } catch (statusError) {
+        console.log('Connection status check failed (this is normal for first-time users):', statusError.message);
+        setIsConnected(false);
       }
+      
     } catch (error) {
-      console.error('Error checking GitLab connection:', error);
-      // Only set error if already connected, otherwise show connect UI
-      if (isConnected) {
-        // Handle specific error messages
-        let errorMessage = error.message;
-        if (error.message.includes('Unexpected end of JSON input')) {
-          errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
-        } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
-        }
-        
-        setError(`Connection check failed: ${errorMessage}`);
-      } else {
-        console.warn('Initial connection check failed, showing connect UI');
+      console.error('Error during initial GitLab connection check:', error);
+      
+      // Don't show errors to users during initial load - this is expected for new users
+      // Only log for debugging purposes
+      if (error.message && !error.message.includes('Authentication Error')) {
+        console.warn('Unexpected error during connection check:', error.message);
       }
+      
+      // Always allow users to proceed with connection setup
+      setIsConnected(false);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchGitLabData = async () => {
+    // Don't fetch data if user is not connected
+    if (!isConnected) {
+      console.log('Skipping GitLab data fetch - user not connected');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/gitlab/intern-analytics');
       if (response.ok) {
@@ -184,8 +176,14 @@ export function GitLabTab() {
         } else {
           setGitlabData(data);
         }
+      } else if (response.status === 401) {
+        // 401 means not authenticated - this is expected for users without connection
+        console.log('GitLab data fetch returned 401 - user not connected (expected)');
+        setIsConnected(false);
+        setGitlabData(null);
+        // Don't show error for 401 - it's expected
       } else {
-        // Handle error response
+        // Handle other error responses
         try {
           const errorText = await response.text();
           let errorMessage = 'Failed to fetch GitLab data';
@@ -201,23 +199,39 @@ export function GitLabTab() {
             }
           }
           
-          throw new Error(errorMessage);
+          // Only show error if user should be connected
+          if (isConnected) {
+            throw new Error(errorMessage);
+          } else {
+            console.log('GitLab data fetch failed but user not connected:', errorMessage);
+          }
         } catch (responseError) {
-          throw new Error(`Failed to fetch GitLab data: ${responseError.message}`);
+          if (isConnected) {
+            throw new Error(`Failed to fetch GitLab data: ${responseError.message}`);
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching GitLab data:', error);
       
-      // Handle specific error messages
-      let errorMessage = error.message;
-      if (error.message.includes('Unexpected end of JSON input')) {
-        errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
+      // Only show errors if the user should be connected
+      if (isConnected) {
+        // Handle specific error messages
+        let errorMessage = error.message;
+        if (error.message.includes('Unexpected end of JSON input')) {
+          errorMessage = 'Server returned an invalid response. This may be due to a timeout or connection issue. Please try again.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.message.includes('Authentication Error')) {
+          // Token might have expired
+          errorMessage = 'Your GitLab token may have expired. Please reconnect your account.';
+          setIsConnected(false); // Force user to reconnect
+        }
+        
+        setError(`Failed to fetch GitLab data: ${errorMessage}`);
+      } else {
+        console.log('GitLab data fetch failed for unconnected user (this is normal):', error.message);
       }
-      
-      if (isConnected) setError(`Failed to fetch GitLab data: ${errorMessage}`);
     }
   };
 
@@ -603,6 +617,11 @@ export function GitLabTab() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* OAuth Token Issues Helper */}
+        {error && (error.includes('Authentication Error') || error.includes('Token')) && (
+          <ClearGitLabTokens />
         )}
 
         <div className="bg-white rounded-lg shadow p-6">

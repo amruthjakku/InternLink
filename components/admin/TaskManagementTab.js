@@ -307,8 +307,15 @@ export function TaskManagementTab() {
         // Extract the cohort ID (could be an object or a string)
         const taskCohortId = typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId;
         
-        // Skip tasks without a cohort ID
+        // Handle tasks without a cohort ID (orphaned tasks)
         if (!taskCohortId) {
+          console.log(`Task ${task.title} has null cohort ID - these are orphaned tasks`);
+          // Show orphaned tasks only when filtering by 'unassigned'
+          return selectedCohort === 'unassigned';
+        }
+        
+        // Skip tasks that have a cohort ID when filtering for unassigned tasks
+        if (selectedCohort === 'unassigned') {
           return false;
         }
         
@@ -450,6 +457,7 @@ export function TaskManagementTab() {
               className="border border-gray-300 rounded-md px-3 py-2 text-sm"
             >
               <option value="all">All Cohorts</option>
+              <option value="unassigned">📌 Unassigned Tasks</option>
               {cohorts.map(cohort => (
                 <option key={cohort._id} value={cohort._id}>{cohort.name}</option>
               ))}

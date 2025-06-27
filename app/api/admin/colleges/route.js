@@ -16,23 +16,41 @@ export async function GET() {
     await connectToDatabase();
 
     const colleges = await College.find({ isActive: true })
-      .select('name description location website mentorUsername createdAt')
+      .select('name description location website superMentorUsername createdAt')
       .sort({ name: 1 });
 
-    // Get mentor names for each college
-    const collegesWithMentors = await Promise.all(
+    // Get super-mentor names and intern counts for each college
+    const collegesWithSuperMentors = await Promise.all(
       colleges.map(async (college) => {
-        let mentorName = 'N/A';
-        if (college.mentorUsername) {
-          const mentor = await User.findOne({ 
-            gitlabUsername: college.mentorUsername,
-            role: 'mentor',
+        let superMentorName = 'N/A';
+        if (college.superMentorUsername) {
+          const superMentor = await User.findOne({ 
+            gitlabUsername: college.superMentorUsername,
+            role: 'super-mentor',
             isActive: true 
           });
-          if (mentor) {
-            mentorName = mentor.name;
+          if (superMentor) {
+            superMentorName = superMentor.name;
           }
         }
+        
+        // Get intern counts for this college
+        const totalInterns = await User.countDocuments({
+          college: college._id,
+          role: 'intern'
+        });
+        
+        const activeInterns = await User.countDocuments({
+          college: college._id,
+          role: 'intern',
+          isActive: true
+        });
+        
+        const internsWithCohorts = await User.countDocuments({
+          college: college._id,
+          role: 'intern',
+          cohortId: { $ne: null }
+        });
         
         return {
           _id: college._id,
@@ -40,14 +58,17 @@ export async function GET() {
           description: college.description,
           location: college.location,
           website: college.website,
-          mentorUsername: college.mentorUsername,
-          mentorName,
+          superMentorUsername: college.superMentorUsername,
+          superMentorName,
+          totalInterns,
+          activeInterns,
+          internsWithCohorts,
           createdAt: college.createdAt
         };
       })
     );
 
-    return NextResponse.json({ colleges: collegesWithMentors });
+    return NextResponse.json({ colleges: collegesWithSuperMentors });
 
   } catch (error) {
     console.error('Error fetching colleges:', error);
@@ -65,7 +86,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, description, location, website, mentorUsername } = await request.json();
+    const { name, description, location, website, superMentorUsername } = await request.json();
 
     if (!name || !description || !location) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -82,16 +103,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'College already exists' }, { status: 400 });
     }
 
-    // Validate mentor if provided
-    if (mentorUsername) {
-      const mentor = await User.findOne({ 
-        gitlabUsername: mentorUsername.toLowerCase(),
-        role: 'mentor',
+    // Validate super-mentor if provided
+    if (superMentorUsername) {
+      const superMentor = await User.findOne({ 
+        gitlabUsername: superMentorUsername.toLowerCase(),
+        role: 'super-mentor',
         isActive: true 
       });
       
-      if (!mentor) {
-        return NextResponse.json({ error: 'Mentor not found' }, { status: 400 });
+      if (!superMentor) {
+        return NextResponse.json({ error: 'Super-mentor not found' }, { status: 400 });
       }
     }
 
@@ -101,7 +122,7 @@ export async function POST(request) {
       description,
       location,
       website: website || '',
-      mentorUsername: mentorUsername ? mentorUsername.toLowerCase() : '',
+      superMentorUsername: superMentorUsername ? superMentorUsername.toLowerCase() : '',
       isActive: true,
       createdBy: session.user.gitlabUsername || session.user.email || 'admin'
     });

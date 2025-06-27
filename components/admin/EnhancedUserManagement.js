@@ -98,7 +98,11 @@ export function EnhancedUserManagement() {
 
     const matchesCohort = filterCohort === 'all' ||
       (filterCohort === 'none' && !user.cohortId) ||
-      (user.cohortId && user.cohortId._id === filterCohort);
+      (user.cohortId && (
+        // Handle both string cohortId and populated cohortId object
+        (typeof user.cohortId === 'string' && user.cohortId === filterCohort) ||
+        (typeof user.cohortId === 'object' && user.cohortId._id === filterCohort)
+      ));
 
     return matchesSearch && matchesStatus && matchesRole && matchesCohort;
   });

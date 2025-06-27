@@ -258,7 +258,10 @@ async function syncCohortAssignment(userId, cohortId, action, originalCohortId =
     }
 
     // Check if already assigned
-    if (user.cohortId && user.cohortId._id.toString() === cohortId) {
+    const currentCohortId = typeof user.cohortId === 'string' 
+      ? user.cohortId 
+      : user.cohortId._id.toString();
+    if (user.cohortId && currentCohortId === cohortId) {
       return {
         user,
         message: `User is already assigned to cohort ${cohort.name}`,
@@ -269,7 +272,9 @@ async function syncCohortAssignment(userId, cohortId, action, originalCohortId =
 
   // Get original cohort ID if not provided
   if (!originalCohortId && user.cohortId) {
-    originalCohortId = user.cohortId._id.toString();
+    originalCohortId = typeof user.cohortId === 'string' 
+      ? user.cohortId 
+      : user.cohortId._id.toString();
   }
 
   // Queue sync operation
