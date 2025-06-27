@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EnhancedLineChart, EnhancedBarChart, EnhancedDoughnutChart, MetricCard } from '../Charts';
 import { format, subDays } from 'date-fns';
+import { CollegeCard } from '../CollegeLogo';
 
 export function AdvancedAnalytics() {
   const [analytics, setAnalytics] = useState(null);
@@ -436,8 +437,8 @@ export function AdvancedAnalytics() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {collegeMetrics.userDistribution.map((college, index) => (
                         <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {college.name}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <CollegeCard college={{ name: college.name }} size="sm" showLocation={false} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {college.users}

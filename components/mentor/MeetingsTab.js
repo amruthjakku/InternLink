@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CollegeBadge } from '../CollegeLogo';
 // Removed mockData import - using real API calls
 
 export function MeetingsTab() {
@@ -250,7 +251,7 @@ export function MeetingsTab() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">{intern.name}</p>
-                  <p className="text-xs text-gray-500">{intern.college_name}</p>
+                  <CollegeBadge college={{ name: intern.college_name }} />
                 </div>
               </div>
             ))}

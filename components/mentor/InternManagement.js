@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { getCollegeName } from '../../utils/helpers';
+import { CollegeBadge } from '../CollegeLogo';
 
 export function InternManagement() {
   const { data: session } = useSession();
@@ -90,9 +91,7 @@ export function InternManagement() {
                 <div>
                   <h4 className="text-lg font-medium text-gray-900">{intern.name}</h4>
                   <p className="text-sm text-gray-600">{intern.email}</p>
-                  <p className="text-sm text-gray-500">
-                    {getCollegeName(intern.college)}
-                  </p>
+                  <CollegeBadge college={{ name: getCollegeName(intern.college) }} />
                 </div>
               </div>
               <div className="flex items-center space-x-4">

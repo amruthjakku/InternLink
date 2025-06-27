@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { CollegeBadge } from '../../../components/CollegeLogo';
 
 export default function RoleDebugPage() {
   const { data: session, status } = useSession();
@@ -207,7 +208,13 @@ export default function RoleDebugPage() {
                           {user.isActive ? '✅ Active' : '❌ Inactive'}
                           {user.roleMismatch && <div className="text-xs text-red-600">⚠️ Role Mismatch</div>}
                         </td>
-                        <td className="px-4 py-2 border-b">{user.college}</td>
+                        <td className="px-4 py-2 border-b">
+                          {user.college ? (
+                            <CollegeBadge college={{ name: user.college }} />
+                          ) : (
+                            <span className="text-gray-500 text-sm">No college</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2 border-b">
                           {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
                         </td>

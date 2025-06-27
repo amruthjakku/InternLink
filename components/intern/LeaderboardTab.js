@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getCollegeName } from '../../utils/helpers';
+import { CollegeBadge } from '../CollegeLogo';
 
 export function LeaderboardTab({ user }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -115,9 +116,7 @@ export function LeaderboardTab({ user }) {
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {getCollegeName(intern.college)}
-                      </p>
+                      <CollegeBadge college={{ name: getCollegeName(intern.college) }} />
                     </div>
                   </div>
                   <div className="flex items-center space-x-6">

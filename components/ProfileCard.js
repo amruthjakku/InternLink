@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
+import { CollegeLogo } from './CollegeLogo';
 
 export function ProfileCard({ user, showMilestones = true, compact = false }) {
   const [milestones, setMilestones] = useState([]);
@@ -183,10 +184,12 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
               </div>
             )}
             {user?.college && (
-              <div className="flex items-center space-x-2">
-                <span>🏫</span>
-                <span>{user.college.name || user.college}</span>
-              </div>
+              <CollegeLogo 
+                college={user.college} 
+                size="sm" 
+                showName={true}
+                className="py-1"
+              />
             )}
             {user?.cohortId && (
               <div className="flex items-center space-x-2">

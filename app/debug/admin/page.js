@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { CollegeBadge } from '../../../components/CollegeLogo';
 
 export default function AdminDebugPage() {
   const { data: session } = useSession();
@@ -224,7 +225,13 @@ export default function AdminDebugPage() {
                         <td className="px-4 py-2 border-b">
                           {user.isActive ? '✅' : '❌'}
                         </td>
-                        <td className="px-4 py-2 border-b text-xs">{user.college}</td>
+                        <td className="px-4 py-2 border-b">
+                          {user.college ? (
+                            <CollegeBadge college={{ name: user.college }} />
+                          ) : (
+                            <span className="text-gray-500 text-xs">No college</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2 border-b text-xs">
                           {user.timeSinceUpdate ? `${user.timeSinceUpdate}s ago` : 'N/A'}
                         </td>

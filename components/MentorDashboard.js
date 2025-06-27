@@ -18,6 +18,7 @@ import { TeamActivity } from './mentor/TeamActivity';
 import { MentorManagementTab } from './mentor/MentorManagementTab';
 import { CohortManagementTab } from './mentor/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
+import { CollegeBadge } from './CollegeLogo';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
 import { Chat } from './Chat';
 import { EnhancedChat } from './EnhancedChat';
@@ -279,8 +280,8 @@ export function MentorDashboard() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {intern.college_name}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <CollegeBadge college={{ name: intern.college_name }} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {intern.completed_tasks}/{intern.total_tasks}

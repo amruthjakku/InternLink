@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CollegeBadge } from '../CollegeLogo';
 // Removed mockData import - using real API calls
 
 export function LeaderboardTab() {
@@ -178,8 +179,10 @@ export function LeaderboardTab() {
                   </div>
                   <div>
                     <h4 className="text-lg font-medium text-gray-900">{intern.name}</h4>
-                    <p className="text-sm text-gray-600">{intern.college_name}</p>
-                    <p className="text-xs text-gray-500">{intern.cohort_name}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <CollegeBadge college={{ name: intern.college_name }} />
+                      <span className="text-xs text-gray-500">{intern.cohort_name}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">

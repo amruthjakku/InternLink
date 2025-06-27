@@ -17,6 +17,7 @@ import { EnhancedGitLabTab } from './intern/EnhancedGitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { ProfileCard } from './ProfileCard';
+import { CollegeLogo } from './CollegeLogo';
 
 export function InternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
@@ -142,12 +143,13 @@ export function InternDashboard() {
                   Welcome back, {user?.name}!
                 </h1>
                 {user?.college && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    <span className="inline-flex items-center">
-                      <span className="mr-1">🏫</span>
-                      {getCollegeName(user.college)}
-                    </span>
-                  </p>
+                  <div className="mt-2">
+                    <CollegeLogo 
+                      college={user.college} 
+                      size="sm" 
+                      showName={true}
+                    />
+                  </div>
                 )}
                 {user?.cohortId && (
                   <p className="mt-1 text-sm text-gray-600">

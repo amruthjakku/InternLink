@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CollegeCard } from './CollegeLogo';
 
 export function CollegeManagement() {
   const [colleges, setColleges] = useState([]);
@@ -150,15 +151,7 @@ export function CollegeManagement() {
           {colleges.map((college) => (
             <div key={college._id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                    <span className="text-white text-lg">🏫</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-900">{college.name}</h3>
-                    <p className="text-sm text-gray-600">{college.location}</p>
-                  </div>
-                </div>
+                <CollegeCard college={college} size="md" />
                 <div className="text-right">
                   <div className="text-xs text-gray-500">ID: {college._id.slice(-6)}</div>
                 </div>

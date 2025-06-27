@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthProvider';
 import { useUserSync } from '../../hooks/useUserSync';
+import { CollegeBadge } from '../CollegeLogo';
 
 export function EnhancedUserManagement() {
   const { user } = useAuth();
@@ -619,9 +620,7 @@ export function EnhancedUserManagement() {
                           </span>
                         )}
                         {user.college && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full">
-                            {user.college.name}
-                          </span>
+                          <CollegeBadge college={user.college} />
                         )}
                       </div>
                     </div>

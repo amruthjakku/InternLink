@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CollegeLogo } from '../CollegeLogo';
 
 export function VerificationPending({ user, onApprove }) {
   const [isSimulatingApproval, setIsSimulatingApproval] = useState(false);
@@ -48,9 +49,13 @@ export function VerificationPending({ user, onApprove }) {
                   <span className="text-gray-900 capitalize">{user?.role}</span>
                 </div>
                 {user?.college_name && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-500">College:</span>
-                    <span className="text-gray-900">{user.college_name}</span>
+                    <CollegeLogo 
+                      college={{ name: user.college_name }} 
+                      size="sm" 
+                      showName={true}
+                    />
                   </div>
                 )}
                 {user?.cohort_name && (

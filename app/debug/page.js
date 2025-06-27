@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { CollegeBadge } from '../../components/CollegeLogo';
 
 export default function DebugPage() {
   const { data: session, status } = useSession();
@@ -137,7 +138,13 @@ export default function DebugPage() {
                           <td className="px-4 py-2 border-b">
                             {user.isActive ? '✅ Yes' : '❌ No'}
                           </td>
-                          <td className="px-4 py-2 border-b">{user.college}</td>
+                          <td className="px-4 py-2 border-b">
+                            {user.college ? (
+                              <CollegeBadge college={{ name: user.college }} />
+                            ) : (
+                              <span className="text-gray-500 text-sm">No college</span>
+                            )}
+                          </td>
                           <td className="px-4 py-2 border-b">
                             {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}
                           </td>
@@ -155,7 +162,11 @@ export default function DebugPage() {
                   <div className="bg-red-50 p-4 rounded">
                     {dbReport.inactiveUsers.map((user) => (
                       <div key={user.id} className="mb-2 text-sm">
-                        <strong>{user.gitlabUsername}</strong> ({user.role}) - {user.college}
+                        <div className="flex items-center space-x-2">
+                          <strong>{user.gitlabUsername}</strong> 
+                          <span>({user.role})</span>
+                          {user.college && <CollegeBadge college={{ name: user.college }} />}
+                        </div>
                       </div>
                     ))}
                   </div>

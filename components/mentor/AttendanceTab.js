@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, subDays, parseISO, eachDayOfInterval } from 'date-fns';
+import { CollegeBadge } from '../CollegeLogo';
 // Removed mockData import - using real API calls
 
 export function AttendanceTab({ userRole = 'mentor' }) {
@@ -345,7 +346,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
                           </div>
                           <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900">{intern?.name}</div>
-                            <div className="text-sm text-gray-500">{intern?.college_name}</div>
+                            <CollegeBadge college={{ name: intern?.college_name }} />
                           </div>
                         </div>
                       </td>
