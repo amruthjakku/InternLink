@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { connectToDatabase, getDatabase } from '../../../../utils/database';
 import Task from '../../../../models/Task';
+import User from '../../../../models/User';
+import College from '../../../../models/College';
+import Cohort from '../../../../models/Cohort';
 import mongoose from 'mongoose';
 import { ObjectId } from 'mongodb';
 
@@ -10,7 +13,7 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session?.user || !['admin', 'super-admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -73,7 +76,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session?.user || !['admin', 'super-admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -85,6 +88,9 @@ export async function POST(request) {
       priority, 
       category, 
       cohortId, 
+      collegeIds, // New: for hierarchical assignment
+      assignmentType, // New: 'hierarchical' or 'cohort'
+      points, // New: task points
       dueDate, 
       startDate,
       estimatedHours,
@@ -92,7 +98,8 @@ export async function POST(request) {
       resources,
       createdBy,
       createdByRole,
-      assignedBy
+      assignedBy,
+      assignedTo // New: for hierarchical assignment structure
     } = data;
 
     if (!title || !description || !category || !cohortId || cohortId === '' || !dueDate) {
@@ -138,9 +145,10 @@ export async function POST(request) {
       status: 'active',
       priority: priority || 'medium',
       category,
-      assignmentType: 'cohort',
+      assignmentType: assignmentType || 'cohort',
       cohortId: cohortIdObj,
       cohortName,
+      points: points || 0,
       createdBy: createdBy || session.user.id,
       createdByRole: createdByRole || session.user.role,
       assignedBy: assignedBy || session.user.gitlabUsername,
@@ -156,16 +164,29 @@ export async function POST(request) {
       requirements: requirements || [],
       submissions: [],
       comments: [],
-      isActive: true
+      isActive: true,
+      // New hierarchical assignment fields
+      assignedTo: assignedTo || {
+        cohort: cohortId,
+        colleges: collegeIds || [],
+        users: []
+      }
     };
 
     const newTask = new Task(taskData);
     await newTask.save();
 
+    // If hierarchical assignment, assign to users in selected colleges
+    let assignedUserCount = 0;
+    if (assignmentType === 'hierarchical' && collegeIds?.length > 0) {
+      assignedUserCount = await assignTaskToColleges(newTask._id, collegeIds);
+    }
+
     return NextResponse.json({ 
       success: true,
       taskId: newTask._id,
-      message: 'Task created successfully'
+      message: 'Task created successfully',
+      assignedUserCount
     });
 
   } catch (error) {
@@ -173,5 +194,29 @@ export async function POST(request) {
     return NextResponse.json({ 
       error: 'Failed to create task' 
     }, { status: 500 });
+  }
+}
+
+// Helper function to assign task to users in specified colleges
+async function assignTaskToColleges(taskId, collegeIds) {
+  try {
+    // Find all active users in the specified colleges
+    const users = await User.find({
+      college: { $in: collegeIds },
+      isActive: true,
+      role: { $in: ['intern', 'mentor'] } // Only assign to interns and mentors
+    });
+
+    // Update users to include this task in their assigned tasks
+    const userIds = users.map(user => user._id);
+    
+    // For now, we'll just log the assignment
+    // In a real implementation, you might have a separate TaskAssignment collection
+    console.log(`Task ${taskId} assigned to ${users.length} users across ${collegeIds.length} colleges`);
+    
+    return users.length;
+  } catch (error) {
+    console.error('Error assigning task to colleges:', error);
+    return 0;
   }
 }

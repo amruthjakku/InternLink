@@ -25,6 +25,21 @@ export async function GET(request) {
     const users = await User.find({})
       .populate('college', 'name')
       .select('name email role college isActive createdAt lastLoginAt');
+      
+    // Debug: Check user-college associations
+    console.log('=== USER-COLLEGE DEBUG ===');
+    console.log('Total users:', users.length);
+    console.log('Users by role:', {
+      intern: users.filter(u => u.role === 'intern').length,
+      mentor: users.filter(u => u.role === 'mentor').length,
+      'super-mentor': users.filter(u => u.role === 'super-mentor').length,
+      admin: users.filter(u => u.role === 'admin').length
+    });
+    console.log('Interns with colleges:', users.filter(u => u.role === 'intern' && u.college).length);
+    console.log('Sample intern data:', users.filter(u => u.role === 'intern').slice(0, 3).map(u => ({
+      name: u.name,
+      college: u.college ? { id: u.college._id, name: u.college.name } : null
+    })));
 
     // Get all tasks
     const tasks = await Task.find({})
@@ -35,6 +50,10 @@ export async function GET(request) {
     // Get all colleges
     const colleges = await College.find({})
       .select('name description location');
+      
+    console.log('=== COLLEGE DEBUG ===');
+    console.log('Total colleges:', colleges.length);
+    console.log('College IDs and names:', colleges.map(c => ({ id: c._id.toString(), name: c.name })));
 
     // Calculate user metrics
     const userMetrics = {
@@ -77,11 +96,23 @@ export async function GET(request) {
       // Helper function to safely compare college IDs
       const isUserInCollege = (user, collegeId) => {
         try {
-          return user && 
+          const result = user && 
                  user.college && 
                  user.college._id && 
                  collegeId && 
                  user.college._id.toString() === collegeId.toString();
+          
+          // Debug the first few comparisons
+          if (user && user.role === 'intern') {
+            console.log(`Checking user "${user.name}":`, {
+              hasCollege: !!user.college,
+              userCollegeId: user.college?._id?.toString(),
+              targetCollegeId: collegeId?.toString(),
+              match: result
+            });
+          }
+          
+          return result;
         } catch (err) {
           console.warn('Error comparing college IDs:', err);
           return false;

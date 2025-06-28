@@ -22,6 +22,10 @@ const cohortSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College'
+  },
   maxInterns: {
     type: Number,
     default: 50
@@ -57,6 +61,7 @@ const cohortSchema = new mongoose.Schema({
 // Indexes for better performance
 cohortSchema.index({ name: 1 });
 cohortSchema.index({ mentorId: 1 });
+cohortSchema.index({ collegeId: 1 });
 cohortSchema.index({ isActive: 1 });
 
 // Pre-save middleware to update timestamps

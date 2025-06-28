@@ -97,8 +97,35 @@ export function CohortAssignmentTab() {
   };
 
   const handleAssignInterns = async () => {
-    if (!selectedCohort || selectedInterns.length === 0) {
-      setErrorMessage('Please select a cohort and at least one intern');
+    // Clear previous messages
+    setErrorMessage('');
+    setSuccessMessage('');
+    
+    // Validation
+    if (!selectedCohort) {
+      setErrorMessage('❌ Please select a cohort first');
+      return;
+    }
+    
+    if (selectedInterns.length === 0) {
+      setErrorMessage('❌ Please select at least one intern to assign');
+      return;
+    }
+
+    // Find the selected cohort to verify it exists
+    const cohortObj = cohorts.find(c => c._id === selectedCohort);
+    if (!cohortObj) {
+      setErrorMessage('Selected cohort not found. Please refresh the page and try again.');
+      return;
+    }
+
+    // Verify selected interns exist
+    const validInterns = selectedInterns.filter(internId => 
+      interns.some(intern => intern._id === internId)
+    );
+    
+    if (validInterns.length !== selectedInterns.length) {
+      setErrorMessage(`Some selected interns are invalid. Found ${validInterns.length} out of ${selectedInterns.length}`);
       return;
     }
 
@@ -107,18 +134,22 @@ export function CohortAssignmentTab() {
     setSuccessMessage('');
 
     try {
-      console.log(`🎯 Assigning ${selectedInterns.length} interns to cohort ${selectedCohort}`);
+      console.log(`🎯 Assigning ${selectedInterns.length} interns to cohort "${cohortObj.name}" (${selectedCohort})`);
+      
+      // Log the exact data being sent
+      const requestData = {
+        cohortId: selectedCohort,
+        userIds: selectedInterns,
+        action: 'assign'
+      };
+      console.log('Request data:', requestData);
       
       const response = await fetch('/api/admin/cohorts/assign-users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          cohortId: selectedCohort,
-          userIds: selectedInterns,
-          action: 'assign'
-        }),
+        body: JSON.stringify(requestData),
       });
 
       const result = await response.json();
@@ -127,18 +158,23 @@ export function CohortAssignmentTab() {
       if (response.ok) {
         const { summary, results } = result;
         
-        let message = `Assignment completed: ${summary.successful} successful`;
-        if (summary.failed > 0) message += `, ${summary.failed} failed`;
-        if (summary.skipped > 0) message += `, ${summary.skipped} skipped`;
+        // Handle both 'successful' and 'success' properties for backward compatibility
+        const successfulCount = summary?.successful || summary?.success || results?.success?.length || 0;
+        const failedCount = summary?.failed || results?.failed?.length || 0;
+        const skippedCount = summary?.skipped || results?.skipped?.length || 0;
+        
+        let message = `Assignment completed: ${successfulCount} successful`;
+        if (failedCount > 0) message += `, ${failedCount} failed`;
+        if (skippedCount > 0) message += `, ${skippedCount} skipped`;
         
         setSuccessMessage(message);
         
         // Show detailed results if there were failures or skips
-        if (summary.failed > 0 || summary.skipped > 0) {
+        if (failedCount > 0 || skippedCount > 0) {
           console.log('Detailed results:', results);
           
-          const failedUsers = results.failed.map(f => f.username || f.userId).join(', ');
-          const skippedUsers = results.skipped.map(s => s.username || s.userId).join(', ');
+          const failedUsers = (results?.failed || []).map(f => f.username || f.userId).join(', ');
+          const skippedUsers = (results?.skipped || []).map(s => s.username || s.userId).join(', ');
           
           let detailMessage = '';
           if (failedUsers) detailMessage += `Failed: ${failedUsers}. `;
@@ -154,11 +190,30 @@ export function CohortAssignmentTab() {
         await fetchData();
         
       } else {
-        setErrorMessage(result.error || 'Failed to assign interns to cohort');
+        const errorMsg = result?.error || result?.details || 'Failed to assign interns to cohort';
+        setErrorMessage(`❌ Assignment failed: ${errorMsg}`);
+        console.error('❌ Assignment failed with status:', response.status, result);
+        
+        // Log additional details for debugging
+        console.error('Request was:', {
+          cohortId: selectedCohort,
+          userIds: selectedInterns,
+          action: 'assign'
+        });
       }
     } catch (error) {
       console.error('Error assigning interns:', error);
-      setErrorMessage(`Assignment failed: ${error.message}`);
+      let errorMsg = 'Assignment failed: ';
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMsg += 'Network connection failed. Please check your connection and try again.';
+      } else if (error.message.includes('JSON')) {
+        errorMsg += 'Server response was invalid. Please try again or contact support.';
+      } else {
+        errorMsg += error.message || 'Unknown error occurred';
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setAssigningInterns(false);
     }

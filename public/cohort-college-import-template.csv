@@ -1,0 +1,4 @@
+cohortName,collegeName,action
+"Your Cohort Name Here","Your College Name Here","assign"
+"Another Cohort Name","Another College Name","assign"
+"Example Cohort","Example College","unassign"

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cohort Assignment</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 10px 0; }
+        .error { background: #fee; border: 1px solid #fcc; color: #c33; }
+        .success { background: #efe; border: 1px solid #cfc; color: #3c3; }
+        button { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a87; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .log { background: #333; color: #fff; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Cohort Assignment Test Tool</h1>
+    
+    <div class="container">
+        <h3>Step 1: Load Data</h3>
+        <button onclick="loadCohorts()">Load Cohorts</button>
+        <button onclick="loadInterns()">Load Interns</button>
+        <button onclick="loadAll()">Load All Data</button>
+        
+        <div id="dataStatus"></div>
+    </div>
+
+    <div class="container">
+        <h3>Step 2: Select Cohort and Intern</h3>
+        <div>
+            <label>Cohort:</label>
+            <select id="cohortSelect">
+                <option value="">Select Cohort</option>
+            </select>
+        </div>
+        <div>
+            <label>Intern:</label>
+            <select id="internSelect">
+                <option value="">Select Intern</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>Step 3: Test Assignment</h3>
+        <button onclick="testAssignment()">Test Assignment</button>
+        <button onclick="testBulkAssignment()">Test Bulk Assignment</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h3>Debug Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let cohorts = [];
+        let interns = [];
+
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.textContent += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.className = `container ${type}`;
+            el.innerHTML = message;
+        }
+
+        async function loadCohorts() {
+            log('🔄 Loading cohorts...');
+            try {
+                const response = await fetch('/api/admin/cohorts');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    cohorts = data.cohorts || [];
+                    log(`✅ Loaded ${cohorts.length} cohorts`);
+                    
+                    // Populate select
+                    const select = document.getElementById('cohortSelect');
+                    select.innerHTML = '<option value="">Select Cohort</option>';
+                    cohorts.forEach(cohort => {
+                        const option = document.createElement('option');
+                        option.value = cohort._id;
+                        option.textContent = `${cohort.name} (${cohort.currentInterns || 0}/${cohort.maxInterns || 'unlimited'})`;
+                        select.appendChild(option);
+                    });
+                    
+                    showStatus('dataStatus', `Cohorts loaded: ${cohorts.length}`, 'success');
+                } else {
+                    log(`❌ Failed to load cohorts: ${data.error}`);
+                    showStatus('dataStatus', `Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error loading cohorts: ${error.message}`);
+                showStatus('dataStatus', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadInterns() {
+            log('🔄 Loading interns...');
+            try {
+                const response = await fetch('/api/admin/users?role=intern');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    interns = data.users || [];
+                    log(`✅ Loaded ${interns.length} interns`);
+                    
+                    // Populate select
+                    const select = document.getElementById('internSelect');
+                    select.innerHTML = '<option value="">Select Intern</option>';
+                    interns.forEach(intern => {
+                        const option = document.createElement('option');
+                        option.value = intern._id;
+                        const cohortInfo = intern.cohortId ? ` [${getCohortName(intern.cohortId)}]` : ' [No Cohort]';
+                        option.textContent = `${intern.name} (${intern.gitlabUsername})${cohortInfo}`;
+                        select.appendChild(option);
+                    });
+                    
+                    showStatus('dataStatus', `Interns loaded: ${interns.length}`, 'success');
+                } else {
+                    log(`❌ Failed to load interns: ${data.error}`);
+                    showStatus('dataStatus', `Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error loading interns: ${error.message}`);
+                showStatus('dataStatus', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function getCohortName(cohortId) {
+            const cohort = cohorts.find(c => c._id === cohortId);
+            return cohort ? cohort.name : 'Unknown';
+        }
+
+        async function loadAll() {
+            await loadCohorts();
+            await loadInterns();
+        }
+
+        async function testAssignment() {
+            const cohortId = document.getElementById('cohortSelect').value;
+            const internId = document.getElementById('internSelect').value;
+
+            if (!cohortId || !internId) {
+                showStatus('testResults', 'Please select both cohort and intern', 'error');
+                return;
+            }
+
+            const cohort = cohorts.find(c => c._id === cohortId);
+            const intern = interns.find(i => i._id === internId);
+            
+            log(`🧪 Testing assignment: ${intern.name} → ${cohort.name}`);
+
+            try {
+                const response = await fetch('/api/admin/cohorts/assign-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cohortId: cohortId,
+                        userIds: [internId],
+                        action: 'assign'
+                    })
+                });
+
+                const result = await response.json();
+                log(`📋 Response status: ${response.status}`);
+                log(`📋 Response data: ${JSON.stringify(result, null, 2)}`);
+
+                if (response.ok) {
+                    showStatus('testResults', 
+                        `✅ Assignment successful!\n` +
+                        `Summary: ${result.summary?.successful || 0} successful, ` +
+                        `${result.summary?.failed || 0} failed, ` +
+                        `${result.summary?.skipped || 0} skipped`, 
+                        'success'
+                    );
+                } else {
+                    showStatus('testResults', 
+                        `❌ Assignment failed: ${result.error}\n` +
+                        `Details: ${result.details || 'No additional details'}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                log(`❌ Request error: ${error.message}`);
+                showStatus('testResults', `❌ Request failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBulkAssignment() {
+            const cohortId = document.getElementById('cohortSelect').value;
+            
+            if (!cohortId) {
+                showStatus('testResults', 'Please select a cohort', 'error');
+                return;
+            }
+
+            const unassignedInterns = interns.filter(intern => !intern.cohortId).slice(0, 3);
+            
+            if (unassignedInterns.length === 0) {
+                showStatus('testResults', 'No unassigned interns found for bulk test', 'error');
+                return;
+            }
+
+            const cohort = cohorts.find(c => c._id === cohortId);
+            const internIds = unassignedInterns.map(i => i._id);
+            
+            log(`🧪 Testing bulk assignment: ${unassignedInterns.length} interns → ${cohort.name}`);
+            log(`Interns: ${unassignedInterns.map(i => i.name).join(', ')}`);
+
+            try {
+                const response = await fetch('/api/admin/cohorts/assign-users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cohortId: cohortId,
+                        userIds: internIds,
+                        action: 'assign'
+                    })
+                });
+
+                const result = await response.json();
+                log(`📋 Bulk response status: ${response.status}`);
+                log(`📋 Bulk response data: ${JSON.stringify(result, null, 2)}`);
+
+                if (response.ok) {
+                    showStatus('testResults', 
+                        `✅ Bulk assignment completed!\n` +
+                        `Summary: ${result.summary?.successful || 0} successful, ` +
+                        `${result.summary?.failed || 0} failed, ` +
+                        `${result.summary?.skipped || 0} skipped`, 
+                        'success'
+                    );
+                } else {
+                    showStatus('testResults', 
+                        `❌ Bulk assignment failed: ${result.error}\n` +
+                        `Details: ${result.details || 'No additional details'}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                log(`❌ Bulk request error: ${error.message}`);
+                showStatus('testResults', `❌ Bulk request failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load data on page load
+        window.onload = () => {
+            log('📄 Test page loaded');
+            loadAll();
+        };
+    </script>
+</body>
+</html>

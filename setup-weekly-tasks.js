@@ -85,6 +85,38 @@ async function setupWeeklyTasks() {
       createdBy: adminUser._id,
       prerequisites: [],
       deliverables: ['GitHub profile URL', 'Screenshot of completed profile'],
+      subtasks: [
+        {
+          title: "Create GitHub Account",
+          description: "Sign up for a GitHub account with a professional username",
+          estimatedHours: 0.25,
+          priority: 'high'
+        },
+        {
+          title: "Upload Profile Picture",
+          description: "Add a professional profile picture to your GitHub account",
+          estimatedHours: 0.25,
+          priority: 'medium'
+        },
+        {
+          title: "Write Profile Bio",
+          description: "Create a compelling bio that describes your background and interests",
+          estimatedHours: 0.5,
+          priority: 'high'
+        },
+        {
+          title: "Add Contact Information",
+          description: "Include your location and how to contact you",
+          estimatedHours: 0.25,
+          priority: 'medium'
+        },
+        {
+          title: "Pin Repositories",
+          description: "Select and pin your best repositories to showcase your work",
+          estimatedHours: 0.75,
+          priority: 'medium'
+        }
+      ],
       resources: [
         {
           title: 'GitHub Profile Guide',
@@ -141,6 +173,38 @@ async function setupWeeklyTasks() {
       createdBy: adminUser._id,
       prerequisites: ['Basic Git knowledge', 'GitHub repository'],
       deliverables: ['Pull request URL', 'Merged branch'],
+      subtasks: [
+        {
+          title: "Create Feature Branch",
+          description: "Create a new branch called 'feature/update-readme' from main",
+          estimatedHours: 0.25,
+          priority: 'high'
+        },
+        {
+          title: "Update README File",
+          description: "Make meaningful changes to the README file on the feature branch",
+          estimatedHours: 0.5,
+          priority: 'high'
+        },
+        {
+          title: "Commit Changes",
+          description: "Add and commit your changes with a descriptive commit message",
+          estimatedHours: 0.25,
+          priority: 'high'
+        },
+        {
+          title: "Create Pull Request",
+          description: "Create a pull request to merge feature branch into main",
+          estimatedHours: 0.5,
+          priority: 'medium'
+        },
+        {
+          title: "Merge Pull Request",
+          description: "Review and merge the pull request, then delete the feature branch",
+          estimatedHours: 0.5,
+          priority: 'medium'
+        }
+      ],
       tags: ['git', 'branching', 'pull-request', 'merge']
     });
     

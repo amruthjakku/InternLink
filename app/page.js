@@ -36,8 +36,10 @@ export default function Home() {
       case 'admin':
         router.push('/admin/dashboard');
         break;
-      case 'mentor':
       case 'super-mentor':
+        router.push('/super-mentor/dashboard');
+        break;
+      case 'mentor':
         router.push('/mentor/dashboard');
         break;
       case 'intern':

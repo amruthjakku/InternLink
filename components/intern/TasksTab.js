@@ -10,7 +10,29 @@ const calculateWeeklyStats = (tasks) => {
   const weekStats = {};
   
   tasks.forEach(task => {
-    const week = task.weekNumber || 'Other';
+    // Use the week number from the API if available
+    let week = task.weekNumber;
+    
+    if (!week) {
+      // If no week number, try to determine from due date or creation date
+      const taskDate = new Date(task.dueDate || task.createdAt || task.startDate);
+      
+      // Calculate weeks since internship/cohort start (more logical for intern program)
+      // Assume internship started at beginning of current month for demo
+      const internshipStart = new Date();
+      internshipStart.setDate(1); // First day of current month
+      internshipStart.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.max(0, Math.ceil((taskDate - internshipStart) / (24 * 60 * 60 * 1000)));
+      week = Math.max(1, Math.ceil((daysDiff + 1) / 7)); // Convert days to weeks, minimum week 1
+      
+      // Cap at reasonable week number (e.g., 12 weeks program)
+      week = Math.min(week, 12);
+      
+      // Add the calculated week number to the task for future reference
+      task.weekNumber = week;
+    }
+    
     if (!weekStats[week]) {
       weekStats[week] = {
         total: 0,
@@ -35,13 +57,148 @@ const calculateWeeklyStats = (tasks) => {
   return weekStats;
 };
 
+// Task Card Component with Subtasks
+const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExpanded }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'todo': return 'bg-gray-100 border-gray-300';
+      case 'in_progress': return 'bg-blue-100 border-blue-300';
+      case 'done': return 'bg-green-100 border-green-300';
+      case 'completed': return 'bg-green-100 border-green-300';
+      case 'blocked': return 'bg-red-100 border-red-300';
+      default: return 'bg-gray-100 border-gray-300';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'text-red-600 bg-red-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'low': return 'text-green-600 bg-green-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const completedSubtasks = hasSubtasks ? task.subtasks.filter(sub => sub.completed).length : 0;
+
+  return (
+    <div className={`border-2 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(task.status)}`}>
+      {/* Main Task Header */}
+      <div onClick={onTaskClick}>
+        <div className="flex items-start justify-between mb-2">
+          <h4 className="font-medium text-gray-900 line-clamp-2">{task.title}</h4>
+          <div className="flex items-center space-x-1 ml-2">
+            {task.weekNumber && (
+              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                W{task.weekNumber}
+              </span>
+            )}
+            {task.points && (
+              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                {task.points}pts
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description || 'No description provided'}</p>
+        
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span className={`px-2 py-1 rounded-full font-medium ${getPriorityColor(task.priority)}`}>
+            {task.priority?.toUpperCase() || 'MEDIUM'}
+          </span>
+          
+          <div className="flex items-center space-x-2">
+            {task.estimatedHours && (
+              <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
+                ⏱️ {task.estimatedHours}h
+              </span>
+            )}
+            <span className="text-gray-400">
+              {task.status === 'done' || task.status === 'completed' ? '✅' : 
+               task.status === 'in_progress' ? '🔄' : 
+               task.status === 'blocked' ? '🚫' : '⏳'}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Subtasks Section */}
+      {hasSubtasks && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded p-1 -m-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSubtaskToggle();
+            }}
+          >
+            <div className="text-sm font-medium text-gray-700">
+              📋 Subtasks ({completedSubtasks}/{task.subtasks.length})
+            </div>
+            <span className="text-gray-400">
+              {isSubtaskExpanded ? '🔽' : '▶️'}
+            </span>
+          </div>
+          
+          {isSubtaskExpanded && (
+            <div className="mt-2 space-y-1">
+              {task.subtasks.map((subtask, index) => (
+                <div 
+                  key={index} 
+                  className={`text-sm p-2 rounded border-l-2 ${
+                    subtask.completed 
+                      ? 'bg-green-50 border-green-400 text-green-800' 
+                      : 'bg-gray-50 border-gray-300 text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-start space-x-2">
+                    <span className="mt-0.5">
+                      {subtask.completed ? '✅' : '⏳'}
+                    </span>
+                    <div className="flex-1">
+                      <div className={`font-medium ${subtask.completed ? 'line-through' : ''}`}>
+                        {subtask.title}
+                      </div>
+                      {subtask.description && (
+                        <div className="text-xs mt-1 opacity-75">
+                          {subtask.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Subtask Progress Bar */}
+          <div className="mt-2">
+            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <span>Progress</span>
+              <span>{Math.round((completedSubtasks / task.subtasks.length) * 100)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${(completedSubtasks / task.subtasks.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function TasksTab({ user, loading }) {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar'
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar', 'weekly'
   const [newComment, setNewComment] = useState('');
   const [addingComment, setAddingComment] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -52,7 +209,31 @@ export function TasksTab({ user, loading }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [taskType, setTaskType] = useState('regular'); // 'weekly' or 'regular'
+  const [collapsedWeeks, setCollapsedWeeks] = useState(new Set()); // Track collapsed weeks
+  const [expandedSubtasks, setExpandedSubtasks] = useState(new Set()); // Track expanded subtasks
   const [weeklyStats, setWeeklyStats] = useState({});
+
+  // Toggle week collapse/expand
+  const toggleWeekCollapse = (weekNumber) => {
+    const newCollapsed = new Set(collapsedWeeks);
+    if (newCollapsed.has(weekNumber)) {
+      newCollapsed.delete(weekNumber);
+    } else {
+      newCollapsed.add(weekNumber);
+    }
+    setCollapsedWeeks(newCollapsed);
+  };
+
+  // Toggle subtask expansion
+  const toggleSubtaskExpansion = (taskId) => {
+    const newExpanded = new Set(expandedSubtasks);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedSubtasks(newExpanded);
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -78,7 +259,7 @@ export function TasksTab({ user, loading }) {
         
         // Log all tasks for debugging
         data.tasks.forEach(task => {
-          console.log(`Task: ${task.title}, Type: ${task.assignmentType}, Cohort: ${typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId}`);
+          console.log(`Task: ${task.title}, Type: ${task.assignmentType}, Week: ${task.weekNumber}, Cohort: ${typeof task.cohortId === 'object' ? task.cohortId?._id : task.cohortId}`);
         });
         
         // Filter tasks to only show tasks for the intern's cohort or assigned directly to them
@@ -94,6 +275,11 @@ export function TasksTab({ user, loading }) {
           }
           
 
+          // For hierarchical tasks, they're already filtered by the API to match the intern's college
+          if (task.assignmentType === 'hierarchical') {
+            console.log(`Task ${task.title} is a hierarchical task assigned to this intern's college`);
+            return true;
+          }
           
           // For cohort tasks, check if it matches the intern's cohort
           if (task.assignmentType === 'cohort' || (!task.assignmentType && task.cohortId)) {
@@ -569,7 +755,9 @@ export function TasksTab({ user, loading }) {
                   <span>
                     {selectedTask.assignmentType === 'cohort' 
                       ? `👥 Cohort Assignment: ${selectedTask.cohortName || 'Your Cohort'}`
-                      : '👤 Individual Assignment'
+                      : selectedTask.assignmentType === 'hierarchical'
+                        ? `🏫 College Assignment`
+                        : '👤 Individual Assignment'
                     }
                   </span>
                   <span>📋 Type: {selectedTask.type || 'Assignment'}</span>
@@ -980,6 +1168,7 @@ export function TasksTab({ user, loading }) {
             {[
               { id: 'kanban', label: 'Kanban', icon: '📋' },
               { id: 'list', label: 'List', icon: '📝' },
+              { id: 'weekly', label: 'Weekly', icon: '🗓️' },
               { id: 'calendar', label: 'Calendar', icon: '📅' }
             ].map(mode => (
               <button
@@ -1091,13 +1280,20 @@ export function TasksTab({ user, loading }) {
                                   <span className="text-xs text-gray-500">
                                     Due: {format(new Date(task.dueDate), 'MMM dd')}
                                   </span>
+                                  {task.weekNumber && (
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                      Week {task.weekNumber}
+                                    </span>
+                                  )}
                                 </div>
                                 
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-gray-500">
                                     {task.assignmentType === 'cohort' 
                                       ? `Cohort: ${task.cohortName || 'Your Cohort'}`
-                                      : 'Assigned to you'
+                                      : task.assignmentType === 'hierarchical'
+                                        ? `College Assignment`
+                                        : 'Assigned to you'
                                     }
                                   </span>
                                   <span className="text-xs text-gray-500">
@@ -1293,6 +1489,132 @@ export function TasksTab({ user, loading }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly View */}
+      {viewMode === 'weekly' && (
+        <div className="space-y-6">
+          {/* Weekly View Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">📅 Weekly Task Overview</h2>
+                <p className="text-blue-100">
+                  Track your progress week by week. Click on any week to expand and see detailed tasks.
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold">
+                  {Object.keys(calculateWeeklyStats(filteredTasks)).length}
+                </div>
+                <div className="text-blue-100 text-sm">
+                  Active Weeks
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div className="space-y-4">
+          {Object.entries(calculateWeeklyStats(filteredTasks))
+            .sort(([a], [b]) => {
+              // Sort by week number numerically
+              return parseInt(a) - parseInt(b);
+            })
+            .map(([weekNumber, weekData]) => {
+              const isCollapsed = collapsedWeeks.has(weekNumber);
+              const weekTasks = weekData.tasks;
+              const completionPercentage = weekData.total > 0 ? (weekData.completed / weekData.total) * 100 : 0;
+              
+              return (
+                <div key={weekNumber} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Week Header */}
+                  <div 
+                    className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                    onClick={() => toggleWeekCollapse(weekNumber)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">
+                            {isCollapsed ? '📁' : '📂'}
+                          </span>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            🗓️ Week {weekNumber}
+                          </h3>
+                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            {weekData.total} {weekData.total === 1 ? 'task' : 'tasks'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium text-green-600">{weekData.completed}</span> completed, 
+                          <span className="font-medium text-blue-600 ml-1">{weekData.inProgress}</span> active, 
+                          <span className="font-medium text-orange-600 ml-1">{weekData.totalPoints}</span> total pts
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-500 ${
+                              completionPercentage === 100 ? 'bg-green-500' : 
+                              completionPercentage >= 50 ? 'bg-blue-500' : 'bg-orange-500'
+                            }`}
+                            style={{ width: `${completionPercentage}%` }}
+                          />
+                        </div>
+                        
+                        <span className="text-sm font-medium text-gray-700">
+                          {completionPercentage.toFixed(0)}%
+                        </span>
+                        
+                        <span className="text-gray-400 ml-2">
+                          {isCollapsed ? '▶️' : '🔽'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Week Tasks - Collapsible */}
+                  {!isCollapsed && (
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {weekTasks.map(task => (
+                          <TaskCardWithSubtasks 
+                            key={task.id} 
+                            task={task} 
+                            onTaskClick={() => {
+                              setSelectedTask(task);
+                              setShowTaskModal(true);
+                            }}
+                            onSubtaskToggle={() => toggleSubtaskExpansion(task.id)}
+                            isSubtaskExpanded={expandedSubtasks.has(task.id)}
+                          />
+                        ))}
+                      </div>
+                      
+                      {weekTasks.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <span className="text-2xl">📝</span>
+                          <p className="mt-2">No tasks for this week yet</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          
+          {Object.keys(calculateWeeklyStats(filteredTasks)).length === 0 && (
+            <div className="text-center py-16 text-gray-500">
+              <span className="text-4xl">📋</span>
+              <h3 className="mt-4 text-lg font-medium">No tasks available</h3>
+              <p className="mt-2">Tasks will appear here once they are assigned</p>
+            </div>
+          )}
           </div>
         </div>
       )}

@@ -84,6 +84,18 @@ const TaskSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Week organization for better task management
+  weekNumber: {
+    type: Number,
+    min: 1,
+    max: 52
+  },
+  // Points system for gamification
+  points: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   progress: {
     type: Number,
     min: 0,
@@ -116,6 +128,48 @@ const TaskSchema = new mongoose.Schema({
     completed: {
       type: Boolean,
       default: false
+    }
+  }],
+  // Subtasks for better task breakdown
+  subtasks: [{
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      default: ''
+    },
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    completedAt: Date,
+    completedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    estimatedHours: {
+      type: Number,
+      default: 0
+    },
+    actualHours: {
+      type: Number,
+      default: 0
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
     }
   }],
   submissions: [{
@@ -199,6 +253,7 @@ TaskSchema.index({ priority: 1 });
 TaskSchema.index({ category: 1 });
 TaskSchema.index({ cohortId: 1 }); // Add index for cohort-based queries
 TaskSchema.index({ assignmentType: 1 }); // Add index for assignment type
+TaskSchema.index({ weekNumber: 1 }); // Add index for week-based queries
 
 // Instance methods
 TaskSchema.methods.canBeEditedBy = function(user) {

@@ -123,6 +123,87 @@ export function AdvancedAnalytics() {
           >
             Refresh
           </button>
+          <button
+            onClick={async () => {
+              try {
+                console.log('=== FETCHING DEBUG DATA ===');
+                const response = await fetch('/api/admin/debug-college-data');
+                if (response.ok) {
+                  const debugData = await response.json();
+                  console.log('=== DEBUG DATA ===', debugData);
+                  alert('Debug data logged to console! Check browser console (F12)');
+                } else {
+                  console.error('Failed to fetch debug data');
+                  alert('Failed to fetch debug data');
+                }
+              } catch (error) {
+                console.error('Error fetching debug data:', error);
+                alert('Error fetching debug data');
+              }
+            }}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            🐛 Debug
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                if (!confirm('This will auto-assign users without colleges to the first available college. Continue?')) {
+                  return;
+                }
+                
+                console.log('=== FETCHING ASSIGNMENT SUGGESTIONS ===');
+                const suggestionsResponse = await fetch('/api/admin/fix-college-assignments');
+                if (!suggestionsResponse.ok) {
+                  alert('Failed to get suggestions');
+                  return;
+                }
+                
+                const suggestionsData = await suggestionsResponse.json();
+                console.log('Suggestions:', suggestionsData);
+                
+                if (suggestionsData.suggestions.length === 0) {
+                  alert('No users need college assignment!');
+                  return;
+                }
+                
+                // Create assignments
+                const assignments = suggestionsData.suggestions
+                  .filter(s => s.suggestedCollegeId)
+                  .map(s => ({
+                    userId: s.userId,
+                    collegeId: s.suggestedCollegeId
+                  }));
+                
+                if (assignments.length === 0) {
+                  alert('No colleges available for assignment!');
+                  return;
+                }
+                
+                console.log('=== APPLYING ASSIGNMENTS ===');
+                const fixResponse = await fetch('/api/admin/fix-college-assignments', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ assignments })
+                });
+                
+                if (fixResponse.ok) {
+                  const fixData = await fixResponse.json();
+                  console.log('Fix results:', fixData);
+                  alert(`Fixed college assignments! Check console for details.`);
+                  fetchAnalytics(); // Refresh analytics
+                } else {
+                  alert('Failed to fix assignments');
+                }
+              } catch (error) {
+                console.error('Error fixing college assignments:', error);
+                alert('Error fixing college assignments');
+              }
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            🔧 Fix Assignments
+          </button>
         </div>
       </div>
 

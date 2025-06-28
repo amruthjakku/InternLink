@@ -7,7 +7,7 @@ import RoleSelection from './RoleSelection';
 import MentorOnboarding from './MentorOnboarding';
 import InternOnboarding from './InternOnboarding';
 
-export default function OnboardingFlow() {
+const OnboardingFlow = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -231,3 +231,5 @@ export default function OnboardingFlow() {
     </div>
   );
 }
+
+export { OnboardingFlow };

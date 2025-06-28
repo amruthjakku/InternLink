@@ -19,9 +19,15 @@ import { CohortManagementTab } from '../../../components/admin/CohortManagementT
 import { TaskManagementTab } from '../../../components/admin/TaskManagementTab';
 import { BulkImportTab } from '../../../components/admin/BulkImportTab';
 import { CohortAssignmentTab } from '../../../components/admin/CohortAssignmentTab';
+import { CohortCollegesTab } from '../../../components/admin/CohortCollegesTab';
 import { MetricCard } from '../../../components/Charts';
 import { ProfileCard } from '../../../components/ProfileCard';
 import { detectUserRole, detectCohortFromUsername, validateGitlabUsername, getRoleSuggestions } from '../../../utils/roleDetection';
+import OrganizationManagement from '../../../components/admin/OrganizationManagement';
+import TaskWorkflow from '../../../components/admin/TaskWorkflow';
+import TeamManagement from '../../../components/admin/TeamManagement';
+import MonitoringAnalytics from '../../../components/admin/MonitoringAnalytics';
+import SystemTools from '../../../components/admin/SystemTools';
 
 // Enhanced Combined Tab Components
 const CombinedCollegeManagement = () => {
@@ -742,12 +748,23 @@ const CombinedCohortSystem = () => {
           >
             Member Assignment
           </button>
+          <button
+            onClick={() => setActiveSubTab('colleges')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              activeSubTab === 'colleges'
+                ? 'bg-orange-100 text-orange-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Colleges
+          </button>
         </div>
       </div>
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         {activeSubTab === 'management' && <CohortManagementTab />}
         {activeSubTab === 'assignment' && <CohortAssignmentTab />}
+        {activeSubTab === 'colleges' && <CohortCollegesTab />}
       </div>
     </div>
   );
@@ -763,27 +780,27 @@ export default function AdminDashboard() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Define the enhanced tab configuration
+  // Define the tab configuration with original names but new functionality
   const defaultTabs = [
     { id: 'overview', name: 'Overview', icon: '📊', color: 'from-blue-500 to-purple-500', category: 'main' },
-    { id: 'combined-college', name: 'College Management', icon: '🏫', color: 'from-purple-500 to-pink-500', category: 'management' },
-    { id: 'combined-attendance', name: 'Attendance & IP System', icon: '📋', color: 'from-blue-500 to-cyan-500', category: 'monitoring' },
-    { id: 'combined-users', name: 'User Management', icon: '👥', color: 'from-green-500 to-emerald-500', category: 'management' },
-    { id: 'combined-cohorts', name: 'Cohort System', icon: '🎯', color: 'from-orange-500 to-red-500', category: 'management' },
-    { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️', color: 'from-gray-500 to-slate-500', category: 'monitoring' },
-    { id: 'advanced-analytics', name: 'Analytics Hub', icon: '📈', color: 'from-indigo-500 to-blue-500', category: 'analytics' },
-    { id: 'task-management', name: 'Task Management', icon: '📝', color: 'from-yellow-500 to-orange-500', category: 'management' },
-    { id: 'super-mentor-management', name: 'Super Mentors', icon: '👨‍🏫', color: 'from-teal-500 to-green-500', category: 'management' },
-    { id: 'data-integrity', name: 'Data Integrity', icon: '🔧', color: 'from-red-500 to-pink-500', category: 'monitoring' },
-    { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦', color: 'from-purple-500 to-indigo-500', category: 'tools' },
-    { id: 'debug-tools', name: 'Debug Tools', icon: '🔍', color: 'from-gray-600 to-gray-800', category: 'tools' }
+    { id: 'college-management', name: 'College Management', icon: '�', color: 'from-purple-500 to-pink-500', category: 'core' },
+    { id: 'attendance-ip', name: 'Attendance & IP System', icon: '📋', color: 'from-yellow-500 to-orange-500', category: 'core' },
+    { id: 'user-management', name: 'User Management', icon: '👥', color: 'from-green-500 to-emerald-500', category: 'core' },
+    { id: 'cohort-system', name: 'Cohort System', icon: '🎯', color: 'from-teal-500 to-cyan-500', category: 'core' },
+    { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️', color: 'from-red-500 to-orange-500', category: 'admin' },
+    { id: 'analytics-hub', name: 'Analytics Hub', icon: '📈', color: 'from-indigo-500 to-blue-500', category: 'insights' },
+    { id: 'task-management', name: 'Task Management', icon: '📝', color: 'from-yellow-500 to-amber-500', category: 'core' },
+    { id: 'super-mentors', name: 'Super Mentors', icon: '👨‍🏫', color: 'from-blue-500 to-sky-500', category: 'core' },
+    { id: 'data-integrity', name: 'Data Integrity', icon: '🔧', color: 'from-gray-500 to-slate-500', category: 'admin' },
+    { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦', color: 'from-purple-500 to-violet-500', category: 'admin' },
+    { id: 'debug-tools', name: 'Debug Tools', icon: '🔍', color: 'from-gray-600 to-gray-800', category: 'admin' }
   ];
 
   // Tab management with drag and drop functionality
   const [tabs, setTabs] = useState(() => {
+    // Force use of new tabs by clearing localStorage
     if (typeof window !== 'undefined') {
-      const savedTabs = localStorage.getItem('adminDashboardTabs');
-      return savedTabs ? JSON.parse(savedTabs) : defaultTabs;
+      localStorage.removeItem('adminDashboardTabs');
     }
     return defaultTabs;
   });
@@ -851,6 +868,13 @@ export default function AdminDashboard() {
     if (session.user.role !== 'admin') {
       router.push('/dashboard');
       return;
+    }
+
+    // Force reset tabs to show new hierarchical workflow within the familiar interface
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('adminDashboardTabs');
+      setTabs(defaultTabs);
+      setActiveTab('task-management'); // Set active tab to task management to highlight the new feature
     }
 
     if (!sessionRefreshed) {
@@ -1046,6 +1070,8 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+
         {/* Enhanced Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
@@ -1289,7 +1315,7 @@ export default function AdminDashboard() {
                 {/* Real-time Activity Stats */}
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
                   <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    📈 Today's Activity
+                    📈 Today&apos;s Activity
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -1317,61 +1343,63 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Combined College Management Tab */}
-        {activeTab === 'combined-college' && <CombinedCollegeManagement />}
-
-        {/* Combined Attendance System Tab */}
-        {activeTab === 'combined-attendance' && <CombinedAttendanceSystem />}
-
-        {/* Combined User Management Tab */}
-        {activeTab === 'combined-users' && <CombinedUserManagement />}
-
-        {/* Combined Cohort System Tab */}
-        {activeTab === 'combined-cohorts' && <CombinedCohortSystem />}
-
+        {/* College Management Tab */}
+        {activeTab === 'college-management' && <CombinedCollegeManagement />}
+        
+        {/* Attendance & IP System Tab */}
+        {activeTab === 'attendance-ip' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Attendance & IP Management</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <IPManagement />
+                </div>
+                <div>
+                  <AttendanceAnalytics />
+                </div>
+              </div>
+            </div>
+            <AttendanceDebugger />
+          </div>
+        )}
+        
+        {/* User Management Tab */}
+        {activeTab === 'user-management' && <EnhancedUserManagement />}
+        
+        {/* Cohort System Tab */}
+        {activeTab === 'cohort-system' && (
+          <div className="space-y-6">
+            <CohortManagementTab />
+            <CohortAssignmentTab />
+            <CohortCollegesTab />
+          </div>
+        )}
+        
         {/* System Monitoring Tab */}
-        {activeTab === 'system-monitoring' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
-            <SystemMonitoring />
-          </div>
-        )}
-
-        {/* Advanced Analytics Tab */}
-        {activeTab === 'advanced-analytics' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
-            <AdvancedAnalytics />
-          </div>
-        )}
-
-        {/* Task Management Tab */}
+        {activeTab === 'system-monitoring' && <SystemMonitoring />}
+        
+        {/* Analytics Hub Tab */}
+        {activeTab === 'analytics-hub' && <AdvancedAnalytics />}
+        
+        {/* Task Management Tab - Integrating the new TaskWorkflow here */}
         {activeTab === 'task-management' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
+          <div className="space-y-6">
+            <TaskWorkflow />
             <TaskManagementTab />
           </div>
         )}
-
-        {/* Super Mentor Management Tab */}
-        {activeTab === 'super-mentor-management' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
-            <SuperMentorManagement />
-          </div>
-        )}
-
+        
+        {/* Super Mentors Tab */}
+        {activeTab === 'super-mentors' && <SuperMentorManagement />}
+        
         {/* Data Integrity Tab */}
-        {activeTab === 'data-integrity' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
-            <DataIntegrityChecker />
-          </div>
-        )}
-
+        {activeTab === 'data-integrity' && <DataIntegrityChecker />}
+        
         {/* Bulk Operations Tab */}
-        {activeTab === 'bulk-operations' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
-            <BulkImportTab />
-          </div>
-        )}
+        {activeTab === 'bulk-operations' && <BulkImportTab />}
 
-        {/* Debug Tools Tab */}
+        {/* Legacy Debug Tools Tab (keeping for compatibility) */}
         {activeTab === 'debug-tools' && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-8`}>
             <div className="space-y-6">

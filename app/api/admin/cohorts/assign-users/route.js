@@ -18,34 +18,51 @@ export async function POST(request) {
   try {
     const authSession = await getServerSession(authOptions);
     if (!authSession || authSession.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('❌ Unauthorized access attempt');
+      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
     }
 
     await connectToDatabase();
     
-    const { cohortId, userIds, action = 'assign' } = await request.json();
+    const requestBody = await request.json();
+    const { cohortId, userIds, action = 'assign' } = requestBody;
     
-    console.log(`🎯 Cohort ${action} request: Cohort ${cohortId}, Users: ${userIds?.length || 0}`);
+    console.log(`🎯 Cohort ${action} request received:`, {
+      cohortId,
+      userIds: userIds?.length ? `${userIds.length} users` : 'No users',
+      action,
+      adminUser: authSession.user.gitlabUsername
+    });
+    
+    // Log the actual user IDs for debugging
+    if (userIds && userIds.length > 0) {
+      console.log('User IDs to process:', userIds);
+    }
 
     // Validate input
     if (!cohortId || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      console.log('❌ Invalid input:', { cohortId, userIds });
       return NextResponse.json({ 
-        error: 'Cohort ID and user IDs array are required' 
+        error: 'Missing required data: cohortId and userIds array are required',
+        details: `cohortId: ${cohortId ? 'provided' : 'missing'}, userIds: ${Array.isArray(userIds) ? `${userIds.length} items` : 'invalid'}`
       }, { status: 400 });
     }
 
     // Start transaction
     session.startTransaction();
+    console.log('🔄 Database transaction started');
     
     // Validate cohort exists
     const cohort = await Cohort.findById(cohortId).session(session);
     if (!cohort) {
+      console.log(`❌ Cohort not found: ${cohortId}`);
       return NextResponse.json({ 
-        error: 'Cohort not found' 
+        error: 'Cohort not found',
+        details: `No cohort found with ID: ${cohortId}`
       }, { status: 404 });
     }
 
-    console.log(`✅ Cohort validated: ${cohort.name}`);
+    console.log(`✅ Cohort validated: "${cohort.name}" (${cohort._id})`);
 
     const results = {
       success: [],

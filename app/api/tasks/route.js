@@ -90,33 +90,51 @@ export async function GET(request) {
       query.isActive = true;
       
       try {
-        // Get the user with their cohort information
-        const user = await User.findById(session.user.id);
+        // Get the user with their cohort and college information
+        const user = await User.findById(session.user.id).populate('college');
         
-        if (user && user.cohortId) {
-          console.log(`Intern ${user.name} (${user._id}) is assigned to cohort ${user.cohortId}`);
+        if (user) {
+          console.log(`Intern ${user.name} (${user._id})`);
           
-          console.log(`Intern's cohort ID: ${user.cohortId}`);
+          // Build query for tasks
+          const orConditions = [];
           
-          // Convert cohortId to ObjectId if it's a string
-          let cohortIdObj;
-          try {
-            cohortIdObj = ObjectId.isValid(user.cohortId) 
-              ? new ObjectId(user.cohortId) 
-              : user.cohortId;
-            console.log(`Converted cohort ID: ${cohortIdObj}`);
-          } catch (error) {
-            console.error('Error converting cohort ID:', error);
-            cohortIdObj = user.cohortId;
+          // 1. Add hierarchical tasks (assigned to the intern's college)
+          if (user.college) {
+            console.log(`Intern's college ID: ${user.college._id}`);
+            
+            // Add tasks assigned to the intern's college through hierarchical assignment
+            orConditions.push({
+              assignmentType: 'hierarchical',
+              'assignedTo.colleges': user.college._id
+            });
           }
           
-          // Show only tasks assigned to the intern's cohort or directly to the intern
-          query.$or = [
-            // Tasks assigned to the intern's cohort
-            { 
+          // 2. Add cohort-based tasks
+          if (user.cohortId) {
+            console.log(`Intern's cohort ID: ${user.cohortId}`);
+            
+            // Convert cohortId to ObjectId if it's a string
+            let cohortIdObj;
+            try {
+              cohortIdObj = ObjectId.isValid(user.cohortId) 
+                ? new ObjectId(user.cohortId) 
+                : user.cohortId;
+              console.log(`Converted cohort ID: ${cohortIdObj}`);
+            } catch (error) {
+              console.error('Error converting cohort ID:', error);
+              cohortIdObj = user.cohortId;
+            }
+            
+            // Add tasks assigned to the intern's cohort
+            orConditions.push({ 
               cohortId: cohortIdObj,
               assignmentType: 'cohort'
-            },
+            });
+          }
+          
+          // 3. Add individually assigned tasks
+          orConditions.push(
             // Tasks assigned directly to the intern
             { 
               assignedTo: session.user.id,
@@ -127,29 +145,28 @@ export async function GET(request) {
               assigneeId: session.user.id,
               assignmentType: 'individual'
             }
-          ];
+          );
+          
+          // Set the combined query
+          query.$or = orConditions;
           
           // Add a log to show the exact query being used
           console.log('Intern tasks query:', JSON.stringify(query, null, 2));
           
-          console.log('Query for intern tasks:', JSON.stringify(query));
-          
-          console.log('Showing cohort and individual tasks for intern');
+          console.log('Showing hierarchical, cohort, and individual tasks for intern');
         } else {
-          console.log(`Intern ${user?.name || 'Unknown'} (${session.user.id}) is not assigned to any cohort`);
+          console.log(`Intern ${session.user.id} not found in database`);
           
-          // If intern is not assigned to a cohort, show individually assigned tasks
+          // If intern is not found, show individually assigned tasks
           query.$or = [
             { assignedTo: session.user.id },
             { assigneeId: session.user.id }
           ];
           
-          console.log('Showing only individual tasks for intern (no cohort)');
-          console.log('💡 SOLUTION: This intern needs to be assigned to a cohort to see cohort-based tasks');
-          console.log('💡 Admin can assign this intern to a cohort through the User Management section');
+          console.log('Showing only individual tasks for intern (not found in DB)');
         }
       } catch (error) {
-        console.error('Error getting user cohort:', error);
+        console.error('Error getting user information:', error);
         // Fallback to just showing individually assigned tasks
         query.$or = [
           { assignedTo: session.user.id },
@@ -209,31 +226,45 @@ export async function GET(request) {
     });
 
     // Format tasks for frontend
-    const formattedTasks = tasks.map(task => ({
-      id: task._id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      category: task.category,
-      assigneeId: task.assignedTo?._id,
-      assigneeName: task.assignedTo?.name || task.assigneeName,
-      assigneeEmail: task.assignedTo?.email,
-      createdBy: task.createdBy?.name,
-      dueDate: task.dueDate,
-      createdDate: task.createdAt,
-      estimatedHours: task.estimatedHours,
-      actualHours: task.actualHours,
-      progress: task.progress,
-      tags: task.tags,
-      dependencies: task.dependencies,
-      attachments: task.attachments,
-      comments: task.comments,
-      timeTracking: task.timeTracking || [],
-      cohortId: task.cohortId,
-      cohortName: task.cohortName,
-      assignmentType: task.assignmentType
-    }));
+    const formattedTasks = tasks.map(task => {
+      const formattedTask = {
+        id: task._id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        category: task.category,
+        assigneeId: task.assignedTo?._id,
+        assigneeName: task.assignedTo?.name || task.assigneeName,
+        assigneeEmail: task.assignedTo?.email,
+        createdBy: task.createdBy?.name,
+        dueDate: task.dueDate,
+        createdDate: task.createdAt,
+        estimatedHours: task.estimatedHours,
+        actualHours: task.actualHours,
+        progress: task.progress,
+        tags: task.tags,
+        dependencies: task.dependencies,
+        attachments: task.attachments,
+        comments: task.comments,
+        timeTracking: task.timeTracking || [],
+        cohortId: task.cohortId,
+        cohortName: task.cohortName,
+        assignmentType: task.assignmentType,
+        weekNumber: task.weekNumber || null,
+        points: task.points || 0
+      };
+      
+      // Add hierarchical assignment information if available
+      if (task.assignmentType === 'hierarchical' && task.assignedTo) {
+        formattedTask.hierarchicalAssignment = {
+          cohort: task.assignedTo.cohort,
+          colleges: task.assignedTo.colleges
+        };
+      }
+      
+      return formattedTask;
+    });
 
     return NextResponse.json({ 
       tasks: formattedTasks,

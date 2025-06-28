@@ -73,6 +73,9 @@ export async function PUT(request, { params }) {
       dueDate, 
       startDate,
       estimatedHours,
+      weekNumber,
+      points,
+      subtasks,
       requirements,
       resources,
       status
@@ -109,6 +112,9 @@ export async function PUT(request, { params }) {
       dueDate: new Date(dueDate),
       startDate: startDate ? new Date(startDate) : new Date(),
       estimatedHours: estimatedHours || 0,
+      weekNumber: weekNumber || null,
+      points: points || 0,
+      subtasks: subtasks || [],
       resources: resources || [],
       requirements: requirements || [],
       updatedAt: new Date()
