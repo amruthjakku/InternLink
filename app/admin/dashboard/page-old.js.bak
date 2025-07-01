@@ -1439,7 +1439,12 @@ export default function AdminDashboard() {
         )}
 
         {/* College Management Tab */}
-        {activeTab === 'college-management' && <CollegeManagement />}
+        {activeTab === 'college-management' && (
+          <div className="p-8">
+            <h2 className="text-2xl font-bold mb-4">College Management</h2>
+            <p>College management functionality will be available here.</p>
+          </div>
+        )}
 
         {/* Bulk Operations Tab */}
         {activeTab === 'bulk-operations' && (
