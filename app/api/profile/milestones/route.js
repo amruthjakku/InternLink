@@ -15,13 +15,16 @@ export async function GET(request) {
 
     await connectToDatabase();
     
+    const { getDatabase } = require('../../../../utils/database');
+    const db = await getDatabase();
+    
     const user = await User.findById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Generate milestones based on user activity
-    const milestones = await generateMilestones(user);
+    const milestones = await generateMilestones(user, db);
 
     return NextResponse.json({ 
       success: true,
@@ -36,7 +39,7 @@ export async function GET(request) {
   }
 }
 
-async function generateMilestones(user) {
+async function generateMilestones(user, db) {
   const milestones = [];
   const now = new Date();
 

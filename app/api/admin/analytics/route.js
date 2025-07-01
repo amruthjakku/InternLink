@@ -38,7 +38,7 @@ export async function GET(request) {
     console.log('Interns with colleges:', users.filter(u => u.role === 'intern' && u.college).length);
     console.log('Sample intern data:', users.filter(u => u.role === 'intern').slice(0, 3).map(u => ({
       name: u.name,
-      college: u.college ? { id: u.college._id, name: u.college.name } : null
+      college: u.college ? { id: u.college._id ? u.college._id.toString() : 'no-id', name: u.college.name } : null
     })));
 
     // Get all tasks
@@ -47,13 +47,23 @@ export async function GET(request) {
       .populate('createdBy', 'name role')
       .select('title status priority category assignedTo createdBy createdByRole dueDate createdAt updatedAt progress');
 
-    // Get all colleges
-    const colleges = await College.find({})
-      .select('name description location');
+    // Get all colleges with error handling
+    let colleges = [];
+    try {
+      colleges = await College.find({})
+        .select('name description location');
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      colleges = []; // Continue with empty array if college fetch fails
+    }
       
     console.log('=== COLLEGE DEBUG ===');
     console.log('Total colleges:', colleges.length);
-    console.log('College IDs and names:', colleges.map(c => ({ id: c._id.toString(), name: c.name })));
+    console.log('College IDs and names:', colleges.map(c => ({ id: c._id ? c._id.toString() : 'no-id', name: c.name })));
+    
+    // Filter out colleges without valid IDs to prevent errors
+    const validColleges = colleges.filter(c => c._id);
+    console.log('Valid colleges (with IDs):', validColleges.length);
 
     // Calculate user metrics
     const userMetrics = {
@@ -120,8 +130,8 @@ export async function GET(request) {
       };
 
       collegeMetrics = {
-        total: colleges.length,
-        withUsers: colleges.filter(college => {
+        total: validColleges.length,
+        withUsers: validColleges.filter(college => {
           try {
             return college._id && users.some(user => isUserInCollege(user, college._id));
           } catch (err) {
@@ -129,7 +139,7 @@ export async function GET(request) {
             return false;
           }
         }).length,
-        userDistribution: colleges.map(college => {
+        userDistribution: validColleges.map(college => {
           try {
             const collegeId = college._id;
             const collegeName = college.name || 'Unknown College';
@@ -169,9 +179,9 @@ export async function GET(request) {
       console.error('Error calculating college metrics:', error);
       // Fallback college metrics
       collegeMetrics = {
-        total: colleges.length,
+        total: validColleges.length,
         withUsers: 0,
-        userDistribution: colleges.map(college => ({
+        userDistribution: validColleges.map(college => ({
           name: college.name || 'Unknown College',
           users: 0,
           interns: 0,

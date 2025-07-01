@@ -208,31 +208,106 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="text-center">
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
           <div className="text-2xl font-bold text-blue-600">
             {stats.repositoriesContributed || 0}
           </div>
           <div className="text-xs text-gray-500">Repositories</div>
         </div>
-        <div className="text-center">
+        <div className="text-center p-3 bg-green-50 rounded-lg">
           <div className="text-2xl font-bold text-green-600">
             {stats.commitCount || 0}
           </div>
           <div className="text-xs text-gray-500">Total Commits</div>
         </div>
-        <div className="text-center">
+        <div className="text-center p-3 bg-purple-50 rounded-lg">
           <div className="text-2xl font-bold text-purple-600">
             {stats.currentStreak || 0}
           </div>
           <div className="text-xs text-gray-500">Day Streak</div>
         </div>
-        <div className="text-center">
+        <div className="text-center p-3 bg-orange-50 rounded-lg">
           <div className="text-2xl font-bold text-orange-600">
             {stats.attendanceRate || 0}%
           </div>
           <div className="text-xs text-gray-500">Attendance</div>
         </div>
       </div>
+
+      {/* Task Progress */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-900">Task Progress</h3>
+          <button 
+            onClick={fetchProfileData}
+            disabled={loading}
+            className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-xl font-bold text-green-600">
+              {stats.tasksCompleted || 0}
+            </div>
+            <div className="text-xs text-gray-500">Completed</div>
+          </div>
+          <div className="text-center p-3 bg-yellow-50 rounded-lg">
+            <div className="text-xl font-bold text-yellow-600">
+              {stats.tasksInProgress || 0}
+            </div>
+            <div className="text-xs text-gray-500">In Progress</div>
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <div className="text-xl font-bold text-gray-600">
+              {stats.totalTasks || 0}
+            </div>
+            <div className="text-xs text-gray-500">Total Tasks</div>
+          </div>
+        </div>
+        {stats.totalTasks > 0 && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <span>Completion Rate</span>
+              <span>{stats.averageTaskCompletion || 0}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${stats.averageTaskCompletion || 0}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Points Breakdown */}
+      {(stats.pointsEarned > 0 || stats.taskPoints > 0) && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-900 mb-3">Points Earned</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-indigo-50 rounded-lg">
+              <div className="text-xl font-bold text-indigo-600">
+                {stats.taskPoints || 0}
+              </div>
+              <div className="text-xs text-gray-500">Task Points</div>
+            </div>
+            <div className="text-center p-3 bg-pink-50 rounded-lg">
+              <div className="text-xl font-bold text-pink-600">
+                {stats.bonusPoints || 0}
+              </div>
+              <div className="text-xs text-gray-500">Bonus Points</div>
+            </div>
+          </div>
+          <div className="mt-3 text-center p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.pointsEarned || 0}
+            </div>
+            <div className="text-xs text-gray-500">Total Points</div>
+          </div>
+        </div>
+      )}
 
       {/* Milestones */}
       {showMilestones && milestones.length > 0 && (

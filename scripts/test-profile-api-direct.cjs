@@ -1,49 +1,69 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../utils/database';
-import User from '../../../../models/User';
-import Task from '../../../../models/Task';
+// CommonJS script to test profile stats API directly
+const mongoose = require('mongoose');
 
-export async function GET(request) {
-  console.log('🔥 Profile Stats API called!');
+// Load environment variables
+require('dotenv').config({ path: '.env.local' });
+
+// Import the generateUserStats function logic
+const { connectToDatabase, getDatabase } = require('../utils/database');
+
+// MongoDB connection string
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('MONGODB_URI environment variable is not set');
+  process.exit(1);
+}
+
+console.log('Using MongoDB URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+
+// Connect to MongoDB
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => {
+  console.log('Connected to MongoDB');
+  testProfileAPIDirectly();
+})
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
+
+async function testProfileAPIDirectly() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      console.log('❌ Profile Stats API: Unauthorized');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     await connectToDatabase();
-    
-    const { getDatabase } = require('../../../../utils/database');
     const db = await getDatabase();
     
-    // Use raw MongoDB query to get complete user data
-    const { ObjectId } = require('mongodb');
-    const user = await db.collection('users').findOne({ _id: new ObjectId(session.user.id) });
-    if (!user) {
-      console.log('❌ Profile Stats API: User not found');
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    console.log(`✅ Profile Stats API: Generating stats for user ${user.name}`);
-    console.log(`✅ Profile Stats API: User GitLab integration:`, user.gitlabIntegration);
-    // Generate stats based on user activity
-    const stats = await generateUserStats(user, db);
-
-    console.log(`✅ Profile Stats API: Returning stats:`, JSON.stringify(stats, null, 2));
-    return NextResponse.json({ 
-      success: true,
-      stats
+    // Find the testme user
+    const testmeUser = await db.collection('users').findOne({ 
+      name: 'test me'
     });
-
+    
+    if (!testmeUser) {
+      console.log('testme user not found');
+      return;
+    }
+    
+    console.log(`\nTesting profile stats API logic for user: ${testmeUser.name}`);
+    console.log(`User ID: ${testmeUser._id} (${typeof testmeUser._id})`);
+    
+    // Call the exact generateUserStats function logic
+    const stats = await generateUserStats(testmeUser, db);
+    
+    console.log('\nGenerated stats:');
+    console.log(JSON.stringify(stats, null, 2));
+    
+    console.log('\n✅ Direct API test completed');
+    
+    // Close the database connection
+    await mongoose.connection.close();
+    console.log('Database connection closed');
+    process.exit(0);
   } catch (error) {
-    console.error('Error fetching profile stats:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch profile stats' 
-    }, { status: 500 });
+    console.error('Error testing profile API directly:', error);
+    process.exit(1);
   }
 }
 
@@ -66,7 +86,6 @@ async function generateUserStats(user, db) {
   };
 
   try {
-
     // Task statistics - use raw MongoDB queries to handle string assignedTo values
     const userIdString = user._id.toString();
     const taskQuery = {
@@ -102,19 +121,16 @@ async function generateUserStats(user, db) {
     console.log(`User ${user.name} has ${completedTasksData.length} completed tasks worth ${actualPointsFromTasks} points`);
 
     // GitLab/Commit statistics
-    console.log(`Profile Stats: Checking GitLab integration for user ${user.name}: ${user.gitlabIntegration?.connected}`);
+    console.log(`Checking GitLab integration: ${user.gitlabIntegration?.connected}`);
     if (user.gitlabIntegration?.connected) {
-      console.log(`Profile Stats: Querying activity records for userId: ${user._id} (${typeof user._id})`);
-      const userIdString = user._id.toString();
+      console.log(`Querying activity records for userId: ${user._id} (${typeof user._id})`);
+      
       const commitRecords = await db.collection('activityrecords').find({
-        $or: [
-          { userId: user._id }, // ObjectId comparison
-          { userId: userIdString } // String comparison
-        ],
+        userId: user._id,
         type: 'commit'
       }).toArray();
 
-      console.log(`Profile Stats: Found ${commitRecords.length} commit records for user ${user.name}`);
+      console.log(`Found ${commitRecords.length} commit records`);
       stats.commitCount = commitRecords.length;
 
       // Calculate commit streak
@@ -125,25 +141,22 @@ async function generateUserStats(user, db) {
       // Repository statistics
       const uniqueRepos = new Set(commitRecords.map(record => record.repositoryName));
       stats.repositoriesContributed = uniqueRepos.size;
-      console.log(`Profile Stats: Found ${uniqueRepos.size} unique repositories: ${Array.from(uniqueRepos).join(', ')}`);
+      console.log(`Found ${uniqueRepos.size} unique repositories: ${Array.from(uniqueRepos).join(', ')}`);
 
       // Merge request statistics (if available)
       const mrRecords = await db.collection('activityrecords').find({
-        $or: [
-          { userId: user._id }, // ObjectId comparison
-          { userId: userIdString } // String comparison
-        ],
+        userId: user._id,
         type: 'merge_request'
       }).toArray();
       stats.mergeRequestsCreated = mrRecords.length;
+      console.log(`Found ${mrRecords.length} merge request records`);
+    } else {
+      console.log('GitLab integration not connected');
     }
 
     // Attendance statistics
     const attendanceRecords = await db.collection('attendancerecords').find({
-      $or: [
-        { userId: user._id }, // ObjectId comparison
-        { userId: user._id.toString() } // String comparison
-      ]
+      userId: user._id
     }).toArray();
 
     if (attendanceRecords.length > 0) {
@@ -163,30 +176,6 @@ async function generateUserStats(user, db) {
     stats.pointsEarned = actualPointsFromTasks + activityBonusPoints;
     stats.taskPoints = actualPointsFromTasks;
     stats.bonusPoints = activityBonusPoints;
-
-    // Additional role-specific stats
-    if (user.role === 'mentor' || user.role === 'super-mentor') {
-      // Count mentees or managed interns
-      const mentees = await User.countDocuments({
-        assignedMentor: user._id
-      });
-      stats.menteesManaged = mentees;
-
-      // Count tasks created
-      const tasksCreated = await Task.countDocuments({
-        createdBy: user._id
-      });
-      stats.tasksCreated = tasksCreated;
-    }
-
-    if (user.role === 'admin') {
-      // Admin-specific stats
-      const totalUsers = await User.countDocuments({ isActive: true });
-      const totalActiveTasks = await Task.countDocuments({ status: 'active' });
-      
-      stats.totalUsersManaged = totalUsers;
-      stats.totalActiveTasksOverseeing = totalActiveTasks;
-    }
 
     return stats;
 
