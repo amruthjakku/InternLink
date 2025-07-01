@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-// Using real API calls - no mock data
 import { InternManagementTab } from './mentor/InternManagementTab';
 import { AdvancedTaskManagement } from './mentor/AdvancedTaskManagement';
-import { CategoriesTab } from './mentor/CategoriesTab';
-import { CollegesTab } from './mentor/CollegesTab';
 import { AttendanceTab } from './mentor/AttendanceTab';
 import { LeaderboardTab } from './mentor/LeaderboardTab';
 import { CommunicationTab } from './mentor/CommunicationTab';
@@ -20,66 +17,96 @@ import { CohortManagementTab } from './mentor/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import { CollegeBadge } from './CollegeLogo';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
-import { Chat } from './Chat';
 import { EnhancedChat } from './EnhancedChat';
 
 export function MentorDashboard() {
   const { user, refreshUserData, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeGroup, setActiveGroup] = useState('management');
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   console.log('MentorDashboard component initialized with user:', user?.name, 'role:', user?.role);
 
-  // Dynamic tabs based on user role
-  const getTabsForRole = (role) => {
-    const baseTabs = [
-      { id: 'overview', name: 'Overview', icon: '📊' },
-      { id: 'intern-management', name: 'Intern Management', icon: '👥' },
-      { id: 'performance', name: 'Performance', icon: '📈' },
-      { id: 'team-activity', name: 'Team Activity', icon: '🔄' },
-      { id: 'attendance', name: 'Attendance', icon: '📍' },
-      { id: 'leaderboard', name: 'Team Leaderboard', icon: '🏆' },
-    ];
+  // Grouped tabs structure similar to admin dashboard
+  const getTabGroups = (role) => {
+    const baseGroups = {
+      management: {
+        name: 'Management',
+        icon: '👥',
+        color: 'blue',
+        tabs: [
+          { id: 'overview', name: 'Overview', icon: '📊', description: 'Dashboard overview and key metrics' },
+          { id: 'intern-management', name: 'Intern Management', icon: '👨‍🎓', description: 'Manage assigned interns' },
+          { id: 'performance', name: 'Performance', icon: '📈', description: 'Monitor intern performance' },
+          { id: 'attendance', name: 'Attendance', icon: '📍', description: 'Track attendance records' }
+        ]
+      },
+      collaboration: {
+        name: 'Collaboration',
+        icon: '🤝',
+        color: 'green',
+        tabs: [
+          { id: 'team-activity', name: 'Team Activity', icon: '🔄', description: 'Monitor team activities' },
+          { id: 'team-chat', name: 'Team Chat', icon: '💬', description: 'Communicate with team' },
+          { id: 'meetings', name: 'Meetings', icon: '📹', description: 'Schedule and manage meetings' },
+          { id: 'leaderboard', name: 'Leaderboard', icon: '🏆', description: 'View team rankings' }
+        ]
+      },
+      tools: {
+        name: 'Tools',
+        icon: '🛠️',
+        color: 'purple',
+        tabs: [
+          { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖', description: 'AI-powered assistance' },
+          { id: 'analytics', name: 'Analytics', icon: '📊', description: 'Detailed analytics dashboard' }
+        ]
+      }
+    };
 
     if (role === 'super-mentor') {
-      return [
-        ...baseTabs,
-        { id: 'mentor-management', name: 'Mentor Management', icon: '👨‍🏫' },
-        { id: 'cohort-management', name: 'Cohort Management', icon: '🎓' },
-        { id: 'task-management', name: 'Task Management', icon: '📝' },
-        { id: 'team-dashboard', name: 'Team Dashboard', icon: '📊' },
-        { id: 'gitlab-integration', name: 'GitLab Integration', icon: '🦊' },
-        { id: 'communication', name: 'Communication', icon: '💬' },
-        { id: 'team-chat', name: 'Team Chat', icon: '💭' },
-        { id: 'meetings', name: 'Meetings', icon: '📹' },
-        { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
-      ];
-    } else {
-      // Regular mentor tabs - limited functionality
-      return [
-        ...baseTabs,
-        { id: 'team-chat', name: 'Team Chat', icon: '💭' },
-        { id: 'ai-settings', name: 'AI Assistant', icon: '🤖' },
-      ];
+      // Add super-mentor specific groups
+      return {
+        ...baseGroups,
+        administration: {
+          name: 'Administration',
+          icon: '⚙️',
+          color: 'orange',
+          tabs: [
+            { id: 'mentor-management', name: 'Mentor Management', icon: '👨‍🏫', description: 'Manage mentors' },
+            { id: 'cohort-management', name: 'Cohort Management', icon: '🎓', description: 'Manage cohorts' },
+            { id: 'task-management', name: 'Task Management', icon: '📝', description: 'Advanced task management' },
+            { id: 'system-overview', name: 'System Overview', icon: '🏢', description: 'System-wide overview' }
+          ]
+        },
+        integration: {
+          name: 'Integration',
+          icon: '🔗',
+          color: 'indigo',
+          tabs: [
+            { id: 'gitlab-integration', name: 'GitLab Integration', icon: '🦊', description: 'GitLab integration dashboard' },
+            { id: 'communication', name: 'Communication', icon: '📢', description: 'System-wide communication' }
+          ]
+        }
+      };
     }
+
+    return baseGroups;
   };
 
-  // Get tabs based on user role, with fallback to regular mentor tabs
-  const tabs = getTabsForRole(user?.role || 'mentor');
-  console.log('Generated tabs for role:', user?.role, 'count:', tabs.length);
+  const tabGroups = getTabGroups(user?.role || 'mentor');
+  const currentGroup = tabGroups[activeGroup];
 
   useEffect(() => {
     if (user) {
-      // Reset active tab to overview when user changes
       setActiveTab('overview');
+      setActiveGroup('management');
       fetchInterns();
     }
   }, [user]);
 
-  // Import SWR hooks at the top of the file
-  const { useCollegeInterns } = require('../lib/swr-hooks');
+
   
   // Use SWR for fetching interns data
   const fetchInterns = async () => {
@@ -154,81 +181,119 @@ export function MentorDashboard() {
   const renderOverview = () => {
     const totalInterns = interns.length;
     const activeInterns = interns.filter(i => i.status === 'active').length;
-    const totalTasks = interns.reduce((sum, intern) => sum + intern.total_tasks, 0);
-    const completedTasks = interns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
+    const totalTasks = interns.reduce((sum, intern) => sum + (intern.total_tasks || 0), 0);
+    const completedTasks = interns.reduce((sum, intern) => sum + (intern.completed_tasks || 0), 0);
     const overallCompletion = totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : 0;
-    const avgPerformance = interns.length > 0 ? (interns.reduce((sum, intern) => sum + intern.performance_score, 0) / interns.length).toFixed(1) : 0;
+    const avgPerformance = interns.length > 0 ? (interns.reduce((sum, intern) => sum + (intern.performance_score || 0), 0) / interns.length).toFixed(1) : 0;
 
     return (
       <div className="space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-lg">👥</span>
-                </div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Interns</p>
+                <p className="text-3xl font-bold">{totalInterns}</p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Interns</p>
-                <p className="text-2xl font-bold text-gray-900">{totalInterns}</p>
+              <div className="text-3xl opacity-80">👥</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Active Interns</p>
+                <p className="text-3xl font-bold">{activeInterns}</p>
+              </div>
+              <div className="text-3xl opacity-80">✅</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">Total Tasks</p>
+                <p className="text-3xl font-bold">{totalTasks}</p>
+              </div>
+              <div className="text-3xl opacity-80">📝</div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Completion Rate</p>
+                <p className="text-3xl font-bold">{overallCompletion}%</p>
+              </div>
+              <div className="text-3xl opacity-80">📊</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity & Top Performers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Performers */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <span className="mr-2">🏆</span>
+                Top Performers
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {interns
+                  .sort((a, b) => (b.performance_score || 0) - (a.performance_score || 0))
+                  .slice(0, 5)
+                  .map((intern, index) => (
+                    <div key={intern.id} className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                        index === 0 ? 'bg-yellow-500' : 
+                        index === 1 ? 'bg-gray-400' : 
+                        index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                        {intern.name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{intern.name}</p>
+                        <p className="text-sm text-gray-500">Score: {intern.performance_score || 0}</p>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-lg">✅</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Interns</p>
-                <p className="text-2xl font-bold text-gray-900">{activeInterns}</p>
-              </div>
+          {/* Recent Activity */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <span className="mr-2">🔄</span>
+                Recent Activity
+              </h3>
             </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-lg">📝</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Tasks</p>
-                <p className="text-2xl font-bold text-gray-900">{totalTasks}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-lg">📊</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Overall Completion</p>
-                <p className="text-2xl font-bold text-gray-900">{overallCompletion}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-r from-pink-400 to-pink-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-lg">⭐</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Avg Performance</p>
-                <p className="text-2xl font-bold text-gray-900">{avgPerformance}</p>
+            <div className="p-6">
+              <div className="space-y-4">
+                {[
+                  { type: 'task_completed', intern: 'John Doe', action: 'completed task "React Component"', time: '2 hours ago', color: 'green' },
+                  { type: 'task_assigned', intern: 'Jane Smith', action: 'was assigned new task', time: '4 hours ago', color: 'blue' },
+                  { type: 'attendance', intern: 'Mike Johnson', action: 'marked attendance', time: '1 day ago', color: 'purple' },
+                  { type: 'performance', intern: 'Sarah Wilson', action: 'received performance feedback', time: '2 days ago', color: 'orange' }
+                ].map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 bg-${activity.color}-500`}></div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-medium">{activity.intern}</span> {activity.action}
+                      </p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -271,8 +336,8 @@ export function MentorDashboard() {
                   <tr key={intern.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {intern.name.charAt(0)}
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                          {intern.name?.charAt(0) || 'U'}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{intern.name}</div>
@@ -281,10 +346,14 @@ export function MentorDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <CollegeBadge college={{ name: intern.college_name }} />
+                      {intern.college_name ? (
+                        <CollegeBadge college={{ name: intern.college_name }} />
+                      ) : (
+                        <span className="text-sm text-gray-500">No college</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {intern.completed_tasks}/{intern.total_tasks}
+                      {intern.completed_tasks || 0}/{intern.total_tasks || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -322,49 +391,70 @@ export function MentorDashboard() {
   };
 
   const renderTabContent = () => {
+    const commonProps = { 
+      user: user || null, 
+      interns: interns || [], 
+      loading: loading || false,
+      userRole: user?.role
+    };
+
     switch (activeTab) {
       case 'overview':
         return renderOverview();
       case 'intern-management':
-        return <InternManagementTab userRole={user?.role} />;
+        return <InternManagementTab {...commonProps} />;
       case 'mentor-management':
-        return user?.role === 'super-mentor' ? <MentorManagementTab /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <MentorManagementTab {...commonProps} /> : renderAccessDenied();
       case 'cohort-management':
-        return user?.role === 'super-mentor' ? <CohortManagementTab /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <CohortManagementTab {...commonProps} /> : renderAccessDenied();
       case 'task-management':
-        return user?.role === 'super-mentor' ? <AdvancedTaskManagement /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <AdvancedTaskManagement {...commonProps} /> : renderAccessDenied();
       case 'performance':
-        return <PerformanceOverview userRole={user?.role} />;
+        return <PerformanceOverview {...commonProps} />;
       case 'team-activity':
-        return <TeamActivity userRole={user?.role} />;
-      case 'team-dashboard':
-        return user?.role === 'super-mentor' ? <TeamActivityDashboard /> : renderComingSoon();
+        return <TeamActivity {...commonProps} />;
+      case 'system-overview':
+        return user?.role === 'super-mentor' ? <TeamActivityDashboard {...commonProps} /> : renderAccessDenied();
       case 'gitlab-integration':
-        return user?.role === 'super-mentor' ? <GitLabIntegrationDashboard /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <GitLabIntegrationDashboard {...commonProps} /> : renderAccessDenied();
       case 'attendance':
-        return <AttendanceTab userRole={user?.role} />;
+        return <AttendanceTab {...commonProps} />;
       case 'leaderboard':
-        return <LeaderboardTab userRole={user?.role} />;
+        return <LeaderboardTab {...commonProps} />;
       case 'communication':
-        return user?.role === 'super-mentor' ? <SuperMentorCommunicationTab /> : renderComingSoon();
+        return user?.role === 'super-mentor' ? <SuperMentorCommunicationTab {...commonProps} /> : renderAccessDenied();
       case 'team-chat':
         return <EnhancedChat userRole={user?.role} />;
       case 'meetings':
-        return user?.role === 'super-mentor' ? <MeetingsTab /> : renderComingSoon();
-      case 'ai-settings':
-        return <AIAssistantTab />;
+        return <MeetingsTab {...commonProps} />;
+      case 'ai-assistant':
+        return <AIAssistantTab {...commonProps} />;
+      case 'analytics':
+        return renderAnalyticsDashboard();
       default:
-        return renderComingSoon();
+        return renderOverview();
     }
   };
 
-  const renderComingSoon = () => (
+  const renderAnalyticsDashboard = () => (
     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
       <div className="text-center py-12">
-        <div className="text-gray-400 text-6xl mb-4">🚧</div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">{tabs.find(t => t.id === activeTab)?.name}</h3>
+        <div className="text-6xl mb-4">📊</div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Advanced Analytics</h3>
         <p className="text-gray-600 max-w-md mx-auto">
-          This feature is coming soon! We're working hard to bring you amazing tools for managing your internship program.
+          Detailed analytics dashboard with comprehensive insights is coming soon!
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderAccessDenied = () => (
+    <div className="bg-white p-8 rounded-xl shadow-sm border border-red-200">
+      <div className="text-center py-12">
+        <div className="text-red-400 text-6xl mb-4">🚫</div>
+        <h3 className="text-xl font-semibold text-red-900 mb-2">Access Denied</h3>
+        <p className="text-red-600 max-w-md mx-auto">
+          You don't have permission to access this feature. Contact your administrator if you believe this is an error.
         </p>
       </div>
     </div>
@@ -419,19 +509,19 @@ export function MentorDashboard() {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-gray-50 min-h-screen">
       {/* Header Section */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
+          <div className="py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="mb-4 sm:mb-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-gray-900">
                   Welcome back, {user?.name}!
                 </h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-gray-600">
                   <span className="inline-flex items-center">
-                    <span className="mr-1">{user?.role === 'super-mentor' ? '👨‍💼' : '👨‍🏫'}</span>
+                    <span className="mr-2">{user?.role === 'super-mentor' ? '👨‍💼' : '👨‍🏫'}</span>
                     {user?.role === 'super-mentor' 
                       ? 'Manage mentors, interns, and college operations'
                       : 'Manage and monitor your assigned interns'
@@ -440,94 +530,96 @@ export function MentorDashboard() {
                 </p>
               </div>
               
-              {/* Quick Stats and Actions */}
-              <div className="flex items-center space-x-4">
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-blue-600">
-                    {interns.length}
-                  </div>
-                  <div className="text-xs text-gray-500">Total Interns</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-green-600">
-                    {interns.filter(i => i.status === 'active').length}
-                  </div>
-                  <div className="text-xs text-gray-500">Active</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-purple-600">
-                    {interns.reduce((sum, intern) => sum + intern.totalTasks, 0)}
-                  </div>
-                  <div className="text-xs text-gray-500">Total Tasks</div>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-2 ml-4">
-                  {/* Refresh Button */}
-                  <button
-                    onClick={handleRefreshSession}
-                    disabled={refreshing}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                    title="Refresh your session to get the latest permissions and data"
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleRefreshSession}
+                  disabled={refreshing}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  title="Refresh your session to get the latest permissions and data"
+                >
+                  <svg 
+                    className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
                   >
-                    <svg 
-                      className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span className="text-sm hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-                  </button>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-sm">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
 
-                  {/* Sign Out Button */}
-                  <button
-                    onClick={handleSignOut}
-                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                    title="Sign out of your account"
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  title="Sign out of your account"
+                >
+                  <svg 
+                    className="w-4 h-4" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
                   >
-                    <svg 
-                      className="w-4 h-4" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="text-sm hidden sm:inline">Sign Out</span>
-                  </button>
-                </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="text-sm">Sign Out</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Groups Navigation */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-6 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => (
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide py-2">
+            {Object.entries(tabGroups).map(([groupId, group]) => (
+              <button
+                key={groupId}
+                onClick={() => {
+                  setActiveGroup(groupId);
+                  setActiveTab(group.tabs[0].id);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                  activeGroup === groupId
+                    ? `bg-${group.color}-100 text-${group.color}-700 border border-${group.color}-200`
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <span>{group.icon}</span>
+                <span>{group.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-tabs Navigation */}
+      <div className="bg-gray-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide py-3">
+            {currentGroup?.tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors duration-200 ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                } rounded-t-lg`}
+                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm'
+                }`}
+                title={tab.description}
               >
                 <span className="text-base">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.name}</span>
+                <span>{tab.name}</span>
               </button>
             ))}
-          </nav>
+          </div>
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {renderTabContent()}
       </div>
     </div>

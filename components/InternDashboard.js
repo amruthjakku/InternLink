@@ -27,23 +27,151 @@ export function InternDashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [tabOrder, setTabOrder] = useState(['progress', 'tasks', 'performance', 'gitlab', 'meetings', 'profile', 'leaderboard', 'attendance', 'chat', 'ai-assistant']);
+  const [draggedTab, setDraggedTab] = useState(null);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const tabs = [
-    { id: 'progress', name: 'Progress', icon: '📊' },
-    { id: 'tasks', name: 'Tasks', icon: '📝' },
-    { id: 'performance', name: 'Performance', icon: '📈' },
-    { id: 'gitlab', name: 'GitLab', icon: '🦊' },
-    { id: 'meetings', name: 'Meetings', icon: '📹' },
-    { id: 'profile', name: 'Profile', icon: '👤' },
-    { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
-    { id: 'attendance', name: 'Attendance', icon: '📍' },
-    { id: 'chat', name: 'Chat', icon: '💬' },
-    { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖' },
-  ];
+  // All available tabs with their configurations
+  const allTabs = {
+    progress: { id: 'progress', name: 'Progress', icon: '📊' },
+    tasks: { id: 'tasks', name: 'Tasks', icon: '📝' },
+    performance: { id: 'performance', name: 'Performance', icon: '📈' },
+    gitlab: { id: 'gitlab', name: 'GitLab', icon: '🦊' },
+    meetings: { id: 'meetings', name: 'Meetings', icon: '📹' },
+    profile: { id: 'profile', name: 'Profile', icon: '👤' },
+    leaderboard: { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
+    attendance: { id: 'attendance', name: 'Attendance', icon: '📍' },
+    chat: { id: 'chat', name: 'Chat', icon: '💬' },
+    'ai-assistant': { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖' }
+  };
+
+  // Get tabs in user's preferred order
+  const getOrderedTabs = () => {
+    return tabOrder
+      .filter(tabId => allTabs[tabId])
+      .map(tabId => allTabs[tabId]);
+  };
 
   useEffect(() => {
     fetchTasks();
+    loadUserPreferences();
   }, []);
+
+  // Load user preferences on component mount
+  const loadUserPreferences = async () => {
+    try {
+      const response = await fetch('/api/user/preferences');
+      if (response.ok) {
+        const data = await response.json();
+        setTabOrder(data.preferences.tabOrder);
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
+
+  // Save user preferences
+  const saveUserPreferences = async (newTabOrder) => {
+    try {
+      const response = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ preferences: { tabOrder: newTabOrder } }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTabOrder(data.preferences.tabOrder);
+        return true;
+      } else {
+        throw new Error('Failed to save preferences');
+      }
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+      throw error;
+    }
+  };
+
+  // Handle long press start (mouse and touch)
+  const handlePressStart = (e, tabId) => {
+    if (isDragging) return;
+    
+    e.preventDefault();
+    
+    const timer = setTimeout(() => {
+      setDraggedTab(tabId);
+      setIsDragging(true);
+      e.target.style.opacity = '0.5';
+      
+      // Add haptic feedback on mobile
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms long press
+    
+    setLongPressTimer(timer);
+  };
+
+  // Handle press end (mouse and touch)
+  const handlePressEnd = (e, tabId) => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    if (!isDragging && !draggedTab) {
+      // Normal click/tap - switch tab
+      setActiveTab(tabId);
+    }
+  };
+
+  // Handle press leave
+  const handlePressLeave = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  // Handle drag over
+  const handleDragOver = (e, targetTabId) => {
+    if (!isDragging || !draggedTab) return;
+    
+    e.preventDefault();
+    
+    if (draggedTab !== targetTabId) {
+      const newOrder = [...tabOrder];
+      const draggedIndex = newOrder.indexOf(draggedTab);
+      const targetIndex = newOrder.indexOf(targetTabId);
+      
+      // Remove dragged item and insert at target position
+      newOrder.splice(draggedIndex, 1);
+      newOrder.splice(targetIndex, 0, draggedTab);
+      
+      setTabOrder(newOrder);
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    if (draggedTab) {
+      // Save the new order
+      saveUserPreferences(tabOrder);
+      
+      // Reset drag state
+      setDraggedTab(null);
+      setIsDragging(false);
+      
+      // Reset opacity
+      const tabs = document.querySelectorAll('[data-tab-id]');
+      tabs.forEach(tab => {
+        tab.style.opacity = '1';
+      });
+    }
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -230,22 +358,60 @@ export function InternDashboard() {
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-6 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors duration-200 ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                } rounded-t-lg`}
-              >
-                <span className="text-base">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.name}</span>
-              </button>
-            ))}
-          </nav>
+          <div className="flex justify-between items-center">
+            <nav className="flex space-x-6 overflow-x-auto scrollbar-hide">
+              {getOrderedTabs().map((tab) => (
+                <button
+                  key={tab.id}
+                  data-tab-id={tab.id}
+                  onMouseDown={(e) => handlePressStart(e, tab.id)}
+                  onMouseUp={(e) => handlePressEnd(e, tab.id)}
+                  onMouseLeave={handlePressLeave}
+                  onMouseEnter={(e) => handleDragOver(e, tab.id)}
+                  onMouseMove={(e) => handleDragOver(e, tab.id)}
+                  onTouchStart={(e) => handlePressStart(e, tab.id)}
+                  onTouchEnd={(e) => handlePressEnd(e, tab.id)}
+                  onTouchMove={(e) => {
+                    if (isDragging) {
+                      e.preventDefault();
+                      const touch = e.touches[0];
+                      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                      const tabElement = element?.closest('[data-tab-id]');
+                      if (tabElement) {
+                        const targetTabId = tabElement.getAttribute('data-tab-id');
+                        handleDragOver(e, targetTabId);
+                      }
+                    }
+                  }}
+                  className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-200 select-none ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  } ${
+                    draggedTab === tab.id ? 'opacity-50 scale-105 shadow-lg' : ''
+                  } ${
+                    isDragging ? 'cursor-grabbing' : 'cursor-pointer hover:cursor-grab'
+                  } rounded-t-lg`}
+                  style={{
+                   userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                    touchAction: isDragging ? 'none' : 'auto'
+                  }}
+                 >
+                  <span className="text-base">{tab.icon}</span>
+                  <span className="hidden sm:inline">{tab.name}</span>
+                </button>
+              ))}
+            </nav>
+            
+            {/* Instructions */}
+            <div className="text-xs text-gray-500 hidden lg:block">
+              Long press and drag to reorder tabs
+            </div>
+          </div>
         </div>
       </div>
 
@@ -298,6 +464,16 @@ export function InternDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Global mouse/touch up handler for drag end */}
+      {isDragging && (
+        <div
+          className="fixed inset-0 z-50"
+          onMouseUp={handleDragEnd}
+          onTouchEnd={handleDragEnd}
+          style={{ pointerEvents: 'all' }}
+        />
+      )}
     </div>
   );
 }

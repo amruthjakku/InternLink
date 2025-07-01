@@ -180,32 +180,63 @@ export function PerformanceTab({ user, loading }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
           title="Performance Score"
-          value={`${performanceData.currentScore}%`}
-          change={performanceData.improvement}
+          value={`${performanceData.currentScore || 0}%`}
+          change={performanceData.improvement || 0}
           icon="📊"
           color="blue"
         />
         <MetricCard
           title="Task Completion"
-          value={`${Math.round((performanceData.completedTasks / performanceData.totalTasks) * 100)}%`}
-          change={8.5}
+          value={`${performanceData.totalTasks > 0 ? Math.round((performanceData.completedTasks / performanceData.totalTasks) * 100) : 0}%`}
+          change={performanceData.productivity?.completionRate || 0}
           icon="✅"
           color="green"
         />
         <MetricCard
           title="Code Quality"
-          value={`${performanceData.codeQuality}%`}
-          change={3.2}
+          value={`${performanceData.codeQuality || 0}%`}
+          change={performanceData.productivity?.qualityScore || 0}
           icon="⭐"
           color="purple"
         />
         <MetricCard
           title="On-Time Delivery"
-          value={`${performanceData.onTimeDelivery}%`}
-          change={-2.1}
+          value={`${performanceData.onTimeDelivery || 0}%`}
+          change={performanceData.productivity?.consistencyScore || 0}
           icon="⏰"
           color="orange"
         />
+      </div>
+
+      {/* Additional Performance Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Avg Tasks/Day</p>
+              <p className="text-2xl font-bold text-blue-600">{performanceData.avgTasksPerDay || 0}</p>
+            </div>
+            <div className="text-2xl">📈</div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Avg Completion Time</p>
+              <p className="text-2xl font-bold text-green-600">{performanceData.avgCompletionTime || 0}d</p>
+            </div>
+            <div className="text-2xl">⏱️</div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Overdue Tasks</p>
+              <p className="text-2xl font-bold text-red-600">{performanceData.overdueTasks || 0}</p>
+            </div>
+            <div className="text-2xl">⚠️</div>
+          </div>
+        </div>
       </div>
 
       {/* Performance Trends */}
@@ -462,22 +493,250 @@ export function PerformanceTab({ user, loading }) {
           <div className="p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">🚀 Top Strength</h4>
             <p className="text-sm text-blue-800">
-              Your code quality has consistently been above 90% for the past month. Keep up the excellent work!
+              {performanceData.codeQuality > 80 
+                ? "Your code quality has consistently been above 80% for the past month. Keep up the excellent work!"
+                : "Focus on improving code quality through better practices and thorough testing."
+              }
             </p>
           </div>
           
           <div className="p-4 bg-yellow-50 rounded-lg">
             <h4 className="font-medium text-yellow-900 mb-2">⚡ Growth Opportunity</h4>
             <p className="text-sm text-yellow-800">
-              Focus on improving time estimation. Your tasks often take 20% longer than estimated.
+              {performanceData.onTimeDelivery < 80 
+                ? "Focus on improving time estimation. Consider breaking down tasks into smaller chunks."
+                : "Great time management! Consider taking on more challenging tasks."
+              }
             </p>
           </div>
           
           <div className="p-4 bg-green-50 rounded-lg">
             <h4 className="font-medium text-green-900 mb-2">🎯 Next Focus</h4>
             <p className="text-sm text-green-800">
-              Consider taking on more complex tasks to challenge yourself and accelerate learning.
+              {performanceData.currentScore > 80 
+                ? "Consider taking on more complex tasks to challenge yourself and accelerate learning."
+                : "Focus on completing current tasks with high quality before taking on new challenges."
+              }
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly Statistics with Insights */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">📊 Weekly Performance Trends</h3>
+          <div className="text-sm text-gray-600">
+            {weeklyStats.length > 0 && (
+              <span>
+                Best week: {weeklyStats.reduce((best, week) => 
+                  week.productivityScore > best.productivityScore ? week : best, weeklyStats[0]
+                )?.week}
+              </span>
+            )}
+          </div>
+        </div>
+        <EnhancedBarChart data={weeklyStatsData} height={300} />
+        
+        {/* Weekly Insights */}
+        {weeklyStats.length > 0 && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <h5 className="font-medium text-sm mb-1">📈 Trend Analysis</h5>
+              <p className="text-xs text-gray-600">
+                {weeklyStats.slice(-2).length === 2 && 
+                 weeklyStats.slice(-1)[0].tasksCompleted > weeklyStats.slice(-2)[0].tasksCompleted
+                  ? "Your productivity is trending upward! Keep up the momentum."
+                  : "Consider reviewing your workflow to maintain consistent productivity."
+                }
+              </p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <h5 className="font-medium text-sm mb-1">🎯 Weekly Goal</h5>
+              <p className="text-xs text-gray-600">
+                Target: Complete {Math.max(3, Math.round(weeklyStats.reduce((sum, w) => sum + w.tasksCompleted, 0) / weeklyStats.length))} tasks per week
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Achievement Progress */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold mb-4">🏆 Achievement Progress</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium mb-3">🎯 Next Achievements</h4>
+            <div className="space-y-3">
+              {achievements.slice(0, 3).map(achievement => (
+                <div key={achievement.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                  <div className="text-2xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <h5 className="font-medium text-sm">{achievement.title}</h5>
+                    <p className="text-xs text-gray-600">{achievement.description}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${achievement.progressPercentage || 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-3">📊 Achievement Stats</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span className="text-sm">Total Points</span>
+                <span className="font-bold text-blue-600">
+                  {achievements.reduce((sum, a) => sum + (a.points || 0), 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span className="text-sm">Achievements Earned</span>
+                <span className="font-bold text-green-600">{achievements.length}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span className="text-sm">Recent Achievements</span>
+                <span className="font-bold text-purple-600">
+                  {achievements.filter(a => {
+                    const earnedDate = new Date(a.earnedDate);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return earnedDate >= weekAgo;
+                  }).length}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Skill Development Recommendations */}
+      {skillProgress.length > 0 && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold mb-4">💡 Skill Development Recommendations</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium mb-3 text-green-700">🚀 Strengths to Leverage</h4>
+              <div className="space-y-2">
+                {skillProgress
+                  .filter(skill => skill.currentLevel >= 7)
+                  .slice(0, 3)
+                  .map(skill => (
+                    <div key={skill.name} className="flex items-center space-x-2 p-2 bg-green-50 rounded">
+                      <span className="text-lg">{skill.icon}</span>
+                      <div>
+                        <p className="text-sm font-medium">{skill.name}</p>
+                        <p className="text-xs text-gray-600">Level {skill.currentLevel}/10 - Consider mentoring others</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-3 text-orange-700">📈 Areas for Growth</h4>
+              <div className="space-y-2">
+                {skillProgress
+                  .filter(skill => skill.currentLevel < skill.targetLevel)
+                  .slice(0, 3)
+                  .map(skill => (
+                    <div key={skill.name} className="flex items-center space-x-2 p-2 bg-orange-50 rounded">
+                      <span className="text-lg">{skill.icon}</span>
+                      <div>
+                        <p className="text-sm font-medium">{skill.name}</p>
+                        <p className="text-xs text-gray-600">
+                          Level {skill.currentLevel}/{skill.targetLevel} - {skill.timeToTarget}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Comparison */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold mb-4">📊 Performance Comparison</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium mb-3">📈 This Month vs Last Month</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Task Completion Rate</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">
+                    {performanceData.totalTasks > 0 ? Math.round((performanceData.completedTasks / performanceData.totalTasks) * 100) : 0}%
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    (performanceData.improvement || 0) > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {(performanceData.improvement || 0) > 0 ? '+' : ''}{performanceData.improvement || 0}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Average Quality Score</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">{performanceData.codeQuality || 0}%</span>
+                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                    Stable
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">On-Time Delivery</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">{performanceData.onTimeDelivery || 0}%</span>
+                  <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                    Monitor
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-3">🎯 Performance Goals</h4>
+            <div className="space-y-3">
+              <div className="p-3 border rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Monthly Task Target</span>
+                  <span className="text-xs text-gray-600">15 tasks</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{ width: `${Math.min((performanceData.completedTasks || 0) / 15 * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  {performanceData.completedTasks || 0}/15 completed
+                </p>
+              </div>
+              
+              <div className="p-3 border rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Quality Target</span>
+                  <span className="text-xs text-gray-600">85%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full"
+                    style={{ width: `${Math.min((performanceData.codeQuality || 0) / 85 * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  {performanceData.codeQuality || 0}% current quality
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

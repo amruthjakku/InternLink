@@ -109,6 +109,13 @@ const userSchema = new mongoose.Schema({
   lastSessionReset: {
     type: Date,
     default: null
+  },
+  // Dashboard customization preferences
+  dashboardPreferences: {
+    tabOrder: {
+      type: [String],
+      default: ['progress', 'tasks', 'performance', 'gitlab', 'meetings', 'profile', 'leaderboard', 'attendance', 'chat', 'ai-assistant']
+    }
   }
 }, {
   timestamps: true
