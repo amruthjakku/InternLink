@@ -1,8 +1,18 @@
 // CommonJS script to update all tasks to have default points
 const mongoose = require('mongoose');
 
+// Load environment variables
+require('dotenv').config({ path: '.env.local' });
+
 // MongoDB connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://your-connection-string';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('MONGODB_URI environment variable is not set');
+  process.exit(1);
+}
+
+console.log('Using MongoDB URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI, {

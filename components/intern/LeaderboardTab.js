@@ -8,10 +8,13 @@ export function LeaderboardTab({ user }) {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
   const [selectedMetric, setSelectedMetric] = useState('points-earned');
-  const [selectedScope, setSelectedScope] = useState('cohort'); // 'cohort', 'college', 'global'
+  const [selectedScope, setSelectedScope] = useState('college'); // 'cohort', 'college', 'global'
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Debug user data
+  console.log('LeaderboardTab received user:', user);
 
   // Fetch data when parameters change
   useEffect(() => {
@@ -33,7 +36,8 @@ export function LeaderboardTab({ user }) {
       console.log('Fetching leaderboard data with params:', {
         period: selectedPeriod,
         metric: selectedMetric,
-        scope: selectedScope
+        scope: selectedScope,
+        user: user
       });
       
       const response = await fetch(

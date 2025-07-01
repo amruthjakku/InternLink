@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../utils/database';
+import { connectToDatabase, getDatabase } from '../../../utils/database';
 import User from '../../../models/User';
 import Task from '../../../models/Task';
 import Attendance from '../../../models/Attendance';
@@ -23,6 +23,7 @@ export async function GET(request) {
     console.log('Leaderboard request params:', { period, metric, scope });
 
     await connectToDatabase();
+    const db = await getDatabase();
 
     // Get current user for filtering by cohort or college
     const currentUser = await User.findOne({ email: session.user.email });
@@ -79,13 +80,18 @@ export async function GET(request) {
       const userId = intern._id.toString();
       
       // Get tasks data with period filter
+      // Handle both string and ObjectId assignedTo values for backward compatibility
       const taskQuery = { 
-        assignedTo: userId,
+        $or: [
+          { assignedTo: userId }, // String comparison
+          { assignedTo: intern._id } // ObjectId comparison
+        ],
         ...dateFilter
       };
       
       console.log(`Fetching tasks for user ${intern.name || intern.email} with query:`, taskQuery);
-      const allTasks = await Task.find(taskQuery);
+      // Use raw MongoDB query to handle string assignedTo values properly
+      const allTasks = await db.collection('tasks').find(taskQuery).toArray();
       console.log(`Found ${allTasks.length} tasks for user ${intern.name || intern.email}`);
       
       // Get completed tasks - include all completed status values
