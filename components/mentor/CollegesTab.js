@@ -317,10 +317,10 @@ export function CollegesTab() {
   );
 
   const CollegeForm = () => {
-    if (!showCreateForm && !editingCollege) return null;
-
     const isEditing = !!editingCollege;
     const [formData, setFormData] = useState(editingCollege || { name: '', description: '', location: '' });
+
+    if (!showCreateForm && !editingCollege) return null;
 
     const handleSubmit = async (e) => {
       e.preventDefault();

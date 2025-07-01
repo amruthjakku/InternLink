@@ -131,10 +131,10 @@ export function CategoriesTab() {
   };
 
   const CategoryCreationForm = () => {
-    if (!showCreateForm && !editingCategory) return null;
-
     const isEditing = !!editingCategory;
     const [formData, setFormData] = useState(editingCategory || { name: '', description: '', color: selectedColor });
+
+    if (!showCreateForm && !editingCategory) return null;
 
     const handleSubmit = async (e) => {
       e.preventDefault();

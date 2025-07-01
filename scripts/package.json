@@ -1,0 +1,9 @@
+{
+  "name": "internlink-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for InternLink",
+  "type": "module",
+  "scripts": {
+    "update-task-points": "node update-task-points.js"
+  }
+}

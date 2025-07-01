@@ -61,12 +61,24 @@ const calculateWeeklyStats = (tasks) => {
 const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExpanded }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'todo': return 'bg-gray-100 border-gray-300';
-      case 'in_progress': return 'bg-blue-100 border-blue-300';
-      case 'done': return 'bg-green-100 border-green-300';
-      case 'completed': return 'bg-green-100 border-green-300';
-      case 'blocked': return 'bg-red-100 border-red-300';
-      default: return 'bg-gray-100 border-gray-300';
+      case 'todo': 
+      case 'not_started': 
+      case 'draft':
+        return 'border-gray-400';
+      case 'in_progress': 
+      case 'active':
+        return 'border-orange-400';
+      case 'review': 
+        return 'border-blue-400';
+      case 'done': 
+      case 'completed': 
+      case 'approved':
+        return 'border-green-400';
+      case 'blocked': 
+      case 'cancelled':
+        return 'border-red-400';
+      default: 
+        return 'border-gray-400';
     }
   };
 
@@ -79,8 +91,10 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
     }
   };
 
-  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-  const completedSubtasks = hasSubtasks ? task.subtasks.filter(sub => sub.completed).length : 0;
+  // Ensure task.subtasks is always an array
+  const subtasks = task.subtasks || [];
+  const hasSubtasks = subtasks.length > 0;
+  const completedSubtasks = hasSubtasks ? subtasks.filter(sub => sub.completed).length : 0;
 
   return (
     <div className={`border-2 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(task.status)}`}>
@@ -135,7 +149,7 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
             }}
           >
             <div className="text-sm font-medium text-gray-700">
-              📋 Subtasks ({completedSubtasks}/{task.subtasks.length})
+              📋 Subtasks ({completedSubtasks}/{subtasks.length})
             </div>
             <span className="text-gray-400">
               {isSubtaskExpanded ? '🔽' : '▶️'}
@@ -144,9 +158,9 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
           
           {isSubtaskExpanded && (
             <div className="mt-2 space-y-1">
-              {task.subtasks.map((subtask, index) => (
+              {subtasks.map((subtask, index) => (
                 <div 
-                  key={index} 
+                  key={subtask.id || index} 
                   className={`text-sm p-2 rounded border-l-2 ${
                     subtask.completed 
                       ? 'bg-green-50 border-green-400 text-green-800' 
@@ -159,7 +173,7 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
                     </span>
                     <div className="flex-1">
                       <div className={`font-medium ${subtask.completed ? 'line-through' : ''}`}>
-                        {subtask.title}
+                        {subtask.title || `Subtask ${index + 1}`}
                       </div>
                       {subtask.description && (
                         <div className="text-xs mt-1 opacity-75">
@@ -177,12 +191,12 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
           <div className="mt-2">
             <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
               <span>Progress</span>
-              <span>{Math.round((completedSubtasks / task.subtasks.length) * 100)}%</span>
+              <span>{Math.round((completedSubtasks / subtasks.length) * 100)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div 
                 className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${(completedSubtasks / task.subtasks.length) * 100}%` }}
+                style={{ width: `${(completedSubtasks / subtasks.length) * 100}%` }}
               />
             </div>
           </div>
@@ -372,53 +386,134 @@ export function TasksTab({ user, loading }) {
     
     if (source.droppableId !== destination.droppableId) {
       const newStatus = destination.droppableId;
-      const taskId = parseInt(result.draggableId);
+      const taskId = result.draggableId;
+      
+      // Find the task
+      const task = tasks.find(t => t.id.toString() === taskId);
+      if (!task) {
+        console.error('Task not found:', taskId);
+        return;
+      }
+      
+      console.log(`Moving task ${task.title} from ${source.droppableId} to ${newStatus}`);
+      
+      // Map old status values if needed
+      const statusMap = {
+        todo: 'not_started',
+        done: 'completed'
+      };
+      
+      // Get the original status for reverting if needed
+      const originalStatus = task.status;
       
       // Optimistically update UI
       setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, status: newStatus }
-            : task
+        prevTasks.map(t => 
+          t.id.toString() === taskId 
+            ? { ...t, status: newStatus }
+            : t
         )
       );
+      
+      // If we have a selected task and it's the one being moved, update it too
+      if (selectedTask && selectedTask.id.toString() === taskId) {
+        setSelectedTask(prev => ({ ...prev, status: newStatus }));
+      }
 
       // Update on server
       try {
+        console.log(`Sending PATCH request to /api/tasks/${taskId} with status: ${newStatus}`);
+        
         const response = await fetch(`/api/tasks/${taskId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ 
+            status: newStatus,
+            progress: newStatus === 'completed' ? 100 : 
+                     newStatus === 'in_progress' ? Math.max(25, task.progress || 0) : 
+                     newStatus === 'review' ? 90 : 
+                     newStatus === 'not_started' ? 0 : task.progress
+          }),
         });
 
-        if (!response.ok) {
+        const data = await response.json();
+        console.log('Server response:', data);
+
+        if (response.ok) {
+          // Update the task with the returned data
+          if (data.task) {
+            console.log('Updating task with server data:', data.task);
+            setTasks(prevTasks => 
+              prevTasks.map(t => 
+                t.id.toString() === taskId 
+                  ? { 
+                      ...t, 
+                      status: data.task.status,
+                      progress: data.task.progress,
+                      updatedAt: data.task.updatedAt
+                    }
+                  : t
+              )
+            );
+            
+            // If we have a selected task and it's the one being moved, update it too
+            if (selectedTask && selectedTask.id.toString() === taskId) {
+              setSelectedTask(prev => ({ 
+                ...prev, 
+                status: data.task.status,
+                progress: data.task.progress,
+                updatedAt: data.task.updatedAt
+              }));
+            }
+            
+            // Refresh the task list to ensure all counts are updated
+            setTimeout(() => fetchTasks(), 1000);
+          }
+        } else {
           // Revert on error
+          console.error('Failed to update task status:', data.error || 'Unknown error');
+          
           setTasks(prevTasks => 
-            prevTasks.map(task => 
-              task.id === taskId 
-                ? { ...task, status: source.droppableId }
-                : task
+            prevTasks.map(t => 
+              t.id.toString() === taskId 
+                ? { ...t, status: originalStatus }
+                : t
             )
           );
-          console.error('Failed to update task status');
+          
+          // Also revert the selected task if it's the one that failed
+          if (selectedTask && selectedTask.id.toString() === taskId) {
+            setSelectedTask(prev => ({ ...prev, status: originalStatus }));
+          }
+          
+          alert(`Failed to update task status: ${data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error updating task status:', error);
+        
         // Revert on error
         setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === taskId 
-              ? { ...task, status: source.droppableId }
-              : task
+          prevTasks.map(t => 
+            t.id.toString() === taskId 
+              ? { ...t, status: originalStatus }
+              : t
           )
         );
+        
+        // Also revert the selected task if it's the one that failed
+        if (selectedTask && selectedTask.id.toString() === taskId) {
+          setSelectedTask(prev => ({ ...prev, status: originalStatus }));
+        }
+        
+        alert(`Error updating task status: ${error.message || 'Unknown error'}`);
       }
     }
   };
 
-  const handleAddComment = async () => {
+  const handleAddComment = async (e) => {
+    if (e) e.preventDefault(); // Prevent form submission if called from a form
     if (!newComment.trim() || !selectedTask) return;
 
     setAddingComment(true);
@@ -438,7 +533,7 @@ export function TasksTab({ user, loading }) {
         // Update the selected task with the new comment
         const updatedTask = {
           ...selectedTask,
-          comments: [...selectedTask.comments, data.comment]
+          comments: [...(selectedTask.comments || []), data.comment]
         };
         setSelectedTask(updatedTask);
         
@@ -453,10 +548,13 @@ export function TasksTab({ user, loading }) {
         
         setNewComment('');
       } else {
-        console.error('Failed to add comment');
+        const errorData = await response.json();
+        console.error('Failed to add comment:', errorData);
+        alert(`Failed to add comment: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error adding comment:', error);
+      alert('Error adding comment. Please try again.');
     } finally {
       setAddingComment(false);
     }
@@ -466,6 +564,28 @@ export function TasksTab({ user, loading }) {
     if (!selectedTask) return;
 
     try {
+      console.log(`Toggling subtask ${subtaskId} to ${completed ? 'completed' : 'incomplete'}`);
+      console.log('Selected task:', selectedTask);
+      console.log('Subtasks:', selectedTask.subtasks);
+      
+      // Find the subtask to make sure it exists
+      const subtask = selectedTask.subtasks.find(st => st.id === subtaskId);
+      if (!subtask) {
+        console.error(`Subtask with ID ${subtaskId} not found in task ${selectedTask.id}`);
+        console.log('Available subtask IDs:', selectedTask.subtasks.map(st => st.id));
+        
+        // Try to find the subtask by index
+        const subtaskIndex = parseInt(subtaskId);
+        if (!isNaN(subtaskIndex) && subtaskIndex >= 0 && subtaskIndex < selectedTask.subtasks.length) {
+          console.log(`Found subtask by index ${subtaskIndex}`);
+        } else {
+          alert('Subtask not found. Please refresh the page and try again.');
+          return;
+        }
+      }
+      
+      console.log('Found subtask:', subtask);
+      
       const response = await fetch(`/api/tasks/${selectedTask.id}/subtasks/${subtaskId}`, {
         method: 'PATCH',
         headers: {
@@ -474,13 +594,29 @@ export function TasksTab({ user, loading }) {
         body: JSON.stringify({ completed }),
       });
 
-      if (response.ok) {
+      const responseData = await response.json();
+      console.log('Subtask update response:', responseData);
+
+      if (response.ok && responseData.success) {
+        console.log('Subtask updated successfully:', responseData);
+        
         // Update the selected task
         const updatedTask = {
           ...selectedTask,
-          subtasks: selectedTask.subtasks.map(subtask =>
-            subtask.id === subtaskId ? { ...subtask, completed } : subtask
-          )
+          subtasks: selectedTask.subtasks.map((subtask, index) => {
+            // Match by id or by index if id matches or index matches subtaskId
+            if ((subtask.id && subtask.id.toString() === subtaskId) || 
+                index.toString() === subtaskId) {
+              return { 
+                ...subtask, 
+                completed,
+                completedAt: completed ? new Date() : null
+              };
+            }
+            return subtask;
+          }),
+          progress: responseData.taskProgress,
+          status: responseData.taskStatus
         };
         setSelectedTask(updatedTask);
         
@@ -492,11 +628,21 @@ export function TasksTab({ user, loading }) {
               : task
           )
         );
+        
+        console.log('Task updated successfully with new subtask status');
       } else {
-        console.error('Failed to update subtask');
+        console.error('Failed to update subtask:', responseData);
+        alert(`Failed to update subtask: ${responseData.error || 'Unknown error'}`);
+        
+        // Revert the UI change if the API call failed
+        const subtaskElement = document.getElementById(`subtask-${subtaskId}`);
+        if (subtaskElement && subtaskElement.type === 'checkbox') {
+          subtaskElement.checked = !completed;
+        }
       }
     } catch (error) {
       console.error('Error updating subtask:', error);
+      alert('Error updating subtask. Please try again.');
     }
   };
 
@@ -511,6 +657,8 @@ export function TasksTab({ user, loading }) {
     }
 
     try {
+      console.log(`Updating progress for task ${taskId} to ${progressNum}%`);
+      
       const response = await fetch(`/api/tasks/${taskId}/progress`, {
         method: 'PATCH',
         headers: {
@@ -519,19 +667,39 @@ export function TasksTab({ user, loading }) {
         body: JSON.stringify({ progress: progressNum }),
       });
 
+      const data = await response.json();
+      console.log('Progress update response:', data);
+
       if (response.ok) {
+        // Update the task in the tasks array
         setTasks(prev => prev.map(task => 
-          task.id === taskId ? { ...task, progress: progressNum } : task
+          task.id === taskId ? { 
+            ...task, 
+            progress: progressNum,
+            status: data.status || task.status
+          } : task
         ));
+        
+        // Update selected task if it's the one being updated
         if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(prev => ({ ...prev, progress: progressNum }));
+          setSelectedTask(prev => ({ 
+            ...prev, 
+            progress: progressNum,
+            status: data.status || prev.status
+          }));
         }
+        
+        alert(`Progress updated to ${progressNum}%`);
+        
+        // Refresh the task list to ensure all counts are updated
+        setTimeout(() => fetchTasks(), 1000);
       } else {
-        alert('Failed to update progress');
+        console.error('Failed to update progress:', data);
+        alert(`Failed to update progress: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating progress:', error);
-      alert('Error updating progress');
+      alert('Error updating progress. Please try again.');
     }
   };
 
@@ -539,23 +707,51 @@ export function TasksTab({ user, loading }) {
     if (!confirm('Are you sure you want to mark this task as complete?')) return;
 
     try {
+      console.log(`Marking task ${taskId} as complete`);
+      
       const response = await fetch(`/api/tasks/${taskId}/complete`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
+      const data = await response.json();
+      console.log('Task completion response:', data);
+
       if (response.ok) {
+        // Update tasks list
         setTasks(prev => prev.map(task => 
-          task.id === taskId ? { ...task, status: 'completed', progress: 100 } : task
+          task.id === taskId ? { 
+            ...task, 
+            status: 'completed', 
+            progress: 100,
+            completedAt: new Date()
+          } : task
         ));
+        
+        // Update selected task if it's the one being completed
         if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(prev => ({ ...prev, status: 'completed', progress: 100 }));
+          setSelectedTask(prev => ({ 
+            ...prev, 
+            status: 'completed', 
+            progress: 100,
+            completedAt: new Date()
+          }));
         }
+        
+        // Show success message
+        alert('Task marked as complete successfully!');
+        
+        // Refresh the task list to ensure all counts are updated
+        setTimeout(() => fetchTasks(), 1000);
       } else {
-        alert('Failed to mark task as complete');
+        console.error('Failed to mark task as complete:', data);
+        alert(`Failed to mark task as complete: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error marking task complete:', error);
-      alert('Error marking task complete');
+      alert('Error marking task complete. Please try again.');
     }
   };
 
@@ -564,6 +760,8 @@ export function TasksTab({ user, loading }) {
     if (!message) return;
 
     try {
+      console.log(`Sending help request for task ${taskId}: ${message}`);
+      
       const response = await fetch(`/api/tasks/${taskId}/help-request`, {
         method: 'POST',
         headers: {
@@ -572,14 +770,43 @@ export function TasksTab({ user, loading }) {
         body: JSON.stringify({ message }),
       });
 
+      const data = await response.json();
+      console.log('Help request response:', data);
+
       if (response.ok) {
+        // Add the help request as a comment to the task
+        if (selectedTask && selectedTask.id === taskId) {
+          const newComment = {
+            id: Date.now().toString(),
+            author: user?.name || user?.gitlabUsername || 'You',
+            text: `Help requested: ${message}`,
+            timestamp: new Date(),
+            type: 'help_request'
+          };
+          
+          setSelectedTask(prev => ({
+            ...prev,
+            comments: [...(prev.comments || []), newComment]
+          }));
+          
+          // Update the task in the tasks array
+          setTasks(prevTasks => 
+            prevTasks.map(task => 
+              task.id === taskId 
+                ? { ...task, comments: [...(task.comments || []), newComment] }
+                : task
+            )
+          );
+        }
+        
         alert('Help request sent to your mentor');
       } else {
-        alert('Failed to send help request');
+        console.error('Failed to send help request:', data);
+        alert(`Failed to send help request: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error requesting help:', error);
-      alert('Error requesting help');
+      alert('Error requesting help. Please try again.');
     }
   };
 
@@ -594,24 +821,55 @@ export function TasksTab({ user, loading }) {
     }
 
     try {
+      console.log(`Logging ${hoursNum} hours for task ${taskId}`);
+      
+      const description = prompt('Add a description (optional):') || '';
+      
       const response = await fetch(`/api/tasks/${taskId}/time-log`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ hours: hoursNum }),
+        body: JSON.stringify({ 
+          hours: hoursNum,
+          description
+        }),
       });
 
+      const data = await response.json();
+      console.log('Time logging response:', data);
+
       if (response.ok) {
-        alert(`Logged ${hoursNum} hours for this task`);
-        // Optionally refresh task data to show updated time logs
-        fetchTasks();
+        // Update the task in the tasks array with new time tracking data
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId 
+              ? { 
+                  ...task, 
+                  timeTracking: data.timeTracking || task.timeTracking || [],
+                  actualHours: data.actualHours || task.actualHours || 0
+                }
+              : task
+          )
+        );
+        
+        // Update selected task if it's the one being updated
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(prev => ({ 
+            ...prev, 
+            timeTracking: data.timeTracking || prev.timeTracking || [],
+            actualHours: data.actualHours || prev.actualHours || 0
+          }));
+        }
+        
+        alert(`Successfully logged ${hoursNum} hours for this task`);
       } else {
-        alert('Failed to log time');
+        console.error('Failed to log time:', data);
+        alert(data.error || 'Failed to log time');
       }
     } catch (error) {
       console.error('Error logging time:', error);
-      alert('Error logging time');
+      alert('Error logging time. Please try again.');
     }
   };
 
@@ -633,46 +891,134 @@ export function TasksTab({ user, loading }) {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/tasks/${selectedTask.id}/submit`, {
+      // Make sure we have a valid task ID
+      if (!selectedTask || !selectedTask.id) {
+        console.error('No task selected or task ID is missing');
+        alert('Error: No task selected or task ID is missing');
+        setSubmitting(false);
+        return;
+      }
+      
+      const taskId = selectedTask.id;
+      console.log('Submitting task:', taskId);
+      console.log('Task details:', selectedTask);
+      console.log('Submission data:', submissionData);
+      
+      const response = await fetch(`/api/tasks/${taskId}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           submissionUrl: submissionData.submissionUrl.trim(),
-          mergeRequestUrl: submissionData.mergeRequestUrl.trim(),
-          notes: submissionData.notes.trim()
+          mergeRequestUrl: submissionData.mergeRequestUrl?.trim() || '',
+          notes: submissionData.notes?.trim() || ''
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const responseData = await response.json();
+      console.log('Submission response:', responseData);
+
+      if (response.ok && responseData.success) {
+        console.log('Task submitted successfully:', responseData);
+        
+        // Create a new submission to add to the task
+        const newSubmission = responseData.submission || {
+          submissionUrl: submissionData.submissionUrl.trim(),
+          mergeRequestUrl: submissionData.mergeRequestUrl?.trim() || '',
+          submittedAt: new Date(),
+          status: 'submitted'
+        };
         
         // Update the task in the tasks array
         setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === selectedTask.id 
-              ? { ...task, submissions: data.submissions, status: 'review' }
-              : task
-          )
+          prevTasks.map(task => {
+            if (task.id === selectedTask.id) {
+              // Create a new submissions array if it doesn't exist
+              const currentSubmissions = task.submissions || [];
+              
+              // Check if this submission already exists
+              const existingIndex = currentSubmissions.findIndex(
+                sub => sub.submissionUrl === newSubmission.submissionUrl
+              );
+              
+              let updatedSubmissions;
+              if (existingIndex >= 0) {
+                // Update existing submission
+                updatedSubmissions = [...currentSubmissions];
+                updatedSubmissions[existingIndex] = {
+                  ...updatedSubmissions[existingIndex],
+                  ...newSubmission
+                };
+              } else {
+                // Add new submission
+                updatedSubmissions = [...currentSubmissions, newSubmission];
+              }
+              
+              return { 
+                ...task, 
+                submissions: updatedSubmissions,
+                status: responseData.taskStatus || 'review',
+                progress: 90 // Set progress to 90% when task is submitted for review
+              };
+            }
+            return task;
+          })
         );
 
         // Update selected task
-        setSelectedTask(prev => ({ 
-          ...prev, 
-          submissions: data.submissions, 
-          status: 'review' 
-        }));
+        setSelectedTask(prev => {
+          // Create a new submissions array if it doesn't exist
+          const currentSubmissions = prev.submissions || [];
+          
+          // Check if this submission already exists
+          const existingIndex = currentSubmissions.findIndex(
+            sub => sub.submissionUrl === newSubmission.submissionUrl
+          );
+          
+          let updatedSubmissions;
+          if (existingIndex >= 0) {
+            // Update existing submission
+            updatedSubmissions = [...currentSubmissions];
+            updatedSubmissions[existingIndex] = {
+              ...updatedSubmissions[existingIndex],
+              ...newSubmission
+            };
+          } else {
+            // Add new submission
+            updatedSubmissions = [...currentSubmissions, newSubmission];
+          }
+          
+          return { 
+            ...prev, 
+            submissions: updatedSubmissions,
+            status: responseData.taskStatus || 'review',
+            progress: 90 // Set progress to 90% when task is submitted for review
+          };
+        });
 
         setShowSubmissionModal(false);
         alert('Task submitted successfully!');
+        
+        // Refresh the task list to ensure all counts are updated
+        setTimeout(() => fetchTasks(), 1000);
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Failed to submit task');
+        console.error('Failed to submit task:', responseData);
+        let errorMessage = 'Failed to submit task. Please try again.';
+        
+        if (responseData.error) {
+          errorMessage = `Error: ${responseData.error}`;
+          if (responseData.details) {
+            errorMessage += `\nDetails: ${responseData.details}`;
+          }
+        }
+        
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Error submitting task:', error);
-      alert('Error submitting task');
+      console.error('Error stack:', error.stack);
+      alert(`Error submitting task: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
       setSubmitting(false);
     }
@@ -724,12 +1070,44 @@ export function TasksTab({ user, loading }) {
   };
 
   // Calculate metrics
-  const completedTasks = tasks.filter(t => t.status === 'done').length;
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
-  const blockedTasks = tasks.filter(t => t.status === 'blocked').length;
-  const overdueTasks = tasks.filter(t => 
-    new Date(t.dueDate) < new Date() && t.status !== 'done'
+  const completedTasks = tasks.filter(t => 
+    t.status === 'done' || 
+    t.status === 'completed' || 
+    t.status === 'approved'
   ).length;
+  
+  const inProgressTasks = tasks.filter(t => 
+    t.status === 'in_progress' || 
+    t.status === 'active' || 
+    t.status === 'review'
+  ).length;
+  
+  const blockedTasks = tasks.filter(t => 
+    t.status === 'blocked' || 
+    t.status === 'cancelled'
+  ).length;
+  
+  const overdueTasks = tasks.filter(t => {
+    const dueDate = new Date(t.dueDate);
+    const today = new Date();
+    return dueDate < today && 
+      t.status !== 'done' && 
+      t.status !== 'completed' && 
+      t.status !== 'approved';
+  }).length;
+  
+  // Log task counts for debugging
+  console.log('Task counts:', {
+    total: tasks.length,
+    completed: completedTasks,
+    inProgress: inProgressTasks,
+    blocked: blockedTasks,
+    overdue: overdueTasks,
+    statusCounts: tasks.reduce((acc, task) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {})
+  });
 
   const TaskModal = () => {
     if (!selectedTask) return null;
@@ -761,24 +1139,22 @@ export function TasksTab({ user, loading }) {
                     }
                   </span>
                   <span>📋 Type: {selectedTask.type || 'Assignment'}</span>
-                  {/* Weekly Task Info */}
-                  {taskType === 'weekly' && selectedTask.weekNumber && (
-                    <>
+                  {/* Task Info */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedTask.weekNumber && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                         📅 Week {selectedTask.weekNumber}
                       </span>
-                      {selectedTask.points && (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                          🏆 {selectedTask.points} points
-                        </span>
-                      )}
-                      {selectedTask.estimatedHours && (
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                          ⏱️ {selectedTask.estimatedHours}h
-                        </span>
-                      )}
-                    </>
-                  )}
+                    )}
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                      🏆 {selectedTask.points || 10} points
+                    </span>
+                    {selectedTask.estimatedHours > 0 && (
+                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                        ⏱️ {selectedTask.estimatedHours}h estimated
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
@@ -805,19 +1181,23 @@ export function TasksTab({ user, loading }) {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Subtasks</h3>
                   <div className="space-y-2">
-                    {selectedTask.subtasks?.map(subtask => (
-                      <div key={subtask.id} className="flex items-center space-x-3 p-2 border rounded">
-                        <input 
-                          type="checkbox" 
-                          checked={subtask.completed}
-                          onChange={(e) => handleSubtaskToggle(subtask.id, e.target.checked)}
-                          className="rounded"
-                        />
-                        <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
-                          {subtask.title}
-                        </span>
-                      </div>
-                    )) || <p className="text-gray-500 text-sm">No subtasks</p>}
+                    {(selectedTask.subtasks && selectedTask.subtasks.length > 0) ? (
+                      selectedTask.subtasks.map((subtask, index) => (
+                        <div key={subtask.id || index} className="flex items-center space-x-3 p-2 border rounded">
+                          <input 
+                            type="checkbox" 
+                            checked={subtask.completed}
+                            onChange={(e) => handleSubtaskToggle(subtask.id || index.toString(), e.target.checked)}
+                            className="rounded"
+                          />
+                          <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
+                            {subtask.title}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">No subtasks</p>
+                    )}
                   </div>
                 </div>
 
@@ -838,7 +1218,7 @@ export function TasksTab({ user, loading }) {
                     )) || <p className="text-gray-500 text-sm">No comments yet</p>}
                     
                     {/* Add Comment */}
-                    <div className="border-t pt-3">
+                    <form onSubmit={handleAddComment} className="border-t pt-3">
                       <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
@@ -847,13 +1227,13 @@ export function TasksTab({ user, loading }) {
                         rows="3"
                       />
                       <button 
-                        onClick={handleAddComment}
+                        type="submit"
                         disabled={addingComment || !newComment.trim()}
                         className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {addingComment ? 'Adding...' : 'Add Comment'}
                       </button>
-                    </div>
+                    </form>
                   </div>
                 </div>
               </div>
@@ -1217,126 +1597,138 @@ export function TasksTab({ user, loading }) {
       {/* Kanban View */}
       {viewMode === 'kanban' && (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {['todo', 'in_progress', 'done', 'blocked'].map(status => (
-              <div key={status} className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-4 capitalize">
-                  {status.replace('_', ' ')} ({filteredTasks.filter(t => t.status === status).length})
-                </h3>
-                
-                <Droppable droppableId={status}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`space-y-3 min-h-[200px] ${
-                        snapshot.isDraggingOver ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      {filteredTasks
-                        .filter(task => task.status === status)
-                        .map((task, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {['not_started', 'in_progress', 'review', 'completed'].map(status => {
+              // Get status display name and icon
+              const statusDisplay = {
+                not_started: { name: 'To Do', icon: '📋', color: 'border-gray-400 bg-gray-50' },
+                in_progress: { name: 'In Progress', icon: '⏳', color: 'border-orange-400 bg-orange-50' },
+                review: { name: 'In Review', icon: '🔍', color: 'border-blue-400 bg-blue-50' },
+                completed: { name: 'Completed', icon: '✅', color: 'border-green-400 bg-green-50' }
+              }[status];
+              
+              const tasksInColumn = filteredTasks.filter(t => {
+                if (status === 'not_started') {
+                  return t.status === 'not_started' || t.status === 'todo' || t.status === 'draft';
+                } else if (status === 'in_progress') {
+                  return t.status === 'in_progress' || t.status === 'active';
+                } else if (status === 'review') {
+                  return t.status === 'review';
+                } else if (status === 'completed') {
+                  return t.status === 'completed' || t.status === 'done' || t.status === 'approved';
+                }
+                return t.status === status;
+              });
+              
+              return (
+                <div key={status} className={`rounded-lg p-4 border ${statusDisplay.color}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900 flex items-center">
+                      <span className="mr-2">{statusDisplay.icon}</span>
+                      {statusDisplay.name} ({tasksInColumn.length})
+                    </h3>
+                    {status === 'completed' && tasksInColumn.length > 0 && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        {Math.round((tasksInColumn.length / filteredTasks.length) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                  
+                  <Droppable droppableId={status}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-3 min-h-[300px] ${
+                          snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
+                        }`}
+                      >
+                        {tasksInColumn.map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-white p-4 rounded-lg shadow-sm border-l-4 cursor-pointer transition-shadow hover:shadow-md ${
+                                className={`bg-white p-3 rounded-lg shadow-sm border-l-4 cursor-pointer transition-all hover:shadow-md ${
                                   getStatusColor(task.status)
-                                } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
+                                } ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-300' : ''}`}
                                 onClick={() => {
                                   setSelectedTask(task);
                                   setShowTaskModal(true);
                                 }}
                               >
+                                {/* Task Header */}
                                 <div className="flex justify-between items-start mb-2">
-                                  <div className="flex-1">
-                                    <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
-                                    {/* Weekly Task Badge */}
-                                    {taskType === 'weekly' && task.weekNumber && (
-                                      <div className="flex items-center space-x-2 mt-1">
-                                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                                          📅 Week {task.weekNumber}
-                                        </span>
-                                        {task.points && (
-                                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                                            🏆 {task.points} pts
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
+                                  <div className="flex items-start">
+                                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{task.title}</h4>
+                                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-full flex items-center">
+                                      <span className="text-yellow-500 mr-1">🏆</span> {task.points || 10}
+                                    </span>
                                   </div>
-                                  <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                  <span className={`text-xs font-medium ml-1 ${getPriorityColor(task.priority)}`}>
                                     {getPriorityIcon(task.priority)}
                                   </span>
                                 </div>
                                 
-                                <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-                                  {task.description}
-                                </p>
-                                
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs text-gray-500">
-                                    Due: {format(new Date(task.dueDate), 'MMM dd')}
-                                  </span>
-                                  {task.weekNumber && (
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                      Week {task.weekNumber}
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-500">
-                                    {task.assignmentType === 'cohort' 
-                                      ? `Cohort: ${task.cohortName || 'Your Cohort'}`
-                                      : task.assignmentType === 'hierarchical'
-                                        ? `College Assignment`
-                                        : 'Assigned to you'
-                                    }
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {task.mentor}
-                                  </span>
-                                </div>
-                                
+                                {/* Task Progress */}
                                 {task.progress > 0 && (
-                                  <div className="mb-2">
-                                    <div className="w-full bg-gray-200 rounded-full h-1">
+                                  <div className="mb-2 mt-1">
+                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
                                       <div 
-                                        className="bg-blue-600 h-1 rounded-full"
+                                        className={`h-1.5 rounded-full ${
+                                          task.progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                                        }`}
                                         style={{ width: `${task.progress}%` }}
                                       />
                                     </div>
                                   </div>
                                 )}
-
-                                <div className="flex items-center justify-between">
-                                  <div className="flex space-x-1">
-                                    {task.tags.slice(0, 2).map(tag => (
-                                      <span key={tag} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
+                                
+                                {/* Task Badges */}
+                                <div className="flex flex-wrap gap-1 mt-2 mb-1">
+                                  {/* Due Date */}
+                                  <span className="inline-flex items-center text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                                    📅 {format(new Date(task.dueDate), 'MMM dd')}
+                                  </span>
                                   
-                                  {task.subtasks.length > 0 && (
-                                    <span className="text-xs text-gray-500">
-                                      {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                                  {/* Week Number */}
+                                  {task.weekNumber && (
+                                    <span className="inline-flex items-center text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                      Week {task.weekNumber}
+                                    </span>
+                                  )}
+                                  
+                                  {/* Points */}
+                                  {task.points > 0 && (
+                                    <span className="inline-flex items-center text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                                      {task.points} pts
                                     </span>
                                   )}
                                 </div>
+                                
+                                {/* Subtasks Progress */}
+                                {task.subtasks && task.subtasks.length > 0 && (
+                                  <div className="flex items-center mt-2 text-xs text-gray-600">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    </svg>
+                                    <span>
+                                      {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </Draggable>
                         ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              );
+            })}
           </div>
         </DragDropContext>
       )}

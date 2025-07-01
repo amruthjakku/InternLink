@@ -84,8 +84,9 @@ export function GitLabDiagnostic() {
   };
 
   const testStateUpdate = () => {
-    const [testState, setTestState] = useState(false);
-    setTestState(true);
+    // Simple state test without using React hooks in a non-component function
+    let testState = false;
+    testState = true;
     addTestResult('State Update', 'PASS', `State update test: ${testState}`);
   };
 

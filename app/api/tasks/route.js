@@ -243,16 +243,28 @@ export async function GET(request) {
         estimatedHours: task.estimatedHours,
         actualHours: task.actualHours,
         progress: task.progress,
-        tags: task.tags,
-        dependencies: task.dependencies,
-        attachments: task.attachments,
-        comments: task.comments,
+        tags: task.tags || [],
+        dependencies: task.dependencies || [],
+        attachments: task.attachments || [],
+        comments: task.comments || [],
         timeTracking: task.timeTracking || [],
         cohortId: task.cohortId,
         cohortName: task.cohortName,
         assignmentType: task.assignmentType,
         weekNumber: task.weekNumber || null,
-        points: task.points || 0
+        points: task.points || 0,
+        subtasks: task.subtasks?.map(subtask => ({
+          id: subtask._id,
+          title: subtask.title,
+          description: subtask.description,
+          completed: subtask.completed,
+          completedAt: subtask.completedAt,
+          priority: subtask.priority,
+          estimatedHours: subtask.estimatedHours,
+          actualHours: subtask.actualHours,
+          createdAt: subtask.createdAt,
+          updatedAt: subtask.updatedAt
+        })) || []
       };
       
       // Add hierarchical assignment information if available
@@ -302,7 +314,9 @@ export async function POST(request) {
       dueDate,
       estimatedHours = 0,
       tags = [],
-      dependencies = []
+      dependencies = [],
+      points = 10, // Default to 10 points if not specified
+      progress = 0
     } = body;
 
     // Validate required fields based on assignment type
@@ -362,7 +376,9 @@ export async function POST(request) {
       dueDate: new Date(dueDate),
       estimatedHours,
       tags,
-      dependencies
+      dependencies,
+      points, // Add points to the task
+      progress // Add progress to the task
     };
 
     // Add assignment details based on type

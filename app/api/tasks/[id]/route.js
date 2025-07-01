@@ -50,13 +50,27 @@ export async function GET(request, { params }) {
       estimatedHours: task.estimatedHours,
       actualHours: task.actualHours,
       progress: task.progress,
-      tags: task.tags,
-      dependencies: task.dependencies,
-      attachments: task.attachments,
-      resources: task.resources,
-      requirements: task.requirements,
-      comments: task.comments,
-      timeTracking: task.timeTracking || []
+      tags: task.tags || [],
+      dependencies: task.dependencies || [],
+      attachments: task.attachments || [],
+      resources: task.resources || [],
+      requirements: task.requirements || [],
+      comments: task.comments || [],
+      timeTracking: task.timeTracking || [],
+      subtasks: task.subtasks?.map(subtask => ({
+        id: subtask._id,
+        title: subtask.title,
+        description: subtask.description,
+        completed: subtask.completed,
+        completedAt: subtask.completedAt,
+        priority: subtask.priority,
+        estimatedHours: subtask.estimatedHours,
+        actualHours: subtask.actualHours,
+        createdAt: subtask.createdAt,
+        updatedAt: subtask.updatedAt
+      })) || [],
+      weekNumber: task.weekNumber,
+      points: task.points || 0
     };
 
     // Add assignment-specific details
@@ -122,6 +136,11 @@ export async function PUT(request, { params }) {
     // Update the task
     const updateData = { ...data, updatedAt: new Date() };
     
+    // Ensure points is set to a default value if not provided
+    if (!updateData.hasOwnProperty('points')) {
+      updateData.points = task.points || 10;
+    }
+    
     // Handle cohort assignment
     if (updateData.assignmentType === 'cohort' && updateData.cohortId) {
       // Clear individual assignment fields
@@ -155,6 +174,123 @@ export async function PUT(request, { params }) {
     console.error('Error updating task:', error);
     return NextResponse.json({ 
       error: 'Failed to update task' 
+    }, { status: 500 });
+  }
+}
+
+export async function PATCH(request, { params }) {
+  try {
+    console.log('PATCH request to update task status');
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+
+    const data = await request.json();
+    console.log('Update data:', data);
+    
+    await connectToDatabase();
+
+    // Find the task
+    const task = await Task.findById(id);
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Check if the user is authorized to update this task
+    // Interns can only update tasks assigned to them
+    const isAssignedIntern = 
+      session.user.role === 'intern' && 
+      task.assignedTo && 
+      task.assignedTo.toString() === session.user.id;
+    
+    // Mentors and admins can update any task
+    const isMentorOrAdmin = ['mentor', 'admin'].includes(session.user.role);
+    
+    if (!isAssignedIntern && !isMentorOrAdmin) {
+      return NextResponse.json({ 
+        error: 'You do not have permission to update this task' 
+      }, { status: 403 });
+    }
+
+    // Prepare update data
+    const updateData = { ...data, updatedAt: new Date() };
+    
+    // If status is being updated to a completed state, set progress to 100%
+    if (data.status && ['completed', 'done', 'approved'].includes(data.status) && 
+        !['completed', 'done', 'approved'].includes(task.status)) {
+      console.log('Setting progress to 100% as task is marked completed');
+      updateData.progress = 100;
+      updateData.completedAt = new Date();
+    }
+    
+    // If status is being changed from completed to something else, adjust progress
+    if (['completed', 'done', 'approved'].includes(task.status) && 
+        data.status && !['completed', 'done', 'approved'].includes(data.status)) {
+      // Only adjust progress if it's not explicitly provided
+      if (!data.hasOwnProperty('progress')) {
+        if (data.status === 'review') {
+          updateData.progress = 90;
+        } else if (['in_progress', 'active'].includes(data.status)) {
+          updateData.progress = 50;
+        } else {
+          updateData.progress = 0;
+        }
+      }
+      updateData.completedAt = null;
+    }
+    
+    // If status is being set to 'review', set progress to at least 90%
+    if (data.status === 'review' && task.status !== 'review' && !data.hasOwnProperty('progress')) {
+      updateData.progress = Math.max(90, task.progress || 0);
+    }
+    
+    // If status is being set to 'in_progress', set a default progress
+    if (['in_progress', 'active'].includes(data.status) && 
+        !['in_progress', 'active'].includes(task.status) && 
+        task.progress < 25 && !data.hasOwnProperty('progress')) {
+      updateData.progress = 25; // Default progress for in_progress status
+    }
+    
+    // Ensure points is set
+    if (!updateData.hasOwnProperty('points') && (!task.points || task.points === 0)) {
+      updateData.points = 10;
+    }
+
+    console.log('Final update data:', updateData);
+
+    // Update the task
+    const result = await Task.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true } // Return the updated document
+    );
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Task updated successfully',
+      task: {
+        id: result._id,
+        title: result.title,
+        status: result.status,
+        progress: result.progress,
+        points: result.points,
+        updatedAt: result.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating task:', error);
+    return NextResponse.json({ 
+      error: 'Failed to update task',
+      details: error.message
     }, { status: 500 });
   }
 }
