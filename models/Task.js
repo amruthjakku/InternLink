@@ -123,6 +123,34 @@ const TaskSchema = new mongoose.Schema({
       enum: ['link', 'file', 'document', 'video', 'tutorial']
     }
   }],
+  
+  // GitLab template repository
+  gitlabTemplateRepo: {
+    url: String,
+    projectId: Number,
+    description: String,
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  
+  // Verification requirements
+  verificationLevel: {
+    type: String,
+    enum: ['none', 'simple', 'strict'],
+    default: 'none'
+  },
+  
+  // Keywords for repository matching
+  matchKeywords: [{
+    type: String,
+    trim: true
+  }],
   requirements: [{
     description: String,
     completed: {

@@ -287,8 +287,19 @@ export async function GET(request) {
           submissionUrl: individualProgress.submissionUrl,
           submissionNotes: individualProgress.submissionNotes,
           needsHelp: individualProgress.needsHelp,
-          helpMessage: individualProgress.helpMessage
+          helpMessage: individualProgress.helpMessage,
+          // GitLab repository details
+          repoUrl: individualProgress.repoUrl,
+          submissionMethod: individualProgress.submissionMethod,
+          verified: individualProgress.verified,
+          submittedOn: individualProgress.submittedOn,
+          matchConfidence: individualProgress.matchConfidence,
+          matchMethod: individualProgress.matchMethod
         } : null,
+        // GitLab template repository
+        gitlabTemplateRepo: task.gitlabTemplateRepo || null,
+        verificationLevel: task.verificationLevel || 'none',
+        matchKeywords: task.matchKeywords || [],
         subtasks: task.subtasks?.map(subtask => {
           // Find individual subtask progress if available
           const subtaskProgress = individualProgress?.subtaskProgress?.find(

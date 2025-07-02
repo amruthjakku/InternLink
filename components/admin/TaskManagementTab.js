@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthProvider';
+import { GitLabTemplateSelector } from './GitLabTemplateSelector';
 
 export function TaskManagementTab() {
   const { user } = useAuth();
@@ -2088,6 +2089,62 @@ export function TaskManagementTab() {
                     min="0"
                     placeholder="20"
                   />
+                </div>
+              </div>
+              
+              {/* GitLab Integration Section */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                <h4 className="text-sm font-medium text-blue-800 mb-3">GitLab Integration</h4>
+                
+                {/* GitLab Template Repository */}
+                <div className="mb-4">
+                  <GitLabTemplateSelector
+                    value={editingTask.gitlabTemplateRepo}
+                    onChange={(templateRepo) => {
+                      setEditingTask({...editingTask, gitlabTemplateRepo: templateRepo});
+                    }}
+                    disabled={!editingTask._id} // Disable until task is saved
+                  />
+                </div>
+                
+                {/* Repository Matching Keywords */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Repository Matching Keywords (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTask.matchKeywords?.join(', ') || ''}
+                    onChange={(e) => {
+                      const keywordsString = e.target.value;
+                      const keywordsArray = keywordsString.split(',').map(kw => kw.trim()).filter(kw => kw);
+                      setEditingTask({...editingTask, matchKeywords: keywordsArray});
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="project-name, feature, technology"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    These keywords will be used to match student repositories with this task.
+                  </p>
+                </div>
+                
+                {/* Verification Level */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Repository Verification Level
+                  </label>
+                  <select
+                    value={editingTask.verificationLevel || 'none'}
+                    onChange={(e) => setEditingTask({...editingTask, verificationLevel: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="none">None - Accept any submission</option>
+                    <option value="simple">Simple - Basic repository matching</option>
+                    <option value="strict">Strict - Require task.json file</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Determines how strictly to verify repository submissions.
+                  </p>
                 </div>
               </div>
 

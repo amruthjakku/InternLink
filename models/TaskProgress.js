@@ -56,6 +56,41 @@ const TaskProgressSchema = new mongoose.Schema({
     default: null
   },
   
+  // GitLab repository details
+  repoUrl: {
+    type: String,
+    default: null
+  },
+  
+  submissionMethod: {
+    type: String,
+    enum: ['auto', 'manual', 'template'],
+    default: 'manual'
+  },
+  
+  verified: {
+    type: Boolean,
+    default: false
+  },
+  
+  submittedOn: {
+    type: Date,
+    default: null
+  },
+  
+  matchConfidence: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  
+  matchMethod: {
+    type: String,
+    enum: ['name_match', 'readme_match', 'file_structure', 'task_json', 'manual', 'template'],
+    default: null
+  },
+  
   // Review and feedback
   reviewedBy: {
     type: mongoose.Schema.Types.ObjectId,

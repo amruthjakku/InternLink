@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { MetricCard } from '../Charts';
 import { format, addDays, subDays } from 'date-fns';
+import { GitLabTaskSubmission } from './GitLabTaskSubmission';
 
 // Helper function to safely format status
 const formatStatus = (status) => {
@@ -1013,6 +1014,48 @@ export function TasksTab({ user, loading }) {
       console.log('Task details:', selectedTask);
       console.log('Submission data:', submissionData);
       
+      // Check if the URL is a GitLab URL
+      const isGitLabUrl = submissionData.submissionUrl.includes('gitlab');
+      
+      // If it's a GitLab URL, use the new verify-submission endpoint
+      if (isGitLabUrl) {
+        const response = await fetch('/api/tasks/verify-submission', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            taskId: selectedTask.id,
+            repoUrl: submissionData.submissionUrl.trim(),
+            method: 'manual'
+          }),
+        });
+        
+        const responseData = await response.json();
+        
+        if (response.ok && responseData.success) {
+          // Update the task with the new progress data
+          setTasks(prevTasks => 
+            prevTasks.map(task => 
+              task.id === selectedTask.id 
+                ? {
+                    ...task,
+                    individualProgress: {
+                      ...task.individualProgress,
+                      ...responseData.taskProgress
+                    }
+                  }
+                : task
+            )
+          );
+          
+          setShowSubmissionModal(false);
+          alert('Task submitted successfully with GitLab repository!');
+          return;
+        }
+      }
+      
+      // Fall back to the original submission endpoint for non-GitLab URLs
       const response = await fetch(`/api/tasks/${taskId}/submit`, {
         method: 'POST',
         headers: {
@@ -1281,6 +1324,27 @@ export function TasksTab({ user, loading }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main Content */}
               <div className="lg:col-span-2 space-y-6">
+                {/* GitLab Task Submission */}
+                <GitLabTaskSubmission 
+                  task={selectedTask} 
+                  onSubmissionComplete={(updatedProgress) => {
+                    // Update the task in the list with the new progress data
+                    setTasks(prevTasks => 
+                      prevTasks.map(task => 
+                        task.id === selectedTask.id 
+                          ? {
+                              ...task,
+                              individualProgress: {
+                                ...task.individualProgress,
+                                ...updatedProgress
+                              }
+                            }
+                          : task
+                      )
+                    );
+                  }}
+                />
+                
                 {/* Description */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Description</h3>

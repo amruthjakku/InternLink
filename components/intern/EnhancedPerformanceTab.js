@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { EnhancedLineChart, EnhancedBarChart, MetricCard, ActivityHeatmap } from '../Charts';
 import { format, subDays, eachDayOfInterval, eachWeekOfInterval, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 
-export function PerformanceTab({ user, loading }) {
+export function EnhancedPerformanceTab({ user, loading }) {
   const [performanceData, setPerformanceData] = useState({});
   const [gitlabData, setGitlabData] = useState({});
   const [weeklyTaskData, setWeeklyTaskData] = useState([]);
@@ -153,45 +153,16 @@ export function PerformanceTab({ user, loading }) {
     return icons[category] || '💻';
   };
 
-  // Utility function to safely format dates
-  const safeFormatDate = (dateValue, formatString = 'MMM dd') => {
-    if (!dateValue) return null;
-    try {
-      const date = new Date(dateValue);
-      return !isNaN(date.getTime()) ? format(date, formatString) : null;
-    } catch (error) {
-      console.warn('Invalid date value:', dateValue);
-      return null;
-    }
-  };
-
   // Prepare chart data
   const prepareTaskTrendData = () => {
     if (!performanceData.dailyPerformance) return { labels: [], datasets: [] };
 
-    // Filter out invalid dates and prepare data
-    const validData = performanceData.dailyPerformance.filter(d => {
-      if (!d.date) return false;
-      try {
-        const date = new Date(d.date);
-        return !isNaN(date.getTime());
-      } catch (error) {
-        return false;
-      }
-    });
-
     return {
-      labels: validData.map(d => {
-        try {
-          return format(new Date(d.date), 'MMM dd');
-        } catch (error) {
-          return 'Invalid Date';
-        }
-      }),
+      labels: performanceData.dailyPerformance.map(d => format(new Date(d.date), 'MMM dd')),
       datasets: [
         {
           label: 'Tasks Completed',
-          data: validData.map(d => d.tasksCompleted || 0),
+          data: performanceData.dailyPerformance.map(d => d.tasksCompleted),
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.4,
@@ -199,7 +170,7 @@ export function PerformanceTab({ user, loading }) {
         },
         {
           label: 'Performance Score',
-          data: validData.map(d => d.score || 0),
+          data: performanceData.dailyPerformance.map(d => d.score),
           borderColor: 'rgb(16, 185, 129)',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,
@@ -213,20 +184,11 @@ export function PerformanceTab({ user, loading }) {
   const prepareCommitActivityData = () => {
     if (!commitActivity.length) return { labels: [], datasets: [] };
 
-    // Group commits by date with validation
+    // Group commits by date
     const commitsByDate = {};
     commitActivity.forEach(commit => {
-      if (commit.committed_date) {
-        try {
-          const commitDate = new Date(commit.committed_date);
-          if (!isNaN(commitDate.getTime())) {
-            const date = format(commitDate, 'MMM dd');
-            commitsByDate[date] = (commitsByDate[date] || 0) + 1;
-          }
-        } catch (error) {
-          console.warn('Invalid commit date:', commit.committed_date);
-        }
-      }
+      const date = format(new Date(commit.committed_date), 'MMM dd');
+      commitsByDate[date] = (commitsByDate[date] || 0) + 1;
     });
 
     const dates = Object.keys(commitsByDate).sort();
@@ -291,6 +253,26 @@ export function PerformanceTab({ user, loading }) {
     };
   };
 
+  const prepareSkillRadarData = () => {
+    if (!skillProgress.length) return { labels: [], datasets: [] };
+
+    return {
+      labels: skillProgress.map(skill => skill.name),
+      datasets: [
+        {
+          label: 'Current Level',
+          data: skillProgress.map(skill => skill.currentLevel),
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(59, 130, 246)',
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgb(59, 130, 246)'
+        }
+      ]
+    };
+  };
+
   // Prepare activity heatmap data
   const prepareActivityHeatmapData = () => {
     const heatmapData = [];
@@ -300,29 +282,15 @@ export function PerformanceTab({ user, loading }) {
     dateRange.forEach(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
       
-      // Count commits for this date with validation
-      const commitsOnDate = commitActivity.filter(commit => {
-        if (!commit.committed_date) return false;
-        try {
-          const commitDate = new Date(commit.committed_date);
-          if (isNaN(commitDate.getTime())) return false;
-          return format(commitDate, 'yyyy-MM-dd') === dateStr;
-        } catch (error) {
-          return false;
-        }
-      }).length;
+      // Count commits for this date
+      const commitsOnDate = commitActivity.filter(commit => 
+        format(new Date(commit.committed_date), 'yyyy-MM-dd') === dateStr
+      ).length;
 
-      // Count tasks completed on this date with validation
-      const tasksOnDate = performanceData.dailyPerformance?.find(day => {
-        if (!day.date) return false;
-        try {
-          const taskDate = new Date(day.date);
-          if (isNaN(taskDate.getTime())) return false;
-          return format(taskDate, 'yyyy-MM-dd') === dateStr;
-        } catch (error) {
-          return false;
-        }
-      })?.tasksCompleted || 0;
+      // Count tasks completed on this date
+      const tasksOnDate = performanceData.dailyPerformance?.find(day => 
+        format(new Date(day.date), 'yyyy-MM-dd') === dateStr
+      )?.tasksCompleted || 0;
 
       const totalActivity = commitsOnDate + tasksOnDate;
 
@@ -359,6 +327,7 @@ export function PerformanceTab({ user, loading }) {
   const commitActivityData = prepareCommitActivityData();
   const weeklyStatsData = prepareWeeklyStatsData();
   const repositoryData = prepareRepositoryContributionData();
+  const skillRadarData = prepareSkillRadarData();
   const activityHeatmapData = prepareActivityHeatmapData();
 
   return (
@@ -549,14 +518,7 @@ export function PerformanceTab({ user, loading }) {
             <div className="space-y-1 text-sm text-blue-800">
               <div>Commits: {commitActivity.length}</div>
               <div>Repositories: {repositoryStats.length}</div>
-              <div>Last sync: {gitlabData.lastSync ? (() => {
-                try {
-                  const syncDate = new Date(gitlabData.lastSync);
-                  return !isNaN(syncDate.getTime()) ? format(syncDate, 'MMM dd, HH:mm') : 'Invalid Date';
-                } catch (error) {
-                  return 'Invalid Date';
-                }
-              })() : 'Never'}</div>
+              <div>Last sync: {gitlabData.lastSync ? format(new Date(gitlabData.lastSync), 'MMM dd, HH:mm') : 'Never'}</div>
             </div>
           </div>
           
@@ -564,15 +526,8 @@ export function PerformanceTab({ user, loading }) {
             <h4 className="font-medium text-purple-900 mb-2">🏆 Achievements</h4>
             <div className="space-y-1 text-sm text-purple-800">
               <div>Total commits: {gitlabData.totalCommits || commitActivity.length}</div>
-              <div>Active repos: {repositoryStats.filter(repo => {
-                if (!repo.last_activity_at) return false;
-                try {
-                  const activityDate = new Date(repo.last_activity_at);
-                  return !isNaN(activityDate.getTime()) && activityDate > subDays(new Date(), 30);
-                } catch (error) {
-                  return false;
-                }
-              }).length}</div>
+              <div>Active repos: {repositoryStats.filter(repo => repo.last_activity_at && 
+                new Date(repo.last_activity_at) > subDays(new Date(), 30)).length}</div>
               <div>Contribution streak: {gitlabData.streak || 0} days</div>
             </div>
           </div>
@@ -620,14 +575,7 @@ export function PerformanceTab({ user, loading }) {
                       {repo.commit_count || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {repo.last_activity_at ? (() => {
-                        try {
-                          const activityDate = new Date(repo.last_activity_at);
-                          return !isNaN(activityDate.getTime()) ? format(activityDate, 'MMM dd, yyyy') : 'Invalid Date';
-                        } catch (error) {
-                          return 'Invalid Date';
-                        }
-                      })() : 'Never'}
+                      {repo.last_activity_at ? format(new Date(repo.last_activity_at), 'MMM dd, yyyy') : 'Never'}
                     </td>
                   </tr>
                 ))}
