@@ -6,6 +6,7 @@ import { connectToDatabase } from '../../../../utils/database.js';
 import { GitLabAPI } from '../../../../utils/gitlab-api.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 import ActivityTracking from '../../../../models/ActivityTracking.js';
+import { gitlabUserCache } from '../../../../utils/gitlab-cache.js';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,27 @@ export async function GET(request) {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const startTime = Date.now();
+
+    const { searchParams } = new URL(request.url);
+    const days = parseInt(searchParams.get('days')) || 30;
+
+    // Check cache first
+    const cachedCommits = await gitlabUserCache.getCachedUserCommits(userId, days);
+    if (cachedCommits) {
+      console.log(`✅ Serving cached commits for user ${userId} (age: ${cachedCommits.age}ms)`);
+      return NextResponse.json({
+        ...cachedCommits.data,
+        fromCache: true,
+        cacheAge: cachedCommits.age,
+        performance: {
+          requestTime: Date.now() - startTime,
+          dataSource: 'cache'
+        }
+      });
     }
 
     // Connect to database

@@ -14,6 +14,14 @@ export function ProgressTab({ user, tasks, loading }) {
     completed: 0,
     total: 0
   });
+  const [userProgress, setUserProgress] = useState(null);
+  const [progressLoading, setProgressLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState('all-time');
+
+  useEffect(() => {
+    // Fetch user's isolated progress data
+    fetchUserProgress();
+  }, [selectedPeriod]);
 
   useEffect(() => {
     // Check if tasks are weekly and calculate weekly progress
@@ -46,6 +54,24 @@ export function ProgressTab({ user, tasks, loading }) {
       setTasksByStatus(statusCounts);
     }
   }, [tasks]);
+
+  const fetchUserProgress = async () => {
+    try {
+      setProgressLoading(true);
+      const response = await fetch(`/api/user/progress?period=${selectedPeriod}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserProgress(data.data);
+      } else {
+        console.error('Failed to fetch user progress');
+      }
+    } catch (error) {
+      console.error('Error fetching user progress:', error);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
 
   const calculateWeeklyProgress = (tasks) => {
     const weeklyStats = {};
@@ -106,6 +132,68 @@ export function ProgressTab({ user, tasks, loading }) {
 
   return (
     <div className="space-y-6">
+      {/* Period Selector */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">📊 Your Progress</h2>
+        <div className="flex items-center space-x-2">
+          <label className="text-sm font-medium text-gray-700">Period:</label>
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all-time">All Time</option>
+            <option value="this-month">This Month</option>
+            <option value="this-week">This Week</option>
+          </select>
+        </div>
+      </div>
+
+      {/* User-Isolated Progress Metrics */}
+      {progressLoading ? (
+        <div className="bg-white rounded-xl p-6 border border-gray-100">
+          <div className="animate-pulse flex space-x-4">
+            <div className="rounded-full bg-gray-300 h-10 w-10"></div>
+            <div className="flex-1 space-y-2 py-1">
+              <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      ) : userProgress && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">🎯 Your Personal Progress</h3>
+            <span className="text-sm text-blue-600 font-medium">
+              {userProgress.user.name} • {userProgress.user.college}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">{userProgress.metrics.pointsEarned}</div>
+              <div className="text-sm text-gray-600">Points Earned</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+              <div className="text-2xl font-bold text-green-600">{userProgress.metrics.completionRate}%</div>
+              <div className="text-sm text-gray-600">Completion Rate</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+              <div className="text-2xl font-bold text-purple-600">{userProgress.metrics.totalHours}h</div>
+              <div className="text-sm text-gray-600">Hours Worked</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+              <div className="text-2xl font-bold text-orange-600">{userProgress.metrics.streakDays}</div>
+              <div className="text-sm text-gray-600">Day Streak</div>
+            </div>
+          </div>
+
+          <div className="mt-4 text-sm text-gray-600 text-center">
+            🔒 <strong>Your personal data</strong> - Only you can see and modify your progress
+          </div>
+        </div>
+      )}
+
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard

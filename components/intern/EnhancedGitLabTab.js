@@ -365,19 +365,21 @@ export function EnhancedGitLabTab() {
       {/* GitLab Data Display */}
       {connectionStatus.connected && gitlabData && (
         <div className="space-y-6">
-          {/* Navigation Tabs */}
+          {/* Enhanced Navigation Tabs - Insights Content at Top Level */}
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex space-x-8 overflow-x-auto scrollbar-hide">
               {[
                 { id: 'overview', name: 'Overview', icon: '📊' },
                 { id: 'commits', name: 'Commits', icon: '💻' },
-                { id: 'insights', name: 'Insights', icon: '🔍' },
+                { id: 'repositories', name: 'Repositories', icon: '📁' },
+                { id: 'merge-requests', name: 'Merge Requests', icon: '🔀' },
+                { id: 'issues', name: 'Issues', icon: '🐛' },
                 { id: 'analytics', name: 'Analytics', icon: '📈' }
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveView(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeView === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -421,8 +423,16 @@ export function EnhancedGitLabTab() {
             />
           )}
 
-          {activeView === 'insights' && (
-            <GitLabInsightsDashboard />
+          {activeView === 'repositories' && (
+            <RepositoriesContent />
+          )}
+
+          {activeView === 'merge-requests' && (
+            <MergeRequestsContent />
+          )}
+
+          {activeView === 'issues' && (
+            <IssuesContent />
           )}
 
           {activeView === 'analytics' && gitlabData.stats && (
@@ -450,6 +460,323 @@ export function EnhancedGitLabTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Content Components for New Tabs
+function RepositoriesContent() {
+  const [repositories, setRepositories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchRepositories();
+  }, []);
+
+  const fetchRepositories = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/gitlab/insights?includeRepositories=true');
+      if (response.ok) {
+        const data = await response.json();
+        setRepositories(data.repositories || []);
+      } else {
+        throw new Error('Failed to fetch repositories');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Loading repositories...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900">📁 Your Repositories</h3>
+        <span className="text-sm text-gray-500">{repositories.length} repositories</span>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {repositories.length > 0 ? repositories.map((repo, index) => (
+          <div key={repo.id || index} className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="text-lg font-medium text-gray-900 truncate">{repo.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">{repo.path}</p>
+                {repo.description && (
+                  <p className="text-sm text-gray-500 mt-2 line-clamp-2">{repo.description}</p>
+                )}
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                repo.visibility === 'public' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+              }`}>
+                {repo.visibility}
+              </span>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-lg font-bold text-blue-600">{repo.commits_count || 0}</p>
+                <p className="text-xs text-gray-500">Commits</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-green-600">{repo.open_issues_count || 0}</p>
+                <p className="text-xs text-gray-500">Issues</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-purple-600">{repo.merge_requests_count || 0}</p>
+                <p className="text-xs text-gray-500">MRs</p>
+              </div>
+            </div>
+            
+            {repo.last_activity_at && (
+              <div className="mt-3 text-xs text-gray-500">
+                Last activity: {new Date(repo.last_activity_at).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        )) : (
+          <div className="col-span-3 text-center p-8">
+            <div className="text-4xl mb-4">📁</div>
+            <p className="text-gray-500">No repositories found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MergeRequestsContent() {
+  const [mergeRequests, setMergeRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchMergeRequests();
+  }, []);
+
+  const fetchMergeRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/gitlab/insights?includeMergeRequests=true');
+      if (response.ok) {
+        const data = await response.json();
+        setMergeRequests(data.merge_requests || []);
+      } else {
+        throw new Error('Failed to fetch merge requests');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Loading merge requests...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900">🔀 Merge Requests</h3>
+        <span className="text-sm text-gray-500">{mergeRequests.length} merge requests</span>
+      </div>
+
+      {/* MR Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-green-50 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">
+            {mergeRequests.filter(mr => mr.state === 'opened').length}
+          </div>
+          <div className="text-sm text-gray-600">Open</div>
+        </div>
+        <div className="bg-blue-50 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">
+            {mergeRequests.filter(mr => mr.state === 'merged').length}
+          </div>
+          <div className="text-sm text-gray-600">Merged</div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-gray-600">
+            {mergeRequests.filter(mr => mr.state === 'closed').length}
+          </div>
+          <div className="text-sm text-gray-600">Closed</div>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        {mergeRequests.length > 0 ? mergeRequests.slice(0, 10).map((mr, index) => (
+          <div key={mr.id || index} className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">{mr.title}</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  {mr.source_branch} → {mr.target_branch}
+                </p>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                  <span>#{mr.iid}</span>
+                  <span>by {mr.author?.name || 'Unknown'}</span>
+                  <span>{new Date(mr.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                mr.state === 'opened' ? 'bg-green-100 text-green-800' :
+                mr.state === 'merged' ? 'bg-blue-100 text-blue-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {mr.state}
+              </span>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center p-8">
+            <div className="text-4xl mb-4">🔀</div>
+            <p className="text-gray-500">No merge requests found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function IssuesContent() {
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchIssues();
+  }, []);
+
+  const fetchIssues = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/gitlab/insights?includeIssues=true');
+      if (response.ok) {
+        const data = await response.json();
+        setIssues(data.issues || []);
+      } else {
+        throw new Error('Failed to fetch issues');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Loading issues...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900">🐛 Issues</h3>
+        <span className="text-sm text-gray-500">{issues.length} issues</span>
+      </div>
+
+      {/* Issue Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-red-50 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-red-600">
+            {issues.filter(issue => issue.state === 'opened').length}
+          </div>
+          <div className="text-sm text-gray-600">Open Issues</div>
+        </div>
+        <div className="bg-green-50 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">
+            {issues.filter(issue => issue.state === 'closed').length}
+          </div>
+          <div className="text-sm text-gray-600">Closed Issues</div>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        {issues.length > 0 ? issues.slice(0, 10).map((issue, index) => (
+          <div key={issue.id || index} className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">{issue.title}</h4>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                  <span>#{issue.iid}</span>
+                  <span>by {issue.author?.name || 'Unknown'}</span>
+                  <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+                </div>
+                {issue.labels && issue.labels.length > 0 && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    {issue.labels.slice(0, 3).map((label, labelIndex) => (
+                      <span 
+                        key={labelIndex}
+                        className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700"
+                        style={{ backgroundColor: `#${label.color}20` }}
+                      >
+                        {label.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                issue.state === 'opened' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+              }`}>
+                {issue.state}
+              </span>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center p-8">
+            <div className="text-4xl mb-4">🐛</div>
+            <p className="text-gray-500">No issues found</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -103,6 +103,9 @@ export function LeaderboardTab({ user }) {
             {selectedScope === 'college' && 'Competing with your college'}
             {selectedScope === 'global' && 'Competing globally'}
           </p>
+          <p className="text-xs text-green-600 mt-1 flex items-center">
+            🔒 <span className="ml-1">Your progress is private and secure - only you can modify your own data</span>
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <select

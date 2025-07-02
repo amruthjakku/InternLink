@@ -58,7 +58,7 @@ const calculateWeeklyStats = (tasks) => {
 };
 
 // Task Card Component with Subtasks
-const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExpanded }) => {
+const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExpanded, onDeleteProgress, deletingProgress }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'todo': 
@@ -101,7 +101,7 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
       {/* Main Task Header */}
       <div onClick={onTaskClick}>
         <div className="flex items-start justify-between mb-2">
-          <h4 className="font-medium text-gray-900 line-clamp-2">{task.title}</h4>
+          <h4 className="font-medium text-gray-900 line-clamp-2 flex-1">{task.title}</h4>
           <div className="flex items-center space-x-1 ml-2">
             {task.weekNumber && (
               <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
@@ -112,6 +112,20 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
               <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
                 {task.points}pts
               </span>
+            )}
+            {/* Delete Progress Button */}
+            {(task.progress > 0 || task.status !== 'not_started') && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteProgress && onDeleteProgress(task.id, task.title);
+                }}
+                disabled={deletingProgress === task.id}
+                className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors disabled:opacity-50"
+                title="Reset progress to start over"
+              >
+                {deletingProgress === task.id ? '⌛' : '🗑️'}
+              </button>
             )}
           </div>
         </div>
@@ -226,6 +240,7 @@ export function TasksTab({ user, loading }) {
   const [collapsedWeeks, setCollapsedWeeks] = useState(new Set()); // Track collapsed weeks
   const [expandedSubtasks, setExpandedSubtasks] = useState(new Set()); // Track expanded subtasks
   const [weeklyStats, setWeeklyStats] = useState({});
+  const [deletingProgress, setDeletingProgress] = useState(null); // Track which task's progress is being deleted
 
   // Toggle week collapse/expand
   const toggleWeekCollapse = (weekNumber) => {
@@ -700,6 +715,69 @@ export function TasksTab({ user, loading }) {
     } catch (error) {
       console.error('Error updating progress:', error);
       alert('Error updating progress. Please try again.');
+    }
+  };
+
+  const handleDeleteProgress = async (taskId, taskTitle) => {
+    const confirmDelete = window.confirm(
+      `⚠️ Are you sure you want to reset all progress for "${taskTitle}"?\n\n` +
+      `This will:\n` +
+      `• Set status back to "Not Started"\n` +
+      `• Reset progress to 0%\n` +
+      `• Clear any notes\n\n` +
+      `This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingProgress(taskId);
+      console.log(`Deleting progress for task ${taskId}`);
+      
+      const response = await fetch(`/api/tasks/update?taskId=${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      console.log('Delete progress response:', data);
+
+      if (response.ok && data.success) {
+        // Update the task in the tasks array
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? { 
+            ...task, 
+            progress: 0,
+            status: 'not_started',
+            notes: null
+          } : task
+        ));
+        
+        // Update selected task if it's the one being reset
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(prev => ({ 
+            ...prev, 
+            progress: 0,
+            status: 'not_started',
+            notes: null
+          }));
+        }
+        
+        alert(`✅ Progress reset successfully for "${taskTitle}"`);
+        
+        // Refresh the task list to ensure all counts are updated
+        setTimeout(() => fetchTasks(), 1000);
+      } else {
+        console.error('Failed to delete progress:', data);
+        alert(`❌ Failed to reset progress: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting progress:', error);
+      alert('❌ Error resetting progress. Please try again.');
+    } finally {
+      setDeletingProgress(null);
     }
   };
 
@@ -1267,6 +1345,26 @@ export function TasksTab({ user, loading }) {
                         style={{ width: `${Math.min((selectedTask.actualHours / selectedTask.estimatedHours) * 100, 100)}%` }}
                       />
                     </div>
+                    
+                    {/* Delete Progress Button */}
+                    {(selectedTask.progress > 0 || selectedTask.status !== 'not_started') && (
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <button
+                          onClick={() => {
+                            handleDeleteProgress(selectedTask.id, selectedTask.title);
+                          }}
+                          disabled={deletingProgress === selectedTask.id}
+                          className="w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Reset all progress to start over"
+                        >
+                          <span>{deletingProgress === selectedTask.id ? '⌛' : '🗑️'}</span>
+                          <span>{deletingProgress === selectedTask.id ? 'Resetting Progress...' : 'Reset Progress'}</span>
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1 text-center">
+                          This will reset status to "Not Started" and progress to 0%
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1660,20 +1758,39 @@ export function TasksTab({ user, loading }) {
                               >
                                 {/* Task Header */}
                                 <div className="flex justify-between items-start mb-2">
-                                  <div className="flex items-start">
-                                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{task.title}</h4>
+                                  <div className="flex items-start flex-1">
+                                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2 flex-1">{task.title}</h4>
                                     <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-full flex items-center">
                                       <span className="text-yellow-500 mr-1">🏆</span> {task.points || 10}
                                     </span>
                                   </div>
-                                  <span className={`text-xs font-medium ml-1 ${getPriorityColor(task.priority)}`}>
-                                    {getPriorityIcon(task.priority)}
-                                  </span>
+                                  <div className="flex items-center space-x-1 ml-2">
+                                    {/* Delete Progress Button */}
+                                    {(task.progress > 0 || task.status !== 'not_started') && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteProgress(task.id, task.title);
+                                        }}
+                                        disabled={deletingProgress === task.id}
+                                        className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors disabled:opacity-50"
+                                        title="Reset progress to start over"
+                                      >
+                                        {deletingProgress === task.id ? '⌛' : '🗑️'}
+                                      </button>
+                                    )}
+                                    <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                      {getPriorityIcon(task.priority)}
+                                    </span>
+                                  </div>
                                 </div>
                                 
                                 {/* Task Progress */}
                                 {task.progress > 0 && (
                                   <div className="mb-2 mt-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-gray-600">{task.progress}% complete</span>
+                                    </div>
                                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                                       <div 
                                         className={`h-1.5 rounded-full ${
@@ -1763,6 +1880,9 @@ export function TasksTab({ user, loading }) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Mentor
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -1826,6 +1946,21 @@ export function TasksTab({ user, loading }) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {task.mentor}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {(task.progress > 0 || task.status !== 'not_started') && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProgress(task.id, task.title);
+                          }}
+                          disabled={deletingProgress === task.id}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors disabled:opacity-50"
+                          title="Reset progress to start over"
+                        >
+                          {deletingProgress === task.id ? '⌛ Resetting...' : '🗑️ Reset'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1984,6 +2119,8 @@ export function TasksTab({ user, loading }) {
                             }}
                             onSubtaskToggle={() => toggleSubtaskExpansion(task.id)}
                             isSubtaskExpanded={expandedSubtasks.has(task.id)}
+                            onDeleteProgress={handleDeleteProgress}
+                            deletingProgress={deletingProgress}
                           />
                         ))}
                       </div>

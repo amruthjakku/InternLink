@@ -6,6 +6,7 @@ import { decrypt } from '../../../../utils/encryption.js';
 import GitLabIntegration from '../../../../models/GitLabIntegration.js';
 import ActivityTracking from '../../../../models/ActivityTracking.js';
 import { getUserCommitActivity, generateCommitAnalytics } from '../../../../utils/gitlab-api.js';
+import { gitlabUserCache } from '../../../../utils/gitlab-cache.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,24 @@ export async function GET(request) {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const startTime = Date.now();
+
+    // Check cache first
+    const cachedAnalytics = await gitlabUserCache.getCachedUserAnalytics(userId);
+    if (cachedAnalytics) {
+      console.log(`✅ Serving cached analytics for user ${userId} (age: ${cachedAnalytics.age}ms)`);
+      return NextResponse.json({
+        ...cachedAnalytics.data,
+        fromCache: true,
+        cacheAge: cachedAnalytics.age,
+        performance: {
+          requestTime: Date.now() - startTime,
+          dataSource: 'cache'
+        }
+      });
     }
 
     await connectToDatabase();
@@ -217,6 +236,17 @@ export async function GET(request) {
           dataSource: integration.tokenType === 'oauth' ? 'OAuth API' : 'Stored Token'
         };
       }
+
+      // Add performance metrics
+      responseData.performance = {
+        requestTime: Date.now() - startTime,
+        dataSource: 'database',
+        activitiesProcessed: storedActivities.length
+      };
+
+      // Cache the analytics data for future requests
+      await gitlabUserCache.cacheUserAnalytics(userId, responseData);
+      console.log(`📦 Cached analytics for user ${userId} (${storedActivities.length} activities)`);
 
       return NextResponse.json(responseData);
 
