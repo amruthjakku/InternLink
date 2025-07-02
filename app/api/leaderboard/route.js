@@ -4,6 +4,7 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import { connectToDatabase, getDatabase } from '../../../utils/database';
 import User from '../../../models/User';
 import Task from '../../../models/Task';
+import TaskProgress from '../../../models/TaskProgress';
 import Attendance from '../../../models/Attendance';
 
 export async function GET(request) {
@@ -74,48 +75,52 @@ export async function GET(request) {
       console.log('Filtering by this month, start date:', startOfMonth);
     }
     
-    // Calculate leaderboard data based on real user data
+    // Calculate leaderboard data based on individual task progress
     const leaderboard = await Promise.all(interns.map(async (intern) => {
-      // Calculate real metrics from database
-      const userId = intern._id.toString();
+      const userId = intern._id;
       
-      // Get tasks data with period filter
-      // Handle both string and ObjectId assignedTo values for backward compatibility
-      const taskQuery = { 
-        $or: [
-          { assignedTo: userId }, // String comparison
-          { assignedTo: intern._id } // ObjectId comparison
-        ],
-        ...dateFilter
-      };
+      // Build date filter for TaskProgress
+      let progressDateFilter = {};
+      if (period === 'this-week') {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        progressDateFilter = { completedAt: { $gte: startOfWeek } };
+      } else if (period === 'this-month') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        progressDateFilter = { completedAt: { $gte: startOfMonth } };
+      }
       
-      console.log(`Fetching tasks for user ${intern.name || intern.email} with query:`, taskQuery);
-      // Use raw MongoDB query to handle string assignedTo values properly
-      const allTasks = await db.collection('tasks').find(taskQuery).toArray();
-      console.log(`Found ${allTasks.length} tasks for user ${intern.name || intern.email}`);
+      console.log(`Fetching task progress for user ${intern.name || intern.email}`);
       
-      // Get completed tasks - include all completed status values
-      const completedTasks = allTasks.filter(task => 
-        task.status === 'completed' || 
-        task.status === 'done' || 
-        task.status === 'approved' ||
-        (task.status === 'review' && task.progress >= 90) // Include tasks in review with high progress
+      // Get all task progress for this intern
+      const allProgress = await TaskProgress.find({
+        internId: userId,
+        ...progressDateFilter
+      }).populate('taskId', 'title points category');
+      
+      console.log(`Found ${allProgress.length} task progress records for user ${intern.name || intern.email}`);
+      
+      // Get completed task progress
+      const completedProgress = allProgress.filter(progress => 
+        progress.status === 'completed' || 
+        progress.status === 'done'
       );
       
-      console.log(`User ${intern.name || intern.email} has ${completedTasks.length} completed tasks out of ${allTasks.length} total tasks`);
-      const totalTasks = allTasks.length;
-      const tasksCompleted = completedTasks.length;
+      console.log(`User ${intern.name || intern.email} has ${completedProgress.length} completed tasks out of ${allProgress.length} total tasks`);
+      
+      const totalTasks = allProgress.length;
+      const tasksCompleted = completedProgress.length;
       const completionRate = totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : 0;
       
-      // Calculate points earned from completed tasks
-      const pointsEarned = completedTasks.reduce((total, task) => {
-        // Each task can have points assigned, default to 10 if not specified
-        const taskPoints = task.points || 10;
-        console.log(`Task "${task.title}" points: ${taskPoints}, status: ${task.status}, progress: ${task.progress}`);
-        return total + taskPoints;
+      // Calculate points earned from individual progress records
+      const pointsEarned = completedProgress.reduce((total, progress) => {
+        const earnedPoints = progress.pointsEarned || 0;
+        console.log(`Task "${progress.taskId?.title || 'Unknown'}" points earned: ${earnedPoints}, status: ${progress.status}`);
+        return total + earnedPoints;
       }, 0);
       
-      console.log(`Total points earned by ${intern.name || intern.email}: ${pointsEarned} from ${completedTasks.length} completed tasks`);
+      console.log(`Total points earned by ${intern.name || intern.email}: ${pointsEarned} from ${completedProgress.length} completed tasks`);
       
       // Get attendance data for streak and hours calculation
       let attendanceQuery = { userId: userId };

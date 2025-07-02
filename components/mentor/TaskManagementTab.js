@@ -4,6 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import * as d3 from 'd3';
 
+// Helper function to safely format status
+const formatStatus = (status) => {
+  if (!status || typeof status !== 'string') {
+    return 'not started';
+  }
+  return status.replace('_', ' ');
+};
+
 export function TaskManagementTab() {
   const [tasks, setTasks] = useState([]);
   const [dependencies, setDependencies] = useState([]);
@@ -145,8 +153,8 @@ export function TaskManagementTab() {
             <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
               {task.title}
             </h4>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
-              {task.priority}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority || 'medium')}`}>
+              {task.priority || 'medium'}
             </span>
           </div>
 
@@ -162,12 +170,12 @@ export function TaskManagementTab() {
           <div className="mb-3">
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-gray-500">Progress</span>
-              <span className="text-xs font-medium text-gray-700">{task.progress}%</span>
+              <span className="text-xs font-medium text-gray-700">{task.progress || 0}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div 
                 className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${task.progress}%` }}
+                style={{ width: `${task.progress || 0}%` }}
               />
             </div>
           </div>
@@ -175,7 +183,7 @@ export function TaskManagementTab() {
           {/* Task Footer */}
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center space-x-2">
-              <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
+              <span>📅 {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
               <span>⏱️ {task.estimatedHours}h</span>
             </div>
             {task.dependencies.length > 0 && (
@@ -399,7 +407,7 @@ export function TaskManagementTab() {
                     {selectedTask.priority} priority
                   </span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTask.status)}`}>
-                    {selectedTask.status.replace('_', ' ')}
+                    {formatStatus(selectedTask.status)}
                   </span>
                   <span>📂 {selectedTask.category}</span>
                 </div>
@@ -475,7 +483,7 @@ export function TaskManagementTab() {
                       <div key={depId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <span className="text-sm text-gray-700">{depTask.title}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(depTask.status)}`}>
-                          {depTask.status.replace('_', ' ')}
+                          {formatStatus(depTask.status)}
                         </span>
                       </div>
                     ) : null;
@@ -709,12 +717,12 @@ export function TaskManagementTab() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                        {task.status.replace('_', ' ')}
+                        {formatStatus(task.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
-                        {task.priority}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(task.priority || 'medium')}`}>
+                        {task.priority || 'medium'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -723,11 +731,11 @@ export function TaskManagementTab() {
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
                               className="bg-blue-500 h-2 rounded-full"
-                              style={{ width: `${task.progress}%` }}
+                              style={{ width: `${task.progress || 0}%` }}
                             />
                           </div>
                         </div>
-                        <span className="text-sm text-gray-900">{task.progress}%</span>
+                        <span className="text-sm text-gray-900">{task.progress || 0}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">

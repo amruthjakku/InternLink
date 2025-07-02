@@ -5,6 +5,14 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { MetricCard } from '../Charts';
 import { format, addDays, subDays } from 'date-fns';
 
+// Helper function to safely format status
+const formatStatus = (status) => {
+  if (!status || typeof status !== 'string') {
+    return 'not started';
+  }
+  return status.replace('_', ' ');
+};
+
 // Helper function to calculate weekly statistics
 const calculateWeeklyStats = (tasks) => {
   const weekStats = {};
@@ -97,7 +105,7 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
   const completedSubtasks = hasSubtasks ? subtasks.filter(sub => sub.completed).length : 0;
 
   return (
-    <div className={`border-2 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(task.status)}`}>
+    <div className={`border-2 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(task.status || 'not_started')}`}>
       {/* Main Task Header */}
       <div onClick={onTaskClick}>
         <div className="flex items-start justify-between mb-2">
@@ -114,7 +122,7 @@ const TaskCardWithSubtasks = ({ task, onTaskClick, onSubtaskToggle, isSubtaskExp
               </span>
             )}
             {/* Delete Progress Button */}
-            {(task.progress > 0 || task.status !== 'not_started') && (
+            {((task.progress || 0) > 0 || (task.status && task.status !== 'not_started')) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -275,6 +283,29 @@ export function TasksTab({ user, loading }) {
         const data = await response.json();
         console.log('Tasks fetched for intern:', data.tasks);
         
+        // Debug: Check the structure of the first task
+        if (data.tasks && data.tasks.length > 0) {
+          console.log('First task structure:', {
+            id: data.tasks[0].id,
+            title: data.tasks[0].title,
+            status: data.tasks[0].status,
+            progress: data.tasks[0].progress,
+            priority: data.tasks[0].priority,
+            dueDate: data.tasks[0].dueDate,
+            individualProgress: data.tasks[0].individualProgress
+          });
+          
+          // Check for any tasks with undefined status
+          const tasksWithUndefinedStatus = data.tasks.filter(task => !task.status);
+          if (tasksWithUndefinedStatus.length > 0) {
+            console.warn('⚠️ Found tasks with undefined status:', tasksWithUndefinedStatus.map(t => ({
+              id: t.id,
+              title: t.title,
+              status: t.status
+            })));
+          }
+        }
+        
         // Set task type and handle weekly tasks
         setTaskType(data.taskType || 'regular');
         
@@ -419,7 +450,7 @@ export function TasksTab({ user, loading }) {
       };
       
       // Get the original status for reverting if needed
-      const originalStatus = task.status;
+      const originalStatus = task.status || 'not_started';
       
       // Optimistically update UI
       setTasks(prevTasks => 
@@ -691,7 +722,7 @@ export function TasksTab({ user, loading }) {
           task.id === taskId ? { 
             ...task, 
             progress: progressNum,
-            status: data.status || task.status
+            status: data.status || task.status || 'not_started'
           } : task
         ));
         
@@ -1115,7 +1146,7 @@ export function TasksTab({ user, loading }) {
   };
 
   const filteredTasks = tasks.filter(task => {
-    if (filterStatus !== 'all' && task.status !== filterStatus) return false;
+    if (filterStatus !== 'all' && (task.status || 'not_started') !== filterStatus) return false;
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
     return true;
   });
@@ -1182,7 +1213,8 @@ export function TasksTab({ user, loading }) {
     blocked: blockedTasks,
     overdue: overdueTasks,
     statusCounts: tasks.reduce((acc, task) => {
-      acc[task.status] = (acc[task.status] || 0) + 1;
+      const status = task.status || 'not_started';
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {})
   });
@@ -1397,7 +1429,7 @@ export function TasksTab({ user, loading }) {
                               submission.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {submission.status.replace('_', ' ').toUpperCase()}
+                              {formatStatus(submission.status).toUpperCase()}
                             </span>
                           </div>
                           
@@ -1749,7 +1781,7 @@ export function TasksTab({ user, loading }) {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 className={`bg-white p-3 rounded-lg shadow-sm border-l-4 cursor-pointer transition-all hover:shadow-md ${
-                                  getStatusColor(task.status)
+                                  getStatusColor(task.status || 'not_started')
                                 } ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-300' : ''}`}
                                 onClick={() => {
                                   setSelectedTask(task);
@@ -1766,7 +1798,7 @@ export function TasksTab({ user, loading }) {
                                   </div>
                                   <div className="flex items-center space-x-1 ml-2">
                                     {/* Delete Progress Button */}
-                                    {(task.progress > 0 || task.status !== 'not_started') && (
+                                    {((task.progress || 0) > 0 || (task.status && task.status !== 'not_started')) && (
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1779,24 +1811,24 @@ export function TasksTab({ user, loading }) {
                                         {deletingProgress === task.id ? '⌛' : '🗑️'}
                                       </button>
                                     )}
-                                    <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                                      {getPriorityIcon(task.priority)}
+                                    <span className={`text-xs font-medium ${getPriorityColor(task.priority || 'medium')}`}>
+                                      {getPriorityIcon(task.priority || 'medium')}
                                     </span>
                                   </div>
                                 </div>
                                 
                                 {/* Task Progress */}
-                                {task.progress > 0 && (
+                                {(task.progress || 0) > 0 && (
                                   <div className="mb-2 mt-1">
                                     <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-gray-600">{task.progress}% complete</span>
+                                      <span className="text-xs text-gray-600">{task.progress || 0}% complete</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                                       <div 
                                         className={`h-1.5 rounded-full ${
-                                          task.progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                                          (task.progress || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'
                                         }`}
-                                        style={{ width: `${task.progress}%` }}
+                                        style={{ width: `${task.progress || 0}%` }}
                                       />
                                     </div>
                                   </div>
@@ -1917,38 +1949,39 @@ export function TasksTab({ user, loading }) {
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.status === 'done' ? 'bg-green-100 text-green-800' :
+                        task.status === 'done' || task.status === 'completed' ? 'bg-green-100 text-green-800' :
                         task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        task.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
                         task.status === 'blocked' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {task.status.replace('_', ' ')}
+                        {formatStatus(task.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
-                        {getPriorityIcon(task.priority)} {task.priority}
+                      <span className={`text-sm font-medium ${getPriorityColor(task.priority || 'medium')}`}>
+                        {getPriorityIcon(task.priority || 'medium')} {task.priority || 'medium'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                      {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No due date'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                           <div 
                             className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${task.progress}%` }}
+                            style={{ width: `${task.progress || 0}%` }}
                           />
                         </div>
-                        <span className="text-sm text-gray-900">{task.progress}%</span>
+                        <span className="text-sm text-gray-900">{task.progress || 0}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {task.mentor}
+                      {task.mentor || 'Unassigned'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {(task.progress > 0 || task.status !== 'not_started') && (
+                      {((task.progress || 0) > 0 || (task.status && task.status !== 'not_started')) && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1998,7 +2031,7 @@ export function TasksTab({ user, loading }) {
                     {dayTasks.slice(0, 2).map(task => (
                       <div 
                         key={task.id}
-                        className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status)}`}
+                        className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status || 'not_started')}`}
                         onClick={() => {
                           setSelectedTask(task);
                           setShowTaskModal(true);

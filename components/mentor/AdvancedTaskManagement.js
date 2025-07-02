@@ -6,6 +6,14 @@ import { EnhancedLineChart, EnhancedBarChart, MetricCard } from '../Charts';
 import { format, subDays, addDays, eachDayOfInterval } from 'date-fns';
 import * as d3 from 'd3';
 
+// Helper function to safely format status
+const formatStatus = (status) => {
+  if (!status || typeof status !== 'string') {
+    return 'not started';
+  }
+  return status.replace('_', ' ');
+};
+
 export function AdvancedTaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [dependencies, setDependencies] = useState([]);
@@ -345,7 +353,7 @@ export function AdvancedTaskManagement() {
     // Add timeline bars
     tasks.forEach(task => {
       const startDate = new Date(task.createdDate);
-      const endDate = new Date(task.dueDate);
+      const endDate = task.dueDate ? new Date(task.dueDate) : new Date();
       const completedDate = task.completedDate ? new Date(task.completedDate) : null;
 
       // Task duration bar
@@ -360,8 +368,8 @@ export function AdvancedTaskManagement() {
         .attr("opacity", 0.3);
 
       // Progress bar
-      if (task.progress > 0) {
-        const progressWidth = (xScale(endDate) - xScale(startDate)) * (task.progress / 100);
+      if ((task.progress || 0) > 0) {
+        const progressWidth = (xScale(endDate) - xScale(startDate)) * ((task.progress || 0) / 100);
         g.append("rect")
           .attr("x", xScale(startDate))
           .attr("y", yScale(task.title))
@@ -693,7 +701,7 @@ export function AdvancedTaskManagement() {
             {['todo', 'in_progress', 'done', 'blocked'].map(status => (
               <div key={status} className="bg-gray-50 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 mb-4 capitalize">
-                  {status.replace('_', ' ')} ({filteredTasks.filter(t => t.status === status).length})
+                  {formatStatus(status)} ({filteredTasks.filter(t => t.status === status).length})
                 </h3>
                 
                 <Droppable droppableId={status}>
@@ -724,8 +732,8 @@ export function AdvancedTaskManagement() {
                               >
                                 <div className="flex justify-between items-start mb-2">
                                   <h4 className="font-medium text-gray-900 text-sm">{task.title}</h4>
-                                  <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                                    {task.priority}
+                                  <span className={`text-xs font-medium ${getPriorityColor(task.priority || 'medium')}`}>
+                                    {task.priority || 'medium'}
                                   </span>
                                 </div>
                                 
@@ -739,7 +747,7 @@ export function AdvancedTaskManagement() {
                                       {task.assigneeName.split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <span className="text-xs text-gray-600">
-                                      {format(new Date(task.dueDate), 'MMM dd')}
+                                      {task.dueDate ? format(new Date(task.dueDate), 'MMM dd') : 'No due date'}
                                     </span>
                                   </div>
                                   
@@ -761,12 +769,12 @@ export function AdvancedTaskManagement() {
                                   </div>
                                 </div>
                                 
-                                {task.progress > 0 && (
+                                {(task.progress || 0) > 0 && (
                                   <div className="mt-3">
                                     <div className="w-full bg-gray-200 rounded-full h-1">
                                       <div 
                                         className="bg-blue-600 h-1 rounded-full"
-                                        style={{ width: `${task.progress}%` }}
+                                        style={{ width: `${task.progress || 0}%` }}
                                       />
                                     </div>
                                   </div>
@@ -867,26 +875,26 @@ export function AdvancedTaskManagement() {
                         task.status === 'blocked' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {task.status.replace('_', ' ')}
+                        {formatStatus(task.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
-                        {task.priority}
+                      <span className={`text-sm font-medium ${getPriorityColor(task.priority || 'medium')}`}>
+                        {task.priority || 'medium'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                      {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No due date'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                           <div 
                             className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${task.progress}%` }}
+                            style={{ width: `${task.progress || 0}%` }}
                           />
                         </div>
-                        <span className="text-sm text-gray-900">{task.progress}%</span>
+                        <span className="text-sm text-gray-900">{task.progress || 0}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

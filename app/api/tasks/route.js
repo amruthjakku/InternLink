@@ -5,6 +5,7 @@ import { connectToDatabase, getDatabase } from '../../../utils/database';
 import { ObjectId } from 'mongodb';
 import Task from '../../../models/Task';
 import User from '../../../models/User';
+import TaskProgress from '../../../models/TaskProgress';
 
 export async function GET(request) {
   try {
@@ -48,17 +49,19 @@ export async function GET(request) {
         if (weeklyTasks.length > 0) {
           // Convert weekly tasks to the format expected by frontend
           const formattedTasks = weeklyTasks.map(task => ({
-            _id: task._id,
-            title: task.title,
+            id: task._id,
+            title: task.title || 'Untitled Task',
             description: task.description,
             instructions: task.instructions,
             assignmentType: task.assignmentType,
             cohortId: task.cohortId,
             assignedTo: task.assignedTo,
             isActive: task.isActive,
-            status: 'active',
+            status: task.status || 'not_started',
+            priority: task.priority || 'medium',
             difficulty: task.difficulty,
-            points: task.points,
+            points: task.points || 0,
+            progress: 0,
             estimatedHours: task.estimatedHours,
             category: task.category,
             weekNumber: task.weekNumber,
@@ -68,7 +71,7 @@ export async function GET(request) {
             prerequisites: task.prerequisites,
             deliverables: task.deliverables,
             resources: task.resources,
-            tags: task.tags,
+            tags: task.tags || [],
             createdAt: task.createdAt,
             updatedAt: task.updatedAt
           }));
@@ -225,14 +228,32 @@ export async function GET(request) {
       console.log(`Task: ${task.title}, Type: ${task.assignmentType}, Cohort: ${task.cohortId?._id || task.cohortId}, Assigned To: ${task.assignedTo?._id || task.assignedTo}`);
     });
 
+    // Get individual progress for intern users
+    let taskProgressMap = new Map();
+    if (session.user.role === 'intern') {
+      const taskIds = tasks.map(task => task._id);
+      const progressRecords = await TaskProgress.find({
+        taskId: { $in: taskIds },
+        internId: session.user.id
+      });
+      
+      progressRecords.forEach(progress => {
+        taskProgressMap.set(progress.taskId.toString(), progress);
+      });
+    }
+
     // Format tasks for frontend
-    const formattedTasks = tasks.map(task => {
+    const formattedTasks = await Promise.all(tasks.map(async task => {
+      // Get individual progress for this intern if available
+      const individualProgress = taskProgressMap.get(task._id.toString());
+      
       const formattedTask = {
         id: task._id,
         title: task.title,
         description: task.description,
-        status: task.status,
-        priority: task.priority,
+        // Use individual progress status if available, otherwise use task status, with fallback
+        status: (individualProgress ? individualProgress.status : task.status) || 'not_started',
+        priority: task.priority || 'medium',
         category: task.category,
         assigneeId: task.assignedTo?._id,
         assigneeName: task.assignedTo?.name || task.assigneeName,
@@ -241,30 +262,52 @@ export async function GET(request) {
         dueDate: task.dueDate,
         createdDate: task.createdAt,
         estimatedHours: task.estimatedHours,
-        actualHours: task.actualHours,
-        progress: task.progress,
+        // Use individual progress data if available
+        actualHours: individualProgress ? individualProgress.actualHours : task.actualHours,
+        progress: (individualProgress ? individualProgress.progress : task.progress) || 0,
         tags: task.tags || [],
         dependencies: task.dependencies || [],
         attachments: task.attachments || [],
         comments: task.comments || [],
-        timeTracking: task.timeTracking || [],
+        timeTracking: individualProgress ? individualProgress.timeLogs : (task.timeTracking || []),
         cohortId: task.cohortId,
         cohortName: task.cohortName,
         assignmentType: task.assignmentType,
         weekNumber: task.weekNumber || null,
         points: task.points || 0,
-        subtasks: task.subtasks?.map(subtask => ({
-          id: subtask._id,
-          title: subtask.title,
-          description: subtask.description,
-          completed: subtask.completed,
-          completedAt: subtask.completedAt,
-          priority: subtask.priority,
-          estimatedHours: subtask.estimatedHours,
-          actualHours: subtask.actualHours,
-          createdAt: subtask.createdAt,
-          updatedAt: subtask.updatedAt
-        })) || []
+        // Individual progress specific fields
+        individualProgress: individualProgress ? {
+          id: individualProgress._id,
+          status: individualProgress.status,
+          progress: individualProgress.progress,
+          actualHours: individualProgress.actualHours,
+          pointsEarned: individualProgress.pointsEarned,
+          startedAt: individualProgress.startedAt,
+          completedAt: individualProgress.completedAt,
+          submissionUrl: individualProgress.submissionUrl,
+          submissionNotes: individualProgress.submissionNotes,
+          needsHelp: individualProgress.needsHelp,
+          helpMessage: individualProgress.helpMessage
+        } : null,
+        subtasks: task.subtasks?.map(subtask => {
+          // Find individual subtask progress if available
+          const subtaskProgress = individualProgress?.subtaskProgress?.find(
+            sp => sp.subtaskId.toString() === subtask._id.toString()
+          );
+          
+          return {
+            id: subtask._id,
+            title: subtask.title,
+            description: subtask.description,
+            completed: subtaskProgress ? subtaskProgress.completed : subtask.completed,
+            completedAt: subtaskProgress ? subtaskProgress.completedAt : subtask.completedAt,
+            priority: subtask.priority,
+            estimatedHours: subtask.estimatedHours,
+            actualHours: subtaskProgress ? subtaskProgress.actualHours : subtask.actualHours,
+            createdAt: subtask.createdAt,
+            updatedAt: subtask.updatedAt
+          };
+        }) || []
       };
       
       // Add hierarchical assignment information if available
@@ -276,7 +319,7 @@ export async function GET(request) {
       }
       
       return formattedTask;
-    });
+    }));
 
     return NextResponse.json({ 
       tasks: formattedTasks,

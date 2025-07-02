@@ -6,6 +6,9 @@
 
 import { ERROR_CODES } from '../config/constants.js';
 
+// Re-export ERROR_CODES for convenience
+export { ERROR_CODES };
+
 /**
  * Base GitLab error class
  */

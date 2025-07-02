@@ -27,6 +27,11 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days')) || 30;
+    const since = searchParams.get('since');
+    const until = searchParams.get('until');
+    const projectId = searchParams.get('projectId');
+    const limit = parseInt(searchParams.get('limit')) || 50;
+    const useCache = searchParams.get('cache') !== 'false';
 
     // Check cache first
     const cachedCommits = await gitlabUserCache.getCachedUserCommits(userId, days);
@@ -45,13 +50,6 @@ export async function GET(request) {
 
     // Connect to database
     await connectToDatabase();
-
-    const { searchParams } = new URL(request.url);
-    const since = searchParams.get('since');
-    const until = searchParams.get('until');
-    const projectId = searchParams.get('projectId');
-    const limit = parseInt(searchParams.get('limit')) || 50;
-    const useCache = searchParams.get('cache') !== 'false';
 
     // Get GitLab integration
     const integration = await GitLabIntegration.findOne({ 

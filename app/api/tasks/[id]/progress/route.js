@@ -4,6 +4,7 @@ import { authOptions } from '../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../utils/database';
 import Task from '../../../../../models/Task';
 import User from '../../../../../models/User';
+import TaskProgress from '../../../../../models/TaskProgress';
 import mongoose from 'mongoose';
 
 export async function PATCH(request, { params }) {
@@ -99,32 +100,62 @@ export async function PATCH(request, { params }) {
       // This is a temporary fix to ensure functionality
     }
 
-    // Update task progress
-    task.progress = progress;
-    
-    // If progress is 100%, update status to completed
-    if (progress === 100 && task.status !== 'completed' && task.status !== 'review') {
-      task.status = 'completed';
-      task.completedAt = new Date();
-      if (user && user._id) {
-        task.completedBy = user._id;
-      } else {
-        task.completedBy = session.user.id;
-      }
-    } 
-    // If progress is less than 100% but greater than 0, update status to in_progress
-    else if (progress > 0 && progress < 100 && task.status !== 'in_progress' && task.status !== 'review') {
-      task.status = 'in_progress';
+    // Instead of updating the task directly, create/update individual progress
+    let taskProgress = await TaskProgress.findOne({
+      taskId: task._id,
+      internId: session.user.id
+    });
+
+    if (!taskProgress) {
+      // Create new progress record
+      taskProgress = new TaskProgress({
+        taskId: task._id,
+        internId: session.user.id,
+        progress: progress
+      });
+    } else {
+      // Update existing progress record
+      taskProgress.progress = progress;
     }
 
-    await task.save();
+    // Auto-update status based on progress
+    if (progress === 100) {
+      taskProgress.status = 'completed';
+      if (!taskProgress.completedAt) {
+        taskProgress.completedAt = new Date();
+      }
+      if (taskProgress.pointsEarned === 0) {
+        taskProgress.pointsEarned = task.points || 10;
+      }
+    } else if (progress >= 90) {
+      taskProgress.status = 'review';
+    } else if (progress > 0) {
+      taskProgress.status = 'in_progress';
+      if (!taskProgress.startedAt) {
+        taskProgress.startedAt = new Date();
+      }
+    } else {
+      taskProgress.status = 'not_started';
+    }
+
+    await taskProgress.save();
+
+    // Don't modify the original task - it remains as a template for all interns
 
     return NextResponse.json({
       success: true,
       message: 'Task progress updated successfully',
-      progress: task.progress,
-      status: task.status,
-      points: task.points || 10
+      progress: taskProgress.progress,
+      status: taskProgress.status,
+      points: taskProgress.pointsEarned || task.points || 10,
+      taskProgress: {
+        id: taskProgress._id,
+        status: taskProgress.status,
+        progress: taskProgress.progress,
+        pointsEarned: taskProgress.pointsEarned,
+        startedAt: taskProgress.startedAt,
+        completedAt: taskProgress.completedAt
+      }
     });
 
   } catch (error) {

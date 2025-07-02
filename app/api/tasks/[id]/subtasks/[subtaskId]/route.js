@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../../utils/database';
 import Task from '../../../../../../models/Task';
+import TaskProgress from '../../../../../../models/TaskProgress';
 import mongoose from 'mongoose';
 
 export async function PATCH(request, { params }) {
@@ -73,106 +74,121 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Subtask not found' }, { status: 404 });
     }
 
-    // Update the subtask
-    try {
-      // Make sure we're working with a valid subtask
-      if (!task.subtasks[subtaskIndex]) {
-        console.error('Subtask at index not found:', subtaskIndex);
-        return NextResponse.json({ error: 'Subtask reference not found' }, { status: 404 });
-      }
-      
-      console.log('Updating subtask at index:', subtaskIndex);
-      console.log('Current subtask state:', JSON.stringify(task.subtasks[subtaskIndex], null, 2));
-      
-      // Update the subtask properties
-      task.subtasks[subtaskIndex].completed = completed;
-      task.subtasks[subtaskIndex].updatedAt = new Date();
-      
-      if (completed) {
-        task.subtasks[subtaskIndex].completedAt = new Date();
-        task.subtasks[subtaskIndex].completedBy = session.user.id;
-      } else {
-        task.subtasks[subtaskIndex].completedAt = null;
-        task.subtasks[subtaskIndex].completedBy = null;
-      }
-      
-      console.log('Updated subtask state:', JSON.stringify(task.subtasks[subtaskIndex], null, 2));
-    } catch (err) {
-      console.error('Error updating subtask properties:', err);
-      return NextResponse.json({ 
-        error: 'Failed to update subtask properties',
-        details: err.message
-      }, { status: 500 });
+    // Get the subtask details
+    const subtask = task.subtasks[subtaskIndex];
+    if (!subtask) {
+      console.error('Subtask at index not found:', subtaskIndex);
+      return NextResponse.json({ error: 'Subtask reference not found' }, { status: 404 });
     }
 
-    // Calculate overall task progress based on subtasks
+    console.log('Updating subtask at index:', subtaskIndex);
+    console.log('Current subtask state:', JSON.stringify(subtask, null, 2));
+
+    // Find or create individual TaskProgress record
+    let taskProgress = await TaskProgress.findOne({
+      taskId: task._id,
+      internId: session.user.id
+    });
+
+    if (!taskProgress) {
+      // Create new progress record
+      taskProgress = new TaskProgress({
+        taskId: task._id,
+        internId: session.user.id,
+        status: 'not_started',
+        progress: 0,
+        subtaskProgress: []
+      });
+    }
+
+    // Update subtask progress in the individual record
+    let subtaskProgressIndex = taskProgress.subtaskProgress.findIndex(
+      sp => sp.subtaskId.toString() === subtask._id.toString()
+    );
+
+    if (subtaskProgressIndex === -1) {
+      // Add new subtask progress
+      taskProgress.subtaskProgress.push({
+        subtaskId: subtask._id,
+        completed: completed,
+        completedAt: completed ? new Date() : null,
+        actualHours: 0
+      });
+    } else {
+      // Update existing subtask progress
+      taskProgress.subtaskProgress[subtaskProgressIndex].completed = completed;
+      taskProgress.subtaskProgress[subtaskProgressIndex].completedAt = completed ? new Date() : null;
+    }
+
+    // Calculate overall task progress based on individual subtask progress
     try {
       if (task.subtasks.length > 0) {
-        const completedSubtasks = task.subtasks.filter(subtask => subtask.completed).length;
-        task.progress = Math.round((completedSubtasks / task.subtasks.length) * 100);
+        const completedSubtasks = taskProgress.subtaskProgress.filter(sp => sp.completed).length;
+        taskProgress.progress = Math.round((completedSubtasks / task.subtasks.length) * 100);
         
-        console.log(`Task progress: ${completedSubtasks}/${task.subtasks.length} = ${task.progress}%`);
+        console.log(`Individual task progress: ${completedSubtasks}/${task.subtasks.length} = ${taskProgress.progress}%`);
         
-        // If all subtasks are completed, mark the task as completed
+        // Update status based on progress
         if (completedSubtasks === task.subtasks.length) {
-          task.status = 'completed';
-          console.log('All subtasks completed, marking task as completed');
-        } else if (task.status === 'completed') {
-          // If not all subtasks are completed but task was marked as completed, revert to in_progress
-          task.status = 'in_progress';
-          console.log('Not all subtasks completed, reverting task to in_progress');
+          taskProgress.status = 'completed';
+          if (!taskProgress.completedAt) {
+            taskProgress.completedAt = new Date();
+          }
+          if (taskProgress.pointsEarned === 0) {
+            taskProgress.pointsEarned = task.points || 10;
+          }
+          console.log('All subtasks completed, marking individual progress as completed');
+        } else if (completedSubtasks > 0) {
+          if (taskProgress.status === 'not_started') {
+            taskProgress.status = 'in_progress';
+            if (!taskProgress.startedAt) {
+              taskProgress.startedAt = new Date();
+            }
+          }
+          console.log('Some subtasks completed, marking individual progress as in_progress');
         }
       }
     } catch (err) {
-      console.error('Error calculating task progress:', err);
-      // Continue with saving even if progress calculation fails
+      console.error('Error calculating individual task progress:', err);
     }
 
-    // Save the task with updated subtask and progress
+    // Save the individual progress record
     try {
-      console.log('Saving task with updated subtask');
-      
-      // Use updateOne instead of save to avoid validation issues
-      const result = await Task.updateOne(
-        { _id: id },
-        { 
-          $set: {
-            [`subtasks.${subtaskIndex}.completed`]: completed,
-            [`subtasks.${subtaskIndex}.updatedAt`]: new Date(),
-            [`subtasks.${subtaskIndex}.completedAt`]: completed ? new Date() : null,
-            [`subtasks.${subtaskIndex}.completedBy`]: completed ? session.user.id : null,
-            progress: task.progress,
-            status: task.status
-          }
-        }
-      );
-      
-      console.log('Task update result:', result);
-      
-      if (result.modifiedCount === 0) {
-        console.error('Task was not modified');
-        return NextResponse.json({ 
-          error: 'Failed to update subtask - no changes were made',
-          details: 'The database operation completed but no documents were modified'
-        }, { status: 500 });
-      }
-      
-      console.log('Task updated successfully using direct update');
+      console.log('Saving individual task progress');
+      await taskProgress.save();
+      console.log('Individual progress saved successfully');
     } catch (err) {
-      console.error('Error saving task:', err);
+      console.error('Error saving individual task progress:', err);
       console.error('Error stack:', err.stack);
       return NextResponse.json({ 
-        error: 'Failed to save task with updated subtask',
+        error: 'Failed to save individual task progress',
         details: err.message
       }, { status: 500 });
     }
 
-    // Prepare response with detailed information
+    // Get the updated subtask progress for response
+    const updatedSubtaskProgress = taskProgress.subtaskProgress.find(
+      sp => sp.subtaskId.toString() === subtask._id.toString()
+    );
+
+    // Prepare response with individual progress information
     const response = {
       success: true,
-      subtask: task.subtasks[subtaskIndex],
-      taskProgress: task.progress,
-      taskStatus: task.status,
+      subtask: {
+        id: subtask._id,
+        title: subtask.title,
+        description: subtask.description,
+        completed: updatedSubtaskProgress ? updatedSubtaskProgress.completed : completed,
+        completedAt: updatedSubtaskProgress ? updatedSubtaskProgress.completedAt : null,
+        actualHours: updatedSubtaskProgress ? updatedSubtaskProgress.actualHours : 0
+      },
+      individualProgress: {
+        taskId: taskProgress.taskId,
+        status: taskProgress.status,
+        progress: taskProgress.progress,
+        pointsEarned: taskProgress.pointsEarned,
+        completedAt: taskProgress.completedAt
+      },
       taskId: task._id,
       message: `Subtask ${completed ? 'completed' : 'marked as incomplete'} successfully`
     };

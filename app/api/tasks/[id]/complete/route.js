@@ -4,6 +4,7 @@ import { authOptions } from '../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../utils/database';
 import Task from '../../../../../models/Task';
 import User from '../../../../../models/User';
+import TaskProgress from '../../../../../models/TaskProgress';
 import mongoose from 'mongoose';
 
 export async function PATCH(request, { params }) {
@@ -100,24 +101,35 @@ export async function PATCH(request, { params }) {
       };
     }
 
-    // Update task status to completed
-    task.status = 'completed';
-    task.progress = 100;
-    task.completedAt = new Date();
-    task.completedBy = user._id;
-
-    // Add completion record
-    if (!task.completions) {
-      task.completions = [];
-    }
-    
-    task.completions.push({
-      internId: user._id,
-      gitlabUsername: user.gitlabUsername,
-      completedAt: new Date()
+    // Instead of updating the task directly, create/update individual progress
+    let taskProgress = await TaskProgress.findOne({
+      taskId: task._id,
+      internId: user._id
     });
 
-    await task.save();
+    if (!taskProgress) {
+      // Create new progress record
+      taskProgress = new TaskProgress({
+        taskId: task._id,
+        internId: user._id,
+        status: 'completed',
+        progress: 100,
+        completedAt: new Date(),
+        pointsEarned: task.points || 10
+      });
+    } else {
+      // Update existing progress record
+      taskProgress.status = 'completed';
+      taskProgress.progress = 100;
+      taskProgress.completedAt = new Date();
+      if (taskProgress.pointsEarned === 0) {
+        taskProgress.pointsEarned = task.points || 10;
+      }
+    }
+
+    await taskProgress.save();
+
+    // Don't modify the original task - it remains as a template for all interns
 
     return NextResponse.json({
       success: true,
@@ -125,10 +137,17 @@ export async function PATCH(request, { params }) {
       task: {
         id: task._id,
         title: task.title,
-        status: task.status,
-        progress: task.progress,
-        points: task.points || 10,
-        completedAt: task.completedAt
+        status: taskProgress.status,
+        progress: taskProgress.progress,
+        points: taskProgress.pointsEarned,
+        completedAt: taskProgress.completedAt
+      },
+      taskProgress: {
+        id: taskProgress._id,
+        status: taskProgress.status,
+        progress: taskProgress.progress,
+        pointsEarned: taskProgress.pointsEarned,
+        completedAt: taskProgress.completedAt
       }
     });
 

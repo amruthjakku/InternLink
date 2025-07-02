@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import { CollegeBadge } from '../CollegeLogo';
 // Using real API calls - no mock data
 
+// Helper function to safely format status
+const formatStatus = (status) => {
+  if (!status || typeof status !== 'string') {
+    return 'scheduled';
+  }
+  return status.replace('_', ' ');
+};
+
 export function MeetingsTab() {
   const [meetings, setMeetings] = useState([]);
   const [interns, setInterns] = useState([]);
@@ -118,7 +126,7 @@ export function MeetingsTab() {
                         meeting.status === 'in_progress' ? 'bg-green-100 text-green-800' :
                         'bg-blue-100 text-blue-800'
                       }`}>
-                        {meeting.status.replace('_', ' ')}
+                        {formatStatus(meeting.status)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{meeting.description}</p>
