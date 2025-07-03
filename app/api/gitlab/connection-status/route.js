@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '@/lib/mongoose';
-import GitLabIntegration from '@/models/GitLabIntegration';
+import { connectToDatabase } from '../../../../utils/database';
+import GitLabIntegration from '../../../../models/GitLabIntegration';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,12 +1,12 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '@/lib/mongoose';
-import Task from '@/models/Task';
-import TaskProgress from '@/models/TaskProgress';
-import GitLabIntegration from '@/models/GitLabIntegration';
-import User from '@/models/User';
-import { gitlabApiRequest, getUserProjects } from '@/utils/gitlab-api';
-import { decryptToken } from '@/utils/encryption';
+import { connectToDatabase } from '../../../../utils/database';
+import Task from '../../../../models/Task';
+import TaskProgress from '../../../../models/TaskProgress';
+import GitLabIntegration from '../../../../models/GitLabIntegration';
+import User from '../../../../models/User';
+import { gitlabApiRequest, getUserProjects } from '../../../../utils/gitlab-api';
+import { decryptToken } from '../../../../utils/encryption';
 
 /**
  * POST /api/tasks/verify-submission
