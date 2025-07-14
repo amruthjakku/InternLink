@@ -3,7 +3,7 @@
  * Provides user-specific caching for GitLab data with intelligent invalidation
  */
 
-import { GitLabCache } from '../gitlab-wrapper/cache/GitLabCache.js';
+import { GitLabCache } from './GitLabCache.js';
 
 class GitLabUserCacheService {
   constructor() {
@@ -389,6 +389,21 @@ class GitLabUserCacheService {
     }
 
     return toDelete.length;
+  }
+
+  /**
+   * Clear all cache data (system-wide)
+   */
+  async clearAllCache() {
+    try {
+      await this.cache.clear();
+      this.userStats.clear();
+      console.log('All cache data cleared');
+      return true;
+    } catch (error) {
+      console.error('Failed to clear all cache:', error);
+      return false;
+    }
   }
 
   /**

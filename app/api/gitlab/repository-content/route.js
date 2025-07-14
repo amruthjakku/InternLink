@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import { connectToDatabase } from '@/utils/database';
-import GitLabIntegration from '@/models/GitLabIntegration';
-import { gitlabApiRequest } from '@/utils/gitlab-api';
-import { decryptToken } from '@/utils/encryption';
+import { connectToDatabase } from '../../../../utils/database';
+import GitLabIntegration from '../../../../models/GitLabIntegration';
+import { gitlabApiRequest } from '../../../../utils/gitlab-api';
+import { decryptToken } from '../../../../utils/encryption';
 
 /**
  * GET /api/gitlab/repository-content
