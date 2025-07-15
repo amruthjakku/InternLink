@@ -92,7 +92,7 @@ GITLAB_RATE_LIMIT=100
 
 #### Basic Setup
 ```javascript
-import { GitLabWrapper } from '@internlink/gitlab-wrapper';
+import { gitlabApiRequest } from '../utils/gitlab-api';
 
 // Initialize the wrapper
 const gitlab = new GitLabWrapper({

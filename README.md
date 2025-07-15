@@ -122,7 +122,7 @@ InternLink/
 ├── utils/                 # Utility functions
 ├── lib/                   # Library configurations
 ├── scripts/               # Database and setup scripts
-├── gitlab-wrapper/        # Custom GitLab integration
+
 └── public/                # Static assets
 ```
 
