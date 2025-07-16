@@ -185,12 +185,19 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
               </div>
             )}
             {user?.college && (
-              <CollegeLogo 
-                college={user.college} 
-                size="sm" 
-                showName={true}
-                className="py-1"
-              />
+              <div>
+                <CollegeLogo 
+                  college={user.college} 
+                  size="sm" 
+                  showName={true}
+                  className="py-1"
+                />
+                {user?.role === 'admin' && (
+                  <div className="mt-1 ml-7 text-xs text-gray-500 italic">
+                    Associated for oversight and coordination
+                  </div>
+                )}
+              </div>
             )}
             {user?.cohortId && (
               <div className="flex items-center space-x-2">
@@ -207,30 +214,50 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">
-            {stats.repositoriesContributed || 0}
+      <div className="mb-6">
+        {user?.role === 'admin' && (
+          <div className="mb-3 text-xs text-gray-600 flex items-center gap-2">
+            <span>📊</span>
+            <span>Your activity metrics demonstrate system engagement and leadership</span>
           </div>
-          <div className="text-xs text-gray-500">Repositories</div>
-        </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">
-            {stats.commitCount || 0}
+        )}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.repositoriesContributed || 0}
+            </div>
+            <div className="text-xs text-gray-500">Repositories</div>
+            {user?.role === 'admin' && (
+              <div className="text-xs text-blue-600 mt-1">System repos</div>
+            )}
           </div>
-          <div className="text-xs text-gray-500">Total Commits</div>
-        </div>
-        <div className="text-center p-3 bg-purple-50 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">
-            {stats.currentStreak || 0}
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">
+              {stats.commitCount || 0}
+            </div>
+            <div className="text-xs text-gray-500">Total Commits</div>
+            {user?.role === 'admin' && (
+              <div className="text-xs text-green-600 mt-1">Platform updates</div>
+            )}
           </div>
-          <div className="text-xs text-gray-500">Day Streak</div>
-        </div>
-        <div className="text-center p-3 bg-orange-50 rounded-lg">
-          <div className="text-2xl font-bold text-orange-600">
-            {stats.attendanceRate || 0}%
+          <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.currentStreak || 0}
+            </div>
+            <div className="text-xs text-gray-500">Day Streak</div>
+            {user?.role === 'admin' && (
+              <div className="text-xs text-purple-600 mt-1">Consistency</div>
+            )}
           </div>
-          <div className="text-xs text-gray-500">Attendance</div>
+          <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <div className="text-2xl font-bold text-orange-600">
+              {stats.attendanceRate || 0}%
+            </div>
+            <div className="text-xs text-gray-500">Attendance</div>
+            {user?.role === 'admin' && (
+              <div className="text-xs text-orange-600 mt-1">Leadership presence</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -246,6 +273,23 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
+        {/* Admin context explanation */}
+        {user?.role === 'admin' && (
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <span className="text-amber-600">💡</span>
+              <div className="text-xs text-amber-700">
+                <p className="font-medium mb-1">Why Tasks Matter for Admins:</p>
+                <ul className="space-y-1 ml-2">
+                  <li>• Monitor system health through task completion rates</li>
+                  <li>• Identify bottlenecks in the learning process</li>
+                  <li>• Ensure cohorts are progressing as expected</li>
+                  <li>• Lead by example - complete admin-specific tasks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-3 bg-green-50 rounded-lg">
             <div className="text-xl font-bold text-green-600">

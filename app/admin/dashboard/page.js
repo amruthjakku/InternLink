@@ -9,8 +9,7 @@ import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserMa
 import { EnhancedUserManagement } from '../../../components/admin/EnhancedUserManagement';
 import { DataIntegrityChecker } from '../../../components/admin/DataIntegrityChecker';
 import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
-import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
-import { IPManagement } from '../../../components/admin/IPManagement';
+import { CombinedAttendanceSystem } from '../../../components/admin/CombinedAttendanceSystem';
 import { CollegeManagement } from '../../../components/CollegeManagement';
 import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
@@ -605,60 +604,7 @@ const CombinedCollegeManagement = () => {
   );
 };
 
-const CombinedAttendanceSystem = () => {
-  const [activeSubTab, setActiveSubTab] = useState('analytics');
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl">📊</span>
-          </div>
-          Attendance & IP Management Center
-        </h2>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setActiveSubTab('analytics')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'analytics'
-                ? 'bg-blue-100 text-blue-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Analytics
-          </button>
-          <button
-            onClick={() => setActiveSubTab('ip-management')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'ip-management'
-                ? 'bg-blue-100 text-blue-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            IP Management
-          </button>
-          <button
-            onClick={() => setActiveSubTab('debug')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'debug'
-                ? 'bg-blue-100 text-blue-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Debug Tools
-          </button>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {activeSubTab === 'analytics' && <AttendanceAnalytics />}
-        {activeSubTab === 'ip-management' && <IPManagement />}
-        {activeSubTab === 'debug' && <AttendanceDebugger />}
-      </div>
-    </div>
-  );
-};
+// Moved to separate component file
 
 const CombinedUserManagement = () => {
   const [activeSubTab, setActiveSubTab] = useState('advanced');
@@ -780,20 +726,64 @@ export default function AdminDashboard() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Define the tab configuration with original names but new functionality
+  // Simplified tab configuration - reduced from 12 to 7 tabs
   const defaultTabs = [
-    { id: 'overview', name: 'Overview', icon: '📊', color: 'from-blue-500 to-purple-500', category: 'main' },
-    { id: 'college-management', name: 'College Management', icon: '�', color: 'from-purple-500 to-pink-500', category: 'core' },
-    { id: 'attendance-ip', name: 'Attendance & IP System', icon: '📋', color: 'from-yellow-500 to-orange-500', category: 'core' },
-    { id: 'user-management', name: 'User Management', icon: '👥', color: 'from-green-500 to-emerald-500', category: 'core' },
-    { id: 'cohort-system', name: 'Cohort System', icon: '🎯', color: 'from-teal-500 to-cyan-500', category: 'core' },
-    { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️', color: 'from-red-500 to-orange-500', category: 'admin' },
-    { id: 'analytics-hub', name: 'Analytics Hub', icon: '📈', color: 'from-indigo-500 to-blue-500', category: 'insights' },
-    { id: 'task-management', name: 'Task Management', icon: '📝', color: 'from-yellow-500 to-amber-500', category: 'core' },
-    { id: 'super-mentors', name: 'Super Mentors', icon: '👨‍🏫', color: 'from-blue-500 to-sky-500', category: 'core' },
-    { id: 'data-integrity', name: 'Data Integrity', icon: '🔧', color: 'from-gray-500 to-slate-500', category: 'admin' },
-    { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦', color: 'from-purple-500 to-violet-500', category: 'admin' },
-    { id: 'debug-tools', name: 'Debug Tools', icon: '🔍', color: 'from-gray-600 to-gray-800', category: 'admin' }
+    { 
+      id: 'overview', 
+      name: 'Overview', 
+      icon: '🏠', 
+      color: 'from-blue-500 to-purple-500', 
+      category: 'main',
+      description: 'Dashboard, analytics & insights'
+    },
+    { 
+      id: 'user-management', 
+      name: 'User Management', 
+      icon: '👥', 
+      color: 'from-green-500 to-emerald-500', 
+      category: 'core',
+      description: 'All users, roles & permissions'
+    },
+    { 
+      id: 'college-management', 
+      name: 'College Management', 
+      icon: '🏫', 
+      color: 'from-purple-500 to-pink-500', 
+      category: 'core',
+      description: 'Institutions & assignments'
+    },
+    { 
+      id: 'attendance-ip', 
+      name: 'Attendance & Security', 
+      icon: '🔐', 
+      color: 'from-yellow-500 to-orange-500', 
+      category: 'core',
+      description: 'Attendance, IP & access control'
+    },
+    { 
+      id: 'cohort-system', 
+      name: 'Cohort System', 
+      icon: '🎯', 
+      color: 'from-teal-500 to-cyan-500', 
+      category: 'core',
+      description: 'Groups & batch management'
+    },
+    { 
+      id: 'task-management', 
+      name: 'Task Management', 
+      icon: '📋', 
+      color: 'from-orange-500 to-red-500', 
+      category: 'core',
+      description: 'Tasks, assignments & progress'
+    },
+    { 
+      id: 'system-monitoring', 
+      name: 'System Admin', 
+      icon: '⚙️', 
+      color: 'from-gray-600 to-gray-800', 
+      category: 'admin',
+      description: 'Monitoring, data & diagnostics'
+    }
   ];
 
   // Tab management with drag and drop functionality
@@ -1347,22 +1337,7 @@ export default function AdminDashboard() {
         {activeTab === 'college-management' && <CombinedCollegeManagement />}
         
         {/* Attendance & IP System Tab */}
-        {activeTab === 'attendance-ip' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Attendance & IP Management</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <IPManagement />
-                </div>
-                <div>
-                  <AttendanceAnalytics />
-                </div>
-              </div>
-            </div>
-            <AttendanceDebugger />
-          </div>
-        )}
+        {activeTab === 'attendance-ip' && <CombinedAttendanceSystem />}
         
         {/* User Management Tab */}
         {activeTab === 'user-management' && <EnhancedUserManagement />}
