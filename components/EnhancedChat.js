@@ -26,6 +26,8 @@ function EnhancedChat({ userRole, selectedRoomId }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [userStatus, setUserStatus] = useState('online');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -107,6 +109,16 @@ function EnhancedChat({ userRole, selectedRoomId }) {
 
   // Common emojis for quick access
   const commonEmojis = ['😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🎉', '🔥', '💯', '😢', '😮', '😡', '🙏', '👏'];
+
+  // Status options
+  const statusOptions = [
+    { value: 'online', label: 'Online', color: 'bg-green-500', emoji: '🟢' },
+    { value: 'away', label: 'Away', color: 'bg-yellow-500', emoji: '🟡' },
+    { value: 'busy', label: 'Busy', color: 'bg-red-500', emoji: '🔴' },
+    { value: 'offline', label: 'Offline', color: 'bg-gray-400', emoji: '⚫' }
+  ];
+
+  const getCurrentStatus = () => statusOptions.find(s => s.value === userStatus) || statusOptions[0];
 
   // Handle emoji selection
   const handleEmojiSelect = (emoji) => {
@@ -410,24 +422,52 @@ function EnhancedChat({ userRole, selectedRoomId }) {
           {/* Profile Header */}
           <div className="p-4 border-b border-gray-200 bg-white">
             {/* User Profile Section */}
-            <div className={`flex items-center mb-4 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
-              <div className="relative">
-                {typeof getProfilePicture(user) === 'string' ? (
-                  <img src={getProfilePicture(user)} alt={user.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
-                ) : (
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getProfilePicture(user).color} text-white text-sm font-medium shadow-sm`}>
-                    {getProfilePicture(user).initials}
+            <div className={`relative mb-4 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+              <div 
+                className={`flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
+                onClick={() => !sidebarCollapsed && setShowStatusDropdown(!showStatusDropdown)}
+              >
+                <div className="relative">
+                  {typeof getProfilePicture(user) === 'string' ? (
+                    <img src={getProfilePicture(user)} alt={user.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getProfilePicture(user).color} text-white text-sm font-medium shadow-sm`}>
+                      {getProfilePicture(user).initials}
+                    </div>
+                  )}
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 ${getCurrentStatus().color} rounded-full border-2 border-white`} title={getCurrentStatus().label}></div>
+                </div>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 truncate">{user.name}</h4>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                      <span className={`text-xs ${userStatus === 'online' ? 'text-green-600' : userStatus === 'away' ? 'text-yellow-600' : userStatus === 'busy' ? 'text-red-600' : 'text-gray-500'}`}>
+                        • {getCurrentStatus().label}
+                      </span>
+                    </div>
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" title="Online"></div>
               </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 truncate">{user.name}</h4>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-sm text-gray-500 capitalize">{user.role}</p>
-                    <span className="text-xs text-green-600">• Online</span>
-                  </div>
+
+              {/* Status Dropdown */}
+              {showStatusDropdown && !sidebarCollapsed && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  {statusOptions.map(status => (
+                    <button
+                      key={status.value}
+                      onClick={() => {
+                        setUserStatus(status.value);
+                        setShowStatusDropdown(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
+                        userStatus === status.value ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <div className={`w-3 h-3 ${status.color} rounded-full`}></div>
+                      <span className="text-sm">{status.label}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
