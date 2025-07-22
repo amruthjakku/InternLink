@@ -2,11 +2,11 @@ import { useState } from 'react';
 
 const CombinedUserManagement = () => {
   const [users, setUsers] = useState([
-    { _id: '1', name: 'John Smith', email: 'john@example.com', role: 'mentor', college: 'Tech University', gitlabUsername: 'johnsmith', isActive: true },
-    { _id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', role: 'super-mentor', college: 'Innovation College', gitlabUsername: 'sarahj', isActive: true },
-    { _id: '3', name: 'Michael Brown', email: 'michael@example.com', role: 'intern', college: 'Tech University', gitlabUsername: 'michaelb', isActive: true },
-    { _id: '4', name: 'Emily Davis', email: 'emily@example.com', role: 'intern', college: 'Digital Arts Institute', gitlabUsername: 'emilyd', isActive: false },
-    { _id: '5', name: 'Robert Wilson', email: 'robert@example.com', role: 'mentor', college: 'Innovation College', gitlabUsername: 'robertw', isActive: true }
+    { _id: '1', name: 'John Smith', email: 'john@example.com', role: 'Tech Lead', college: 'Tech University', gitlabUsername: 'johnsmith', isActive: true },
+    { _id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', role: 'POC', college: 'Innovation College', gitlabUsername: 'sarahj', isActive: true },
+    { _id: '3', name: 'Michael Brown', email: 'michael@example.com', role: 'AI developer Intern', college: 'Tech University', gitlabUsername: 'michaelb', isActive: true },
+    { _id: '4', name: 'Emily Davis', email: 'emily@example.com', role: 'AI developer Intern', college: 'Digital Arts Institute', gitlabUsername: 'emilyd', isActive: false },
+    { _id: '5', name: 'Robert Wilson', email: 'robert@example.com', role: 'Tech Lead', college: 'Innovation College', gitlabUsername: 'robertw', isActive: true }
   ]);
 
   const [activeFilter, setActiveFilter] = useState('all');
@@ -93,8 +93,8 @@ const CombinedUserManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                    user.role === 'super-mentor' ? 'bg-blue-100 text-blue-800' :
-                    user.role === 'mentor' ? 'bg-green-100 text-green-800' :
+                    user.role === 'POC' ? 'bg-blue-100 text-blue-800' :
+                    user.role === 'Tech Lead' ? 'bg-green-100 text-green-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
                     {user.role}

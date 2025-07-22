@@ -124,8 +124,8 @@ const SuperMentorsTab = ({ colleges, users }) => {
       if (response.ok) {
         const data = await response.json();
         setCollegeUsers({
-          mentors: data.users?.filter(u => u.role === 'mentor' || u.role === 'super-mentor') || [],
-          interns: data.users?.filter(u => u.role === 'intern') || []
+          mentors: data.users?.filter(u => u.role === 'Tech Lead' || u.role === 'POC') || [],
+          interns: data.users?.filter(u => u.role === 'AI developer Intern') || []
         });
       }
     } catch (error) {
@@ -222,7 +222,7 @@ const SuperMentorsTab = ({ colleges, users }) => {
                         <div className="text-xs text-gray-500">{mentor.gitlabUsername}</div>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded ${
-                        mentor.role === 'super-mentor' 
+                        mentor.role === 'POC' 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-blue-100 text-blue-800'
                       }`}>
@@ -277,8 +277,8 @@ const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
       const response = await fetch(`/api/admin/colleges/${college._id}/users`);
       if (response.ok) {
         const data = await response.json();
-        setMentors(data.users?.filter(u => u.role === 'mentor' || u.role === 'super-mentor') || []);
-        setInterns(data.users?.filter(u => u.role === 'intern') || []);
+        setMentors(data.users?.filter(u => u.role === 'Tech Lead' || u.role === 'POC') || []);
+        setInterns(data.users?.filter(u => u.role === 'AI developer Intern') || []);
       }
     } catch (error) {
       console.error('Error fetching college users:', error);

@@ -39,8 +39,8 @@ async function testCohortCollegeAPI() {
           if (!acc[collegeName]) {
             acc[collegeName] = { interns: 0, mentors: 0, others: 0 };
           }
-          if (user.role === 'intern') acc[collegeName].interns++;
-          else if (user.role === 'mentor') acc[collegeName].mentors++;
+          if (user.role === 'AI developer Intern') acc[collegeName].interns++;
+          else if (user.role === 'Tech Lead') acc[collegeName].mentors++;
           else acc[collegeName].others++;
         }
         return acc;

@@ -81,7 +81,7 @@ const OnboardingFlow = () => {
 
   const handleRoleSelection = (role) => {
     setSelectedRole(role);
-    setCurrentStep(role === 'mentor' ? 'mentor-onboarding' : 'intern-onboarding');
+    setCurrentStep(role === 'Tech Lead' ? 'tech-lead-onboarding' : 'ai-developer-intern-onboarding');
   };
 
   const handleOnboardingComplete = async (data) => {

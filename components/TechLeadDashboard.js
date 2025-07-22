@@ -95,7 +95,7 @@ export function MentorDashboard() {
     return baseGroups;
   };
 
-  const tabGroups = getTabGroups(user?.role || 'mentor');
+  const tabGroups = getTabGroups(user?.role || 'Tech Lead');
   const currentGroup = tabGroups[activeGroup];
 
   useEffect(() => {
@@ -404,25 +404,25 @@ export function MentorDashboard() {
       case 'intern-management':
         return <InternManagementTab {...commonProps} />;
       case 'mentor-management':
-        return user?.role === 'super-mentor' ? <MentorManagementTab {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <TechLeadManagementTab {...commonProps} /> : renderAccessDenied();
       case 'cohort-management':
-        return user?.role === 'super-mentor' ? <CohortManagementTab {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <CohortManagementTab {...commonProps} /> : renderAccessDenied();
       case 'task-management':
-        return user?.role === 'super-mentor' ? <AdvancedTaskManagement {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <AdvancedTaskManagement {...commonProps} /> : renderAccessDenied();
       case 'performance':
         return <PerformanceOverview {...commonProps} />;
       case 'team-activity':
         return <TeamActivity {...commonProps} />;
       case 'system-overview':
-        return user?.role === 'super-mentor' ? <TeamActivityDashboard {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <TeamActivityDashboard {...commonProps} /> : renderAccessDenied();
       case 'gitlab-integration':
-        return user?.role === 'super-mentor' ? <GitLabIntegrationDashboard {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <GitLabIntegrationDashboard {...commonProps} /> : renderAccessDenied();
       case 'attendance':
         return <AttendanceTab {...commonProps} />;
       case 'leaderboard':
         return <LeaderboardTab {...commonProps} />;
       case 'communication':
-        return user?.role === 'super-mentor' ? <SuperMentorCommunicationTab {...commonProps} /> : renderAccessDenied();
+        return user?.role === 'POC' ? <POCCommunicationTab {...commonProps} /> : renderAccessDenied();
       case 'team-chat':
         return <EnhancedChat userRole={user?.role} />;
       case 'meetings':
@@ -521,9 +521,9 @@ export function MentorDashboard() {
                 </h1>
                 <p className="mt-2 text-sm text-gray-600">
                   <span className="inline-flex items-center">
-                    <span className="mr-2">{user?.role === 'super-mentor' ? '👨‍💼' : '👨‍🏫'}</span>
-                    {user?.role === 'super-mentor' 
-                      ? 'Manage mentors, interns, and college operations'
+                    <span className="mr-2">{user?.role === 'POC' ? '👨‍💼' : '👨‍🏫'}</span>
+                    {user?.role === 'POC' 
+                      ? 'Manage Tech Leads, AI developer interns, and college operations'
                       : 'Manage and monitor your assigned interns'
                     }
                   </span>

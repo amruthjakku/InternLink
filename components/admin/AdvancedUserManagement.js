@@ -143,9 +143,9 @@ export function AdvancedUserManagement() {
         setPermissions(data.permissions || []);
       } else {
         setPermissions([
-          { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['intern', 'mentor', 'admin'] },
-          { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['mentor', 'admin'] },
-          { id: 3, name: 'View Reports', description: 'Access to analytics and reports', roles: ['mentor', 'admin'] },
+          { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['AI developer Intern', 'Tech Lead', 'admin'] },
+          { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['Tech Lead', 'admin'] },
+          { id: 3, name: 'View Reports', description: 'Access to analytics and reports', roles: ['Tech Lead', 'admin'] },
           { id: 4, name: 'Manage Users', description: 'Add, edit, and delete users', roles: ['admin'] },
           { id: 5, name: 'System Settings', description: 'Modify system configuration', roles: ['admin'] },
           { id: 6, name: 'Bulk Operations', description: 'Perform bulk user operations', roles: ['admin'] }
@@ -159,7 +159,7 @@ export function AdvancedUserManagement() {
 
   const fetchMentors = async (collegeName = null) => {
     try {
-      let url = '/api/admin/users?role=mentor';
+      let url = '/api/admin/users?role=Tech%20Lead';
       if (collegeName) {
         url += `&college=${encodeURIComponent(collegeName)}`;
       }
@@ -467,12 +467,12 @@ export function AdvancedUserManagement() {
 
   // User distribution data
   const roleDistributionData = {
-    labels: ['Interns', 'Mentors', 'Super Mentors', 'Admins'],
+    labels: ['AI developer Interns', 'Tech Leads', 'POCs', 'Admins'],
     datasets: [{
       data: [
-        (users && Array.isArray(users)) ? users.filter(u => u.role === 'intern').length : 0,
-        (users && Array.isArray(users)) ? users.filter(u => u.role === 'mentor').length : 0,
-        (users && Array.isArray(users)) ? users.filter(u => u.role === 'super-mentor').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'AI developer Intern').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'Tech Lead').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'POC').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'admin').length : 0
       ],
       backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B']
@@ -521,7 +521,7 @@ export function AdvancedUserManagement() {
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-2">Bulk Import Users</h3>
             <p className="text-sm text-gray-600 mb-2">
-              Import users in bulk from a CSV or Excel file. Download the sample sheet to see the required format. Supported roles: intern, mentor, super-mentor, admin.
+              Import users in bulk from a CSV or Excel file. Download the sample sheet to see the required format. Supported roles: AI developer Intern, Tech Lead, POC, admin.
             </p>
             <div className="flex items-center gap-4 mb-4">
               <a href="/sample-user-import.csv" download className="px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm">Download Sample CSV</a>
