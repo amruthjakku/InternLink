@@ -37,7 +37,7 @@ export function CollegeManagement() {
         
         // Calculate statistics for each college
         const collegesWithStats = colleges.map(college => {
-          const collegeAI Developer Interns = users.filter(user => {
+          const collegeAIDeveloperInterns = users.filter(user => {
             if (user.role !== 'AI Developer Intern') return false;
             
             // Handle different formats of college ID comparison
@@ -53,8 +53,8 @@ export function CollegeManagement() {
             return userCollegeStr === collegeIdStr;
           });
           
-          const activeAIDeveloperInterns = collegeAI Developer Interns.filter(intern => intern.isActive);
-          const totalAIDeveloperInterns = collegeAI Developer Interns.length;
+          const activeAIDeveloperInterns = collegeAIDeveloperInterns.filter(intern => intern.isActive);
+          const totalAIDeveloperInterns = collegeAIDeveloperInterns.length;
           
           // Calculate completion rate (simplified - could be based on actual completion data)
           const completionRate = totalAIDeveloperInterns > 0 ? 
@@ -215,7 +215,7 @@ export function CollegeManagement() {
               
               {/* Additional Info */}
               <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Super-mentor: {college.superTech LeadName || 'Unassigned'}</span>
+                <span>Super-mentor: {college.superTechLeadName || 'Unassigned'}</span>
                 <span>Added: {new Date(college.createdAt).toLocaleDateString()}</span>
               </div>
             </div>

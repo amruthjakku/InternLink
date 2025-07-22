@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
+export default function TechLeadOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
   const [formData, setFormData] = useState({
     collegeName: '',
     collegeDescription: '',
@@ -12,7 +12,7 @@ export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demo
     cohortDescription: '',
     startDate: '',
     endDate: '',
-    maxAI Developer Interns: 20
+    maxAIDeveloperInterns: 20
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -50,8 +50,8 @@ export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demo
       }
     }
     
-    if (formData.maxAI Developer Interns < 1 || formData.maxAI Developer Interns > 100) {
-      newErrors.maxAI Developer Interns = 'Max interns must be between 1 and 100';
+    if (formData.maxAIDeveloperInterns < 1 || formData.maxAIDeveloperInterns > 100) {
+      newErrors.maxAIDeveloperInterns = 'Max interns must be between 1 and 100';
     }
     
     setErrors(newErrors);
@@ -110,7 +110,7 @@ export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demo
           collegeId: collegeResult.collegeId,
           startDate: formData.startDate,
           endDate: formData.endDate,
-          maxAI Developer Interns: parseInt(formData.maxAI Developer Interns)
+          maxAIDeveloperInterns: parseInt(formData.maxAIDeveloperInterns)
         }),
       });
 
@@ -259,17 +259,17 @@ export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demo
                 </label>
                 <input
                   type="number"
-                  name="maxAI Developer Interns"
-                  value={formData.maxAI Developer Interns}
+                  name="maxAIDeveloperInterns"
+                  value={formData.maxAIDeveloperInterns}
                   onChange={handleInputChange}
                   min="1"
                   max="100"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.maxAI Developer Interns ? 'border-red-500' : 'border-gray-300'
+                    errors.maxAIDeveloperInterns ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
-                {errors.maxAI Developer Interns && (
-                  <p className="text-red-500 text-sm mt-1">{errors.maxAI Developer Interns}</p>
+                {errors.maxAIDeveloperInterns && (
+                  <p className="text-red-500 text-sm mt-1">{errors.maxAIDeveloperInterns}</p>
                 )}
               </div>
             </div>

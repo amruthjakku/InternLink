@@ -65,9 +65,22 @@ export function AIDeveloperInternDashboard() {
       if (response.ok) {
         const data = await response.json();
         setTabOrder(data.preferences.tabOrder);
+        return;
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
+    }
+    
+    // Fallback: try to load from localStorage
+    try {
+      const savedOrder = localStorage.getItem('dashboardTabOrder');
+      if (savedOrder) {
+        const parsedOrder = JSON.parse(savedOrder);
+        setTabOrder(parsedOrder);
+        console.log('Loaded preferences from localStorage fallback');
+      }
+    } catch (storageError) {
+      console.error('Failed to load from localStorage:', storageError);
     }
   };
 
@@ -87,11 +100,21 @@ export function AIDeveloperInternDashboard() {
         setTabOrder(data.preferences.tabOrder);
         return true;
       } else {
-        throw new Error('Failed to save preferences');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        console.error('Failed to save preferences:', errorMessage);
+        return false;
       }
     } catch (error) {
       console.error('Error saving user preferences:', error);
-      throw error;
+      // Fallback: save to localStorage if API fails
+      try {
+        localStorage.setItem('dashboardTabOrder', JSON.stringify(newTabOrder));
+        console.log('Preferences saved to localStorage as fallback');
+      } catch (storageError) {
+        console.error('Failed to save to localStorage:', storageError);
+      }
+      return false;
     }
   };
 
@@ -156,10 +179,13 @@ export function AIDeveloperInternDashboard() {
   };
 
   // Handle drag end
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     if (draggedTab) {
       // Save the new order
-      saveUserPreferences(tabOrder);
+      const success = await saveUserPreferences(tabOrder);
+      if (!success) {
+        console.warn('Failed to save tab order preferences, but continuing with local changes');
+      }
       
       // Reset drag state
       setDraggedTab(null);

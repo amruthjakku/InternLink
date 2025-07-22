@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RoleSelection from './RoleSelection';
-import Tech LeadOnboarding from './Tech LeadOnboarding';
-import AI Developer InternOnboarding from './AI Developer InternOnboarding';
+import TechLeadOnboarding from './MentorOnboarding';
+import AIDeveloperInternOnboarding from './InternOnboarding';
 
 const OnboardingFlow = () => {
   const { data: session, status } = useSession();
@@ -211,7 +211,7 @@ const OnboardingFlow = () => {
         )}
 
         {currentStep === 'mentor-onboarding' && (
-          <Tech LeadOnboarding 
+          <TechLeadOnboarding 
             onComplete={handleOnboardingComplete}
             onBack={handleBack}
             userInfo={userInfo}
@@ -220,7 +220,7 @@ const OnboardingFlow = () => {
         )}
 
         {currentStep === 'intern-onboarding' && (
-          <AI Developer InternOnboarding 
+          <AIDeveloperInternOnboarding 
             onComplete={handleOnboardingComplete}
             onBack={handleBack}
             userInfo={userInfo}

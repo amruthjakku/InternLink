@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-import { AIDeveloperInternManagementTab } from './tech-lead/AIDeveloperInternManagementTab';
+import { AIDeveloperInternManagementTab } from './tech-lead/InternManagementTab';
 import { AdvancedTaskManagement } from './tech-lead/AdvancedTaskManagement';
 import { AttendanceTab } from './tech-lead/AttendanceTab';
 import { LeaderboardTab } from './tech-lead/LeaderboardTab';
 import { CommunicationTab } from './tech-lead/CommunicationTab';
-import { POCCommunicationTab } from './tech-lead/SuperTechLeadCommunicationTab';
+import { POCCommunicationTab } from './tech-lead/SuperMentorCommunicationTab';
 import { MeetingsTab } from './tech-lead/MeetingsTab';
 import { AIAssistantTab } from './tech-lead/AIAssistantTab';
 import { PerformanceOverview } from './tech-lead/PerformanceOverview';
 import { TeamActivity } from './tech-lead/TeamActivity';
-import { TechLeadManagementTab } from './tech-lead/TechLeadManagementTab';
+import { TechLeadManagementTab } from './tech-lead/MentorManagementTab';
 import { CohortManagementTab } from './tech-lead/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import { CollegeBadge } from './CollegeLogo';

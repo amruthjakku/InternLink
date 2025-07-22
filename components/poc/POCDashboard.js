@@ -139,7 +139,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Tech Leads</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTech Leads}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalTechLeads}</p>
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Assigned AI Developer Interns</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.assignedAI Developer Interns}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.assignedAIDeveloperInterns}</p>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Unassigned AI Developer Interns</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.unassignedAI Developer Interns}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.unassignedAIDeveloperInterns}</p>
             </div>
           </div>
         </div>
@@ -253,7 +253,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
 };
 
 const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
-  const [selectedTech Lead, setSelectedTech Lead] = useState(null);
+  const [selectedTechLead, setSelectedTechLead] = useState(null);
   const [selectedAIDeveloperInterns, setSelectedAIDeveloperInterns] = useState([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
@@ -262,24 +262,24 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
   }
 
   const { mentors, interns } = collegeData;
-  const unassignedAI Developer Interns = interns.filter(intern => !intern.mentorId);
+  const unassignedAIDeveloperInterns = interns.filter(intern => !intern.mentorId);
 
   const handleCreateTeam = async () => {
-    if (!selectedTech Lead || selectedAIDeveloperInterns.length === 0) return;
+    if (!selectedTechLead || selectedAIDeveloperInterns.length === 0) return;
 
     try {
       const response = await fetch('/api/poc/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorId: selectedTech Lead._id,
+          mentorId: selectedTechLead._id,
           internIds: selectedAIDeveloperInterns.map(i => i._id)
         })
       });
 
       if (response.ok) {
         alert('Team created successfully!');
-        setSelectedTech Lead(null);
+        setSelectedTechLead(null);
         setSelectedAIDeveloperInterns([]);
         setShowCreateTeam(false);
         fetchTeams();
@@ -318,9 +318,9 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
                 {mentors.filter(m => m.role === 'Tech Lead').map((mentor) => (
                   <div
                     key={mentor._id}
-                    onClick={() => setSelectedTech Lead(mentor)}
+                    onClick={() => setSelectedTechLead(mentor)}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedTech Lead?._id === mentor._id
+                      selectedTechLead?._id === mentor._id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
@@ -335,10 +335,10 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
             {/* Select AI Developer Interns */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select AI Developer Interns ({unassignedAI Developer Interns.length} available)
+                Select AI Developer Interns ({unassignedAIDeveloperInterns.length} available)
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {unassignedAI Developer Interns.map((intern) => (
+                {unassignedAIDeveloperInterns.map((intern) => (
                   <div
                     key={intern._id}
                     onClick={() => {
@@ -374,13 +374,13 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
           </div>
 
           {/* Create Button */}
-          {selectedTech Lead && selectedAIDeveloperInterns.length > 0 && (
+          {selectedTechLead && selectedAIDeveloperInterns.length > 0 && (
             <div className="mt-6">
               <button
                 onClick={handleCreateTeam}
                 className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
-                Create Team: {selectedTech Lead.name} + {selectedAIDeveloperInterns.length} interns
+                Create Team: {selectedTechLead.name} + {selectedAIDeveloperInterns.length} interns
               </button>
             </div>
           )}

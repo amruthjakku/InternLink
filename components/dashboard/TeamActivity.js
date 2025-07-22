@@ -11,7 +11,7 @@ export default function TeamActivity({ demoMode = false }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState({});
-  const [internActivity, setAI Developer InternActivity] = useState([]);
+  const [internActivity, setAIDeveloperInternActivity] = useState([]);
   const [dailyTrend, setDailyTrend] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [error, setError] = useState(null);
@@ -41,7 +41,7 @@ export default function TeamActivity({ demoMode = false }) {
         });
 
         // Set intern activity from real data
-        setAI Developer InternActivity(data.internActivity || []);
+        setAIDeveloperInternActivity(data.internActivity || []);
         // Set daily trend from real data
         setDailyTrend(data.dailyTrend || []);
       } else {
@@ -55,7 +55,7 @@ export default function TeamActivity({ demoMode = false }) {
           totalDeletions: 0,
           activeProjects: 0
         });
-        setAI Developer InternActivity([]);
+        setAIDeveloperInternActivity([]);
         setDailyTrend([]);
       }
     } catch (error) {
@@ -70,7 +70,7 @@ export default function TeamActivity({ demoMode = false }) {
         totalDeletions: 0,
         activeProjects: 0
       });
-      setAI Developer InternActivity([]);
+      setAIDeveloperInternActivity([]);
       setDailyTrend([]);
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export default function TeamActivity({ demoMode = false }) {
 
       if (response.ok) {
         setAnalytics(data.analytics);
-        setAI Developer InternActivity(data.internActivity);
+        setAIDeveloperInternActivity(data.internActivity);
         setDailyTrend(data.dailyTrend);
         setError(null);
       } else {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function AI Developer InternOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
+export default function AIDeveloperInternOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
   const [colleges, setColleges] = useState([]);
   const [cohorts, setCohorts] = useState([]);
   const [formData, setFormData] = useState({
@@ -77,8 +77,8 @@ export default function AI Developer InternOnboarding({ onComplete, onBack, user
               description: 'Summer internship program for 2025',
               startDate: '2025-05-01',
               endDate: '2025-07-31',
-              maxAI Developer Interns: 20,
-              currentAI Developer Interns: 0
+              maxAIDeveloperInterns: 20,
+              currentAIDeveloperInterns: 0
             }
           ]);
         } else if (collegeId === 'demo_college_2') {
@@ -89,8 +89,8 @@ export default function AI Developer InternOnboarding({ onComplete, onBack, user
               description: 'Specialized cohort for full-stack development',
               startDate: '2025-01-15',
               endDate: '2025-06-15',
-              maxAI Developer Interns: 25,
-              currentAI Developer Interns: 0
+              maxAIDeveloperInterns: 25,
+              currentAIDeveloperInterns: 0
             }
           ]);
         }
@@ -316,7 +316,7 @@ export default function AI Developer InternOnboarding({ onComplete, onBack, user
                     >
                       <option value="">Choose a cohort...</option>
                       {cohorts.map(cohort => {
-                        const availableSpots = (cohort.maxAI Developer Interns || 0) - (cohort.currentAI Developer Interns || 0);
+                        const availableSpots = (cohort.maxAIDeveloperInterns || 0) - (cohort.currentAIDeveloperInterns || 0);
                         return (
                           <option 
                             key={cohort._id} 
@@ -347,7 +347,7 @@ export default function AI Developer InternOnboarding({ onComplete, onBack, user
                       {selectedCohort.endDate && (
                         <p><strong>End:</strong> {new Date(selectedCohort.endDate).toLocaleDateString()}</p>
                       )}
-                      <p><strong>Available Spots:</strong> {(selectedCohort.maxAI Developer Interns || 0) - (selectedCohort.currentAI Developer Interns || 0)} / {selectedCohort.maxAI Developer Interns || 0}</p>
+                      <p><strong>Available Spots:</strong> {(selectedCohort.maxAIDeveloperInterns || 0) - (selectedCohort.currentAIDeveloperInterns || 0)} / {selectedCohort.maxAIDeveloperInterns || 0}</p>
                     </div>
                   </div>
                 )}

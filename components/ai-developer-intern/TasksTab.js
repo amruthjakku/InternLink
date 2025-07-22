@@ -367,12 +367,12 @@ export function TasksTab({ user, loading }) {
           
           // For individual tasks, check if assigned to this intern
           if (task.assignmentType === 'individual' || (!task.assignmentType && (task.assignedTo || task.assigneeId))) {
-            const isAssignedToAI Developer Intern = 
+            const isAssignedToAIDeveloperIntern = 
               task.assigneeId === user?.id || 
               task.assignedTo === user?.id;
               
-            console.log(`Task ${task.title} is ${isAssignedToAI Developer Intern ? '' : 'not '}assigned to this intern`);
-            return isAssignedToAI Developer Intern;
+            console.log(`Task ${task.title} is ${isAssignedToAIDeveloperIntern ? '' : 'not '}assigned to this intern`);
+            return isAssignedToAIDeveloperIntern;
           }
           
           // For tasks without assignment type, check both cohort and individual assignment
@@ -391,11 +391,11 @@ export function TasksTab({ user, loading }) {
             }
             
             // Check if assigned directly to this intern
-            const isAssignedToAI Developer Intern = 
+            const isAssignedToAIDeveloperIntern = 
               task.assigneeId === user?.id || 
               task.assignedTo === user?.id;
             
-            if (isAssignedToAI Developer Intern) {
+            if (isAssignedToAIDeveloperIntern) {
               console.log(`Task ${task.title} is assigned to this intern (legacy format)`);
               return true;
             }
