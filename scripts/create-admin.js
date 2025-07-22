@@ -83,8 +83,8 @@ async function createTestData() {
     console.log('Admin user created:', adminUser.name);
 
     // Create test mentor user
-    const existingTech Lead = await User.findOne({ gitlabUsername: 'testmentor' });
-    if (!existingTech Lead) {
+    const existingTechLead = await User.findOne({ gitlabUsername: 'testmentor' });
+    if (!existingTechLead) {
       const mentorUser = new User({
         gitlabUsername: 'testmentor',
         gitlabId: 'mentor123',
@@ -100,8 +100,8 @@ async function createTestData() {
     }
 
     // Create test intern user
-    const existingAI Developer Intern = await User.findOne({ gitlabUsername: 'testintern' });
-    if (!existingAI Developer Intern) {
+    const existingAIDeveloperIntern = await User.findOne({ gitlabUsername: 'testintern' });
+    if (!existingAIDeveloperIntern) {
       const internUser = new User({
         gitlabUsername: 'testintern',
         gitlabId: 'intern123',

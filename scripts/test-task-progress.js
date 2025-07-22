@@ -47,19 +47,19 @@ async function testTaskProgressSystem() {
     console.log(`   Points: ${cohortTask.points || 10}\n`);
     
     // 2. Find interns in the cohort
-    const cohortAI Developer Interns = await User.find({
+    const cohortAIDeveloperInterns = await User.find({
       cohortId: cohortTask.cohortId,
       role: 'AI Developer Intern',
       isActive: true
     }).limit(3); // Test with first 3 interns
     
-    if (cohortAI Developer Interns.length === 0) {
+    if (cohortAIDeveloperInterns.length === 0) {
       console.log('❌ No interns found in the cohort. Please add interns first.');
       return;
     }
     
-    console.log(`✅ Found ${cohortAI Developer Interns.length} interns in cohort:`);
-    cohortAI Developer Interns.forEach(intern => {
+    console.log(`✅ Found ${cohortAIDeveloperInterns.length} interns in cohort:`);
+    cohortAIDeveloperInterns.forEach(intern => {
       console.log(`   - ${intern.name} (${intern.gitlabUsername})`);
     });
     console.log();
@@ -67,8 +67,8 @@ async function testTaskProgressSystem() {
     // 3. Test individual progress creation
     console.log('🧪 Testing individual progress creation...');
     
-    for (let i = 0; i < cohortAI Developer Interns.length; i++) {
-      const intern = cohortAI Developer Interns[i];
+    for (let i = 0; i < cohortAIDeveloperInterns.length; i++) {
+      const intern = cohortAIDeveloperInterns[i];
       
       // Check if progress already exists
       let progress = await TaskProgress.findOne({
@@ -131,7 +131,7 @@ async function testTaskProgressSystem() {
     const leaderboardData = await TaskProgress.aggregate([
       {
         $match: { 
-          internId: { $in: cohortAI Developer Interns.map(i => i._id) },
+          internId: { $in: cohortAIDeveloperInterns.map(i => i._id) },
           status: { $in: ['completed', 'done'] }
         }
       },
@@ -180,10 +180,10 @@ async function testTaskProgressSystem() {
     if (cohortTask.subtasks && cohortTask.subtasks.length > 0) {
       console.log('🔧 Testing subtask progress...');
       
-      const testAI Developer Intern = cohortAI Developer Interns[0];
+      const testAIDeveloperIntern = cohortAIDeveloperInterns[0];
       let progress = await TaskProgress.findOne({
         taskId: cohortTask._id,
-        internId: testAI Developer Intern._id
+        internId: testAIDeveloperIntern._id
       });
       
       // Add subtask progress
@@ -205,7 +205,7 @@ async function testTaskProgressSystem() {
       }
       
       await progress.save();
-      console.log(`   ✅ Updated subtask progress for ${testAI Developer Intern.name}`);
+      console.log(`   ✅ Updated subtask progress for ${testAIDeveloperIntern.name}`);
       console.log(`   Subtask: "${firstSubtask.title}" marked as completed`);
     }
     console.log();
@@ -213,7 +213,7 @@ async function testTaskProgressSystem() {
     // 7. Summary
     console.log('📊 Test Summary:');
     console.log(`   ✅ Task: ${cohortTask.title}`);
-    console.log(`   ✅ AI Developer Interns tested: ${cohortAI Developer Interns.length}`);
+    console.log(`   ✅ AI Developer Interns tested: ${cohortAIDeveloperInterns.length}`);
     console.log(`   ✅ Progress records: ${allProgress.length}`);
     console.log(`   ✅ Individual tracking: Working correctly`);
     console.log(`   ✅ Leaderboard calculation: Working correctly`);

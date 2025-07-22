@@ -33,7 +33,7 @@
 - ❌ **Removed isActive: true** from college creation
 - ❌ **Removed isActive filters** from:
   - `getAllColleges()`
-  - `getCollegesByTech Lead()`
+  - `getCollegesByTechLead()`
   - `getCohortsByCollege()`
 
 ### 6. API Endpoints Updated

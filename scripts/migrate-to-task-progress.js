@@ -59,21 +59,21 @@ async function migrateTaskProgress() {
           }
         } else if (task.assignmentType === 'cohort' && task.cohortId) {
           // Cohort task - find all interns in the cohort
-          const cohortAI Developer Interns = await User.find({ 
+          const cohortAIDeveloperInterns = await User.find({ 
             cohortId: task.cohortId, 
             role: 'AI Developer Intern',
             isActive: true 
           });
-          interns = cohortAI Developer Interns;
+          interns = cohortAIDeveloperInterns;
           console.log(`  Found ${interns.length} interns in cohort ${task.cohortId}`);
         } else if (task.assignmentType === 'hierarchical' && task.assignedTo?.colleges) {
           // Hierarchical task - find interns in specified colleges
-          const collegeAI Developer Interns = await User.find({
+          const collegeAIDeveloperInterns = await User.find({
             college: { $in: task.assignedTo.colleges },
             role: 'AI Developer Intern',
             isActive: true
           });
-          interns = collegeAI Developer Interns;
+          interns = collegeAIDeveloperInterns;
           console.log(`  Found ${interns.length} interns in specified colleges`);
         } else {
           console.log(`  Skipping task - no valid assignment found`);

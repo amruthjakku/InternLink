@@ -149,7 +149,7 @@ class EnhancedSystemTester {
         description: 'Test cohort for enhanced system',
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        maxAI Developer Interns: 10,
+        maxAIDeveloperInterns: 10,
         createdBy: 'test-admin'
       });
 
