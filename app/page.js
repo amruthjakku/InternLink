@@ -36,14 +36,14 @@ export default function Home() {
       case 'admin':
         router.push('/admin/dashboard');
         break;
-      case 'super-mentor':
-        router.push('/super-mentor/dashboard');
+      case 'POC':
+        router.push('/poc/dashboard');
         break;
-      case 'mentor':
-        router.push('/mentor/dashboard');
+      case 'Tech Lead':
+        router.push('/tech-lead/dashboard');
         break;
-      case 'intern':
-        router.push('/intern/dashboard');
+      case 'AI developer Intern':
+        router.push('/ai-developer-intern/dashboard');
         break;
       default:
         console.error('Unknown user role:', role);

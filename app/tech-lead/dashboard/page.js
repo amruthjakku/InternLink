@@ -91,7 +91,7 @@ export default function MentorDashboardPage() {
       return;
     }
 
-    if (session.user.role !== 'mentor' && session.user.role !== 'super-mentor') {
+    if (session.user.role !== 'Tech Lead' && session.user.role !== 'POC') {
       router.push('/unauthorized');
       return;
     }

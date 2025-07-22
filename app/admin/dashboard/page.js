@@ -117,16 +117,16 @@ const CombinedCollegeManagement = () => {
     (college.superMentorName && college.superMentorName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Fetch super-mentors for dropdowns
-  const fetchSuperMentors = async () => {
+  // Fetch POCs for dropdowns
+  const fetchPOCs = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=super-mentor');
+      const response = await fetch('/api/admin/users?role=POC');
       if (response.ok) {
         const data = await response.json();
         setMentors(data.users || []); // Keep the same state variable for compatibility
       }
     } catch (error) {
-      console.error('Error fetching super-mentors:', error);
+      console.error('Error fetching POCs:', error);
     }
   };
 
@@ -183,7 +183,7 @@ const CombinedCollegeManagement = () => {
   // Fetch colleges and super-mentors on component mount
   useEffect(() => {
     fetchColleges();
-    fetchSuperMentors();
+    fetchPOCs();
   }, []);
   
   return (

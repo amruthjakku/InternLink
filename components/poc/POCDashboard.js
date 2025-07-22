@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
-const SuperMentorDashboard = () => {
+const POCDashboard = () => {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
   const [collegeData, setCollegeData] = useState(null);
@@ -9,7 +9,7 @@ const SuperMentorDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (session?.user?.role === 'super-mentor') {
+    if (session?.user?.role === 'POC') {
       fetchCollegeData();
       fetchTeams();
     }
@@ -17,7 +17,7 @@ const SuperMentorDashboard = () => {
 
   const fetchCollegeData = async () => {
     try {
-      const response = await fetch('/api/super-mentor/college-overview');
+      const response = await fetch('/api/poc/college-overview');
       if (response.ok) {
         const data = await response.json();
         setCollegeData(data);
@@ -31,7 +31,7 @@ const SuperMentorDashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      const response = await fetch('/api/super-mentor/teams');
+      const response = await fetch('/api/poc/teams');
       if (response.ok) {
         const data = await response.json();
         setTeams(data.teams || []);
@@ -216,7 +216,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
                   <p className="text-sm text-gray-600">{mentor.gitlabUsername}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded ${
-                  mentor.role === 'super-mentor' 
+                  mentor.role === 'POC' 
                     ? 'bg-blue-100 text-blue-800' 
                     : 'bg-green-100 text-green-800'
                 }`}>
@@ -268,7 +268,7 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
     if (!selectedMentor || selectedInterns.length === 0) return;
 
     try {
-      const response = await fetch('/api/super-mentor/teams', {
+      const response = await fetch('/api/poc/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -315,7 +315,7 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
                 Select Mentor
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {mentors.filter(m => m.role === 'mentor').map((mentor) => (
+                {mentors.filter(m => m.role === 'Tech Lead').map((mentor) => (
                   <div
                     key={mentor._id}
                     onClick={() => setSelectedMentor(mentor)}
@@ -456,4 +456,4 @@ const PerformanceTab = ({ collegeData, teams }) => {
   );
 };
 
-export default SuperMentorDashboard;
+export default POCDashboard;

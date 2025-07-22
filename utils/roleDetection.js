@@ -50,18 +50,18 @@ export function detectUserRole(gitlabUsername) {
   
   for (const pattern of superMentorPatterns) {
     if (pattern.test(username)) {
-      return 'super-mentor';
+      return 'POC';
     }
   }
   
   for (const pattern of mentorPatterns) {
     if (pattern.test(username)) {
-      return 'mentor';
+      return 'Tech Lead';
     }
   }
   
-  // Default to intern if no patterns match
-  return 'intern';
+  // Default to AI developer Intern if no patterns match
+  return 'AI developer Intern';
 }
 
 /**
@@ -200,16 +200,16 @@ function calculateConfidence(username, role) {
     return 0.9;
   }
   
-  if (role === 'super-mentor' && /^super_mentor|^chief|^head|^principal/.test(lowerUsername)) {
+  if (role === 'POC' && /^super_mentor|^chief|^head|^principal/.test(lowerUsername)) {
     return 0.9;
   }
   
-  if (role === 'mentor' && /^mentor|mentor$|^lead|^senior/.test(lowerUsername)) {
+  if (role === 'Tech Lead' && /^mentor|mentor$|^lead|^senior/.test(lowerUsername)) {
     return 0.8;
   }
   
   // Medium confidence for other patterns
-  if (role !== 'intern') {
+  if (role !== 'AI developer Intern') {
     return 0.6;
   }
   

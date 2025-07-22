@@ -43,13 +43,18 @@ export async function middleware(request) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // Mentor routes (accessible by mentors and super-mentors)
-    if (pathname.startsWith('/mentor') && !['admin', 'mentor', 'super-mentor'].includes(token.role)) {
+    // Tech Lead routes (accessible by Tech Leads and POCs)
+    if (pathname.startsWith('/tech-lead') && !['admin', 'Tech Lead', 'POC'].includes(token.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // Intern routes (accessible by interns, mentors, and super-mentors for supervision)
-    if (pathname.startsWith('/intern') && !['admin', 'mentor', 'super-mentor', 'intern'].includes(token.role)) {
+    // POC routes (accessible by POCs and admins)
+    if (pathname.startsWith('/poc') && !['admin', 'POC'].includes(token.role)) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    
+    // AI developer Intern routes (accessible by AI developer Interns, Tech Leads, and POCs for supervision)
+    if (pathname.startsWith('/ai-developer-intern') && !['admin', 'Tech Lead', 'POC', 'AI developer Intern'].includes(token.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

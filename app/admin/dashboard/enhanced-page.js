@@ -12,7 +12,7 @@ import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
 import { AttendanceAnalytics } from '../../../components/admin/AttendanceAnalytics';
 import { IPManagement } from '../../../components/admin/IPManagement';
 import { CollegeManagement } from '../../../components/CollegeManagement';
-import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
+import { POCManagement } from '../../../components/admin/POCManagement';
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
 import { AttendanceDebugger } from '../../../components/admin/AttendanceDebugger';
 import { CohortManagementTab } from '../../../components/admin/CohortManagementTab';
@@ -250,7 +250,7 @@ export default function EnhancedAdminDashboard() {
     { id: 'system-monitoring', name: 'System Monitoring', icon: '🖥️', color: 'from-gray-500 to-slate-500', category: 'monitoring' },
     { id: 'advanced-analytics', name: 'Analytics Hub', icon: '📈', color: 'from-indigo-500 to-blue-500', category: 'analytics' },
     { id: 'task-management', name: 'Task Management', icon: '📝', color: 'from-yellow-500 to-orange-500', category: 'management' },
-    { id: 'super-mentor-management', name: 'Super Mentors', icon: '👨‍🏫', color: 'from-teal-500 to-green-500', category: 'management' },
+    { id: 'poc-management', name: 'POCs', icon: '👨‍🏫', color: 'from-teal-500 to-green-500', category: 'management' },
     { id: 'data-integrity', name: 'Data Integrity', icon: '🔧', color: 'from-red-500 to-pink-500', category: 'monitoring' },
     { id: 'bulk-operations', name: 'Bulk Operations', icon: '📦', color: 'from-purple-500 to-indigo-500', category: 'tools' },
     { id: 'debug-tools', name: 'Debug Tools', icon: '🔍', color: 'from-gray-600 to-gray-800', category: 'tools' }
@@ -724,7 +724,7 @@ export default function EnhancedAdminDashboard() {
         {activeTab === 'system-monitoring' && <SystemMonitoring />}
         {activeTab === 'advanced-analytics' && <AdvancedAnalytics />}
         {activeTab === 'task-management' && <TaskManagementTab />}
-        {activeTab === 'super-mentor-management' && <SuperMentorManagement />}
+        {activeTab === 'poc-management' && <POCManagement />}
         {activeTab === 'data-integrity' && <DataIntegrityChecker />}
         {activeTab === 'bulk-operations' && <BulkImportTab />}
         

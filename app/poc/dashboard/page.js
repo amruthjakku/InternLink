@@ -3,9 +3,9 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import SuperMentorDashboard from '../../../components/super-mentor/SuperMentorDashboard';
+import POCDashboard from '../../../components/poc/POCDashboard';
 
-export default function SuperMentorDashboardPage() {
+export default function POCDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -17,8 +17,8 @@ export default function SuperMentorDashboardPage() {
       return;
     }
 
-    if (session.user.role !== 'super-mentor') {
-      router.push('/dashboard'); // Redirect to regular dashboard if not super-mentor
+    if (session.user.role !== 'POC') {
+      router.push('/dashboard'); // Redirect to regular dashboard if not POC
       return;
     }
   }, [session, status, router]);
@@ -34,7 +34,7 @@ export default function SuperMentorDashboardPage() {
     );
   }
 
-  if (!session || session.user.role !== 'super-mentor') {
+  if (!session || session.user.role !== 'POC') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -51,5 +51,5 @@ export default function SuperMentorDashboardPage() {
     );
   }
 
-  return <SuperMentorDashboard />;
+  return <POCDashboard />;
 }

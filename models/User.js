@@ -26,14 +26,14 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['admin', 'super-mentor', 'mentor', 'intern'],
-    default: 'intern'
+    enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'],
+    default: 'AI developer Intern'
   },
   college: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
     required: function() {
-      return this.role === 'intern' || this.role === 'mentor' || this.role === 'super-mentor';
+      return this.role === 'AI developer Intern' || this.role === 'Tech Lead' || this.role === 'POC';
     }
   },
   // Add cohortId field to associate users with cohorts
@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.role === 'intern';
+      return this.role === 'AI developer Intern';
     }
   },
   isActive: {
@@ -228,55 +228,55 @@ userSchema.statics.getAdmins = function() {
   return this.find({ role: 'admin', isActive: true });
 };
 
-userSchema.statics.getMentorsByCollege = function(collegeId) {
-  return this.find({ role: 'mentor', college: collegeId, isActive: true }).populate('college');
+userSchema.statics.getTechLeadsByCollege = function(collegeId) {
+  return this.find({ role: 'Tech Lead', college: collegeId, isActive: true }).populate('college');
 };
 
-userSchema.statics.getInternsByMentor = function(mentorUsername) {
-  return this.findOne({ gitlabUsername: mentorUsername, role: 'mentor' })
+userSchema.statics.getAIDeveloperInternsByTechLead = function(techLeadUsername) {
+  return this.findOne({ gitlabUsername: techLeadUsername, role: 'Tech Lead' })
     .populate('college')
-    .then(mentor => {
-      if (!mentor) return [];
+    .then(techLead => {
+      if (!techLead) return [];
       return this.find({ 
-        role: 'intern', 
-        assignedMentor: mentor._id, 
+        role: 'AI developer Intern', 
+        assignedMentor: techLead._id, 
         isActive: true 
       }).populate('college');
     });
 };
 
-userSchema.statics.getSuperMentorsByCollege = function(collegeId) {
-  return this.find({ role: 'super-mentor', college: collegeId, isActive: true }).populate('college');
+userSchema.statics.getPOCsByCollege = function(collegeId) {
+  return this.find({ role: 'POC', college: collegeId, isActive: true }).populate('college');
 };
 
-userSchema.statics.getInternsBySuperMentor = function(superMentorUsername) {
-  return this.findOne({ gitlabUsername: superMentorUsername, role: 'super-mentor' })
+userSchema.statics.getAIDeveloperInternsByPOC = function(pocUsername) {
+  return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
     .populate('college')
-    .then(superMentor => {
-      if (!superMentor) return [];
-      return this.find({ role: 'intern', college: superMentor.college, isActive: true }).populate('college');
+    .then(poc => {
+      if (!poc) return [];
+      return this.find({ role: 'AI developer Intern', college: poc.college, isActive: true }).populate('college');
     });
 };
 
-userSchema.statics.getMentorsBySuperMentor = function(superMentorUsername) {
-  return this.findOne({ gitlabUsername: superMentorUsername, role: 'super-mentor' })
+userSchema.statics.getTechLeadsByPOC = function(pocUsername) {
+  return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
     .populate('college')
-    .then(superMentor => {
-      if (!superMentor) return [];
-      return this.find({ role: 'mentor', college: superMentor.college, isActive: true }).populate('college');
+    .then(poc => {
+      if (!poc) return [];
+      return this.find({ role: 'Tech Lead', college: poc.college, isActive: true }).populate('college');
     });
 };
 
 // Instance methods
 userSchema.methods.canManageUser = function(targetUser) {
   if (this.role === 'admin') return true;
-  if (this.role === 'super-mentor') {
-    // Super-mentor can manage interns and mentors in their college
-    if (targetUser.role === 'intern' || targetUser.role === 'mentor') {
+  if (this.role === 'POC') {
+    // POC can manage AI developer Interns and Tech Leads in their college
+    if (targetUser.role === 'AI developer Intern' || targetUser.role === 'Tech Lead') {
       return this.college.toString() === targetUser.college.toString();
     }
   }
-  if (this.role === 'mentor' && targetUser.role === 'intern') {
+  if (this.role === 'Tech Lead' && targetUser.role === 'AI developer Intern') {
     return this.college.toString() === targetUser.college.toString();
   }
   return false;
@@ -284,7 +284,7 @@ userSchema.methods.canManageUser = function(targetUser) {
 
 userSchema.methods.canAccessCollege = function(collegeId) {
   if (this.role === 'admin') return true;
-  if (this.role === 'super-mentor' || this.role === 'mentor' || this.role === 'intern') {
+  if (this.role === 'POC' || this.role === 'Tech Lead' || this.role === 'AI developer Intern') {
     return this.college.toString() === collegeId.toString();
   }
   return false;

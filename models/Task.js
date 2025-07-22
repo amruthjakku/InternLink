@@ -62,7 +62,7 @@ const TaskSchema = new mongoose.Schema({
   },
   createdByRole: {
     type: String,
-    enum: ['admin', 'super-mentor', 'mentor'],
+    enum: ['admin', 'POC', 'Tech Lead'],
     required: true
   },
   assignedBy: {
@@ -288,19 +288,19 @@ TaskSchema.methods.canBeEditedBy = function(user) {
   // Admin can edit all tasks
   if (user.role === 'admin') return true;
   
-  // Super-mentor can edit tasks they created or tasks created by mentors in their college
-  if (user.role === 'super-mentor') {
+  // POC can edit tasks they created or tasks created by Tech Leads in their college
+  if (user.role === 'POC') {
     if (this.createdBy.toString() === user._id.toString()) return true;
-    if (this.createdByRole === 'mentor') {
+    if (this.createdByRole === 'Tech Lead') {
       // Check if the task creator is in the same college (would need to populate createdBy)
-      return true; // For now, allow super-mentors to edit mentor tasks
+      return true; // For now, allow POCs to edit Tech Lead tasks
     }
     return false;
   }
   
-  // Mentors can only edit tasks they created (not admin/super-mentor created tasks)
-  if (user.role === 'mentor') {
-    return this.createdBy.toString() === user._id.toString() && this.createdByRole === 'mentor';
+  // Tech Leads can only edit tasks they created (not admin/POC created tasks)
+  if (user.role === 'Tech Lead') {
+    return this.createdBy.toString() === user._id.toString() && this.createdByRole === 'Tech Lead';
   }
   
   return false;

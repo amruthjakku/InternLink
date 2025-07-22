@@ -53,7 +53,7 @@ export default function InternDashboardPage() {
       return;
     }
 
-    if (session.user.role !== 'intern') {
+    if (session.user.role !== 'AI developer Intern') {
       router.push('/unauthorized');
       return;
     }
