@@ -33,7 +33,7 @@ export async function GET() {
     // Get assigned interns count for each mentor
     const mentorsWithStats = await Promise.all(mentors.map(async (mentor) => {
       const assignedInterns = await User.countDocuments({
-        role: 'intern',
+        role: 'AI developer Intern',
         college: mentor.college._id,
         assignedBy: mentor.gitlabUsername,
         isActive: true

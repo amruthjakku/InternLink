@@ -62,7 +62,7 @@ export async function GET(request) {
         isActive: user.isActive
       };
       
-      user.role = 'intern';
+      user.role = 'AI developer Intern';
       user.isActive = true;
       user.lastTokenRefresh = new Date();
       user.sessionVersion = (user.sessionVersion || 0) + 1;
@@ -144,7 +144,7 @@ export async function POST(request) {
         await User.findByIdAndUpdate(user._id, {
           assignedMentor: undefined,
           assignedBy: 'system-auto',
-          role: 'intern',
+          role: 'AI developer Intern',
           $unset: { assignedMentor: 1 }  // Remove the field entirely
         });
         

@@ -17,7 +17,7 @@ export async function POST(request) {
 
     // Get all interns without cohort assignments
     const internsWithoutCohorts = await User.find({ 
-      role: 'intern',
+      role: 'AI developer Intern',
       $or: [
         { cohortId: { $exists: false } },
         { cohortId: null }
@@ -105,9 +105,9 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Get summary of cohort assignments
-    const totalInterns = await User.countDocuments({ role: 'intern' });
+    const totalInterns = await User.countDocuments({ role: 'AI developer Intern' });
     const internsWithCohorts = await User.countDocuments({ 
-      role: 'intern',
+      role: 'AI developer Intern',
       cohortId: { $exists: true, $ne: null }
     });
     const internsWithoutCohorts = totalInterns - internsWithCohorts;

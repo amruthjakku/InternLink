@@ -27,7 +27,7 @@ export async function POST(request) {
       isActive: user.isActive,
       hasRole: !!user.role,
       hasCollege: !!user.college,
-      hasMentorIfNeeded: user.role !== 'intern' || !!user.assignedMentor,
+      hasMentorIfNeeded: user.role !== 'AI developer Intern' || !!user.assignedMentor,
       hasAssignedBy: !!user.assignedBy
     };
     

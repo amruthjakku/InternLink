@@ -51,7 +51,7 @@ async function migrateTaskProgress() {
         if (task.assignmentType === 'individual' && task.assignedTo) {
           // Individual task - find the assigned intern
           const intern = await User.findById(task.assignedTo);
-          if (intern && intern.role === 'intern') {
+          if (intern && intern.role === 'AI developer Intern') {
             interns = [intern];
             console.log(`  Found assigned intern: ${intern.name} (${intern.gitlabUsername})`);
           } else {
@@ -61,7 +61,7 @@ async function migrateTaskProgress() {
           // Cohort task - find all interns in the cohort
           const cohortInterns = await User.find({ 
             cohortId: task.cohortId, 
-            role: 'intern',
+            role: 'AI developer Intern',
             isActive: true 
           });
           interns = cohortInterns;
@@ -70,7 +70,7 @@ async function migrateTaskProgress() {
           // Hierarchical task - find interns in specified colleges
           const collegeInterns = await User.find({
             college: { $in: task.assignedTo.colleges },
-            role: 'intern',
+            role: 'AI developer Intern',
             isActive: true
           });
           interns = collegeInterns;
@@ -182,7 +182,7 @@ async function verifyMigration() {
   
   try {
     // Get some statistics
-    const totalInterns = await User.countDocuments({ role: 'intern', isActive: true });
+    const totalInterns = await User.countDocuments({ role: 'AI developer Intern', isActive: true });
     const totalTasks = await Task.countDocuments({ isActive: true });
     const totalProgress = await TaskProgress.countDocuments();
     

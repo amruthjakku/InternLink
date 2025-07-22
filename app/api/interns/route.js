@@ -40,7 +40,7 @@ export async function GET(request) {
     const { User } = await import('../../../models/User');
     
     // Build query based on parameters
-    const query = { role: 'intern' };
+    const query = { role: 'AI developer Intern' };
     
     if (collegeId) query.college = collegeId;
     if (mentorId) query.assignedMentor = mentorId;

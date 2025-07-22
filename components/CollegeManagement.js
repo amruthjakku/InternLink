@@ -27,7 +27,7 @@ export function CollegeManagement() {
         console.log(`Total colleges fetched: ${colleges.length}`);
         console.log(`Total users fetched: ${users.length}`);
         console.log('Colleges:', colleges.map(c => ({ id: c._id, name: c.name })));
-        console.log('Interns:', users.filter(u => u.role === 'intern').map(u => ({ 
+        console.log('Interns:', users.filter(u => u.role === 'AI developer Intern').map(u => ({ 
           id: u._id, 
           name: u.name, 
           college: u.college, 
@@ -38,7 +38,7 @@ export function CollegeManagement() {
         // Calculate statistics for each college
         const collegesWithStats = colleges.map(college => {
           const collegeInterns = users.filter(user => {
-            if (user.role !== 'intern') return false;
+            if (user.role !== 'AI developer Intern') return false;
             
             // Handle different formats of college ID comparison
             const userCollegeId = user.college?._id || user.college;
@@ -72,8 +72,8 @@ export function CollegeManagement() {
         
         // Calculate overall stats
         const totalColleges = colleges.length;
-        const totalInterns = users.filter(u => u.role === 'intern').length;
-        const activeInterns = users.filter(u => u.role === 'intern' && u.isActive).length;
+        const totalInterns = users.filter(u => u.role === 'AI developer Intern').length;
+        const activeInterns = users.filter(u => u.role === 'AI developer Intern' && u.isActive).length;
         const avgCompletionRate = collegesWithStats.length > 0 ? 
           Math.round(collegesWithStats.reduce((sum, c) => sum + c.completionRate, 0) / collegesWithStats.length) : 0;
         

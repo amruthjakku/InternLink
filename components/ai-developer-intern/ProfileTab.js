@@ -170,7 +170,7 @@ export function ProfileTab() {
                   {user?.name}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {user?.role === 'intern' ? '👨‍🎓 Intern' : '👨‍🏫 Mentor'}
+                  {user?.role === 'AI developer Intern' ? '👨‍🎓 AI developer Intern' : '👨‍🏫 Tech Lead'}
                 </p>
               </div>
               <div className="mt-6 flex flex-col justify-stretch space-y-3 sm:flex-row sm:space-y-0 sm:space-x-4">

@@ -113,7 +113,7 @@ export function MentorDashboard() {
     setLoading(true);
     try {
       // Different API endpoints based on role
-      let endpoint = '/api/admin/users?role=intern';
+      let endpoint = '/api/admin/users?role=AI%20developer%20Intern';
       
       console.log('Fetching interns for user role:', user?.role);
       

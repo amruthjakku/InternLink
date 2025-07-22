@@ -9,8 +9,8 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'intern') {
-      return NextResponse.json({ error: 'Unauthorized - Only interns can join cohorts' }, { status: 401 });
+    if (!session || session.user.role !== 'AI developer Intern') {
+      return NextResponse.json({ error: 'Unauthorized - Only AI developer interns can join cohorts' }, { status: 401 });
     }
 
     await connectToDatabase();
@@ -81,7 +81,7 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'intern') {
+    if (!session || session.user.role !== 'AI developer Intern') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -59,7 +59,7 @@ export async function GET() {
         gitlabId: '999999',
         name: 'Test User',
         email: 'test@example.com',
-        role: 'intern',
+        role: 'AI developer Intern',
         isActive: true
       });
       await testUser.save();
