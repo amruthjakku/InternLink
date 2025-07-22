@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'mentor', 'intern'] },
+  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'] },
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
   assignedBy: { type: String, required: true },
   isActive: { type: Boolean, default: true },
@@ -90,7 +90,7 @@ async function createTestData() {
         gitlabId: 'mentor123',
         name: 'Test Mentor',
         email: 'mentor@test.edu',
-        role: 'mentor',
+        role: 'Tech Lead',
         college: testCollege._id,
         assignedBy: 'Admin',
         isActive: true
@@ -107,7 +107,7 @@ async function createTestData() {
         gitlabId: 'intern123',
         name: 'Test Intern',
         email: 'intern@test.edu',
-        role: 'intern',
+        role: 'AI developer Intern',
         college: testCollege._id,
         assignedBy: 'Test Mentor',
         isActive: true

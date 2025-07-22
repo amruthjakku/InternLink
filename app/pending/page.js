@@ -53,7 +53,7 @@ export default function PendingApproval() {
               <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
               <ul className="text-sm text-blue-800 text-left space-y-1">
                 <li>• An admin will review your account</li>
-                <li>• You'll be assigned a role (intern, mentor, etc.)</li>
+                <li>• You'll be assigned a role (AI developer Intern, Tech Lead, etc.)</li>
                 <li>• You'll receive access to your dashboard</li>
                 <li>• You'll get an email notification when approved</li>
               </ul>

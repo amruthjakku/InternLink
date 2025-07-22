@@ -14,19 +14,19 @@ const mockUsers = [
     _id: '1',
     name: 'John Doe',
     cohortId: 'cohort123', // String format
-    role: 'intern'
+    role: 'AI developer Intern'
   },
   {
     _id: '2', 
     name: 'Jane Smith',
     cohortId: { _id: 'cohort123', name: 'Cohort A' }, // Object format
-    role: 'intern'
+    role: 'AI developer Intern'
   },
   {
     _id: '3',
     name: 'Bob Johnson', 
     cohortId: null, // No cohort
-    role: 'intern'
+    role: 'AI developer Intern'
   }
 ];
 

@@ -209,13 +209,13 @@ async function performDataSyncAudit() {
       
       const mentors = await User.countDocuments({ 
         college: college._id, 
-        role: 'mentor', 
+        role: 'Tech Lead', 
         isActive: true 
       });
       
       const interns = await User.countDocuments({ 
         college: college._id, 
-        role: 'intern', 
+        role: 'AI developer Intern', 
         isActive: true 
       });
 

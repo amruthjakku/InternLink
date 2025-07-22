@@ -180,7 +180,7 @@ const CombinedCollegeManagement = () => {
     }
   };
 
-  // Fetch colleges and super-mentors on component mount
+  // Fetch colleges and POCs on component mount
   useEffect(() => {
     fetchColleges();
     fetchPOCs();
@@ -344,7 +344,7 @@ const CombinedCollegeManagement = () => {
                         </div>
                         <div className="flex items-center text-gray-600">
                           <span className="mr-2">👨‍🏫</span>
-                          <span>{college.superMentorName || 'No super-mentor assigned'}</span>
+                          <span>{college.pocName || 'No POC assigned'}</span>
                         </div>
                         {college.website && (
                           <div className="flex items-center text-gray-600">
@@ -441,7 +441,7 @@ const CombinedCollegeManagement = () => {
                   onChange={(e) => setNewCollege({...newCollege, superMentorUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="">Select a super-mentor</option>
+                  <option value="">Select a POC</option>
                   {mentors.map((mentor) => (
                     <option key={mentor._id} value={mentor.gitlabUsername}>
                       {mentor.name} ({mentor.gitlabUsername})
@@ -542,7 +542,7 @@ const CombinedCollegeManagement = () => {
                   onChange={(e) => setEditingCollege({...editingCollege, superMentorUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">No super-mentor assigned</option>
+                  <option value="">No POC assigned</option>
                   {mentors.map((mentor) => (
                     <option key={mentor._id} value={mentor.gitlabUsername}>
                       {mentor.name} ({mentor.gitlabUsername})
@@ -1365,8 +1365,8 @@ export default function AdminDashboard() {
           </div>
         )}
         
-        {/* Super Mentors Tab */}
-        {activeTab === 'super-mentors' && <SuperMentorManagement />}
+        {/* POCs Tab */}
+        {activeTab === 'pocs' && <POCManagement />}
         
         {/* Data Integrity Tab */}
         {activeTab === 'data-integrity' && <DataIntegrityChecker />}
