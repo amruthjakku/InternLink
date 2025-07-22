@@ -3392,8 +3392,10 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
   const [showChatInterface, setShowChatInterface] = useState(false);
 
   const handleChatRoomClick = (room) => {
+    console.log('🖱️ Chat room clicked:', room);
     setSelectedChatRoom(room);
     setShowChatInterface(true);
+    console.log('✅ Modal should be opening...');
   };
 
   const closeChatInterface = () => {
@@ -3403,6 +3405,21 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
 
   return (
     <div className="space-y-6">
+      {/* Debug Info */}
+      <div className="bg-yellow-50 p-2 rounded text-xs">
+        Debug: showChatInterface={showChatInterface.toString()}, selectedChatRoom={selectedChatRoom?.name || 'none'}
+        <button 
+          onClick={() => {
+            console.log('🧪 Test modal button clicked');
+            setSelectedChatRoom(chatRooms[0] || { _id: 'test', name: 'Test Room', type: 'general' });
+            setShowChatInterface(true);
+          }}
+          className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs"
+        >
+          Test Modal
+        </button>
+      </div>
+      
       {/* Chat Room Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-green-50 p-4 rounded-lg">
@@ -3462,7 +3479,11 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
           chatRooms.map((room) => (
             <div
               key={room._id}
-              onClick={() => handleChatRoomClick(room)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleChatRoomClick(room);
+              }}
               className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-300"
             >
               <div className="flex items-start justify-between">
@@ -3518,7 +3539,13 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
 
       {/* Chat Interface Modal */}
       {showChatInterface && selectedChatRoom && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+             onClick={(e) => {
+               console.log('🖱️ Modal backdrop clicked');
+               if (e.target === e.currentTarget) {
+                 closeChatInterface();
+               }
+             }}>
           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-5/6 mx-4 flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -3554,7 +3581,13 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
 
             {/* Chat Interface */}
             <div className="flex-1 overflow-hidden">
-              <EnhancedChat userRole="POC" selectedRoomId={selectedChatRoom._id} />
+              {selectedChatRoom ? (
+                <EnhancedChat userRole="POC" selectedRoomId={selectedChatRoom._id} />
+              ) : (
+                <div className="p-8 text-center">
+                  <p>Loading chat room...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
