@@ -141,24 +141,6 @@ export function EnhancedChat({ userRole, selectedRoomId }) {
     }
   };
 
-  const testChatRoomAccess = async () => {
-    if (!selectedRoom) {
-      alert('No room selected');
-      return;
-    }
-    
-    try {
-      console.log('🧪 Testing chat room access...');
-      const response = await fetch(`/api/chat-rooms/${selectedRoom._id}/messages`);
-      const data = await response.json();
-      console.log('🧪 Chat room access test result:', { status: response.status, data });
-      alert(`Chat room access test:\nStatus: ${response.status}\nSuccess: ${response.ok}\nMessages: ${data.messages?.length || 0}`);
-    } catch (error) {
-      console.error('🧪 Chat room access test error:', error);
-      alert(`Chat room access test error: ${error.message}`);
-    }
-  };
-
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
@@ -247,13 +229,6 @@ export function EnhancedChat({ userRole, selectedRoomId }) {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={testChatRoomAccess}
-                    className="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-                    title="Test Chat Room Access"
-                  >
-                    🧪
-                  </button>
                 </div>
               </div>
 
