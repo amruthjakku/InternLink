@@ -4,6 +4,7 @@ import { authOptions } from '../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../utils/database';
 import ChatRoom from '../../../../../models/ChatRoom';
 import Message from '../../../../../models/Message';
+import User from '../../../../../models/User';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,7 +113,6 @@ export async function POST(request, { params }) {
     console.log('✅ Chat room found:', { name: chatRoom.name, visibility: chatRoom.visibility });
 
     // Get the actual user from database to ensure we have the correct _id
-    const User = require('../../../../../models/User');
     const dbUser = await User.findOne({
       $or: [
         { gitlabUsername: session.user.gitlabUsername },

@@ -102,7 +102,8 @@ export function EnhancedChat({ userRole }) {
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('❌ Failed to send message:', errorData);
-        alert(`Failed to send message: ${errorData.error || 'Please try again.'}`);
+        console.error('❌ Response details:', { status: response.status, statusText: response.statusText });
+        alert(`Failed to send message: ${errorData.error || 'Please try again.'}\nStatus: ${response.status}`);
       }
     } catch (error) {
       console.error('❌ Error sending message:', error);
@@ -127,6 +128,24 @@ export function EnhancedChat({ userRole }) {
       case 'support': return 'bg-green-100 text-green-600';
       case 'social': return 'bg-purple-100 text-purple-600';
       default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  const testChatRoomAccess = async () => {
+    if (!selectedRoom) {
+      alert('No room selected');
+      return;
+    }
+    
+    try {
+      console.log('🧪 Testing chat room access...');
+      const response = await fetch(`/api/chat-rooms/${selectedRoom._id}/messages`);
+      const data = await response.json();
+      console.log('🧪 Chat room access test result:', { status: response.status, data });
+      alert(`Chat room access test:\nStatus: ${response.status}\nSuccess: ${response.ok}\nMessages: ${data.messages?.length || 0}`);
+    } catch (error) {
+      console.error('🧪 Chat room access test error:', error);
+      alert(`Chat room access test error: ${error.message}`);
     }
   };
 
@@ -206,16 +225,25 @@ export function EnhancedChat({ userRole }) {
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getRoomColor(selectedRoom.type)}`}>
-                    <span className="text-lg">{getRoomIcon(selectedRoom.type)}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getRoomColor(selectedRoom.type)}`}>
+                      <span className="text-lg">{getRoomIcon(selectedRoom.type)}</span>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{selectedRoom.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {selectedRoom.description || `${selectedRoom.participantCount} participants`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{selectedRoom.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedRoom.description || `${selectedRoom.participantCount} participants`}
-                    </p>
-                  </div>
+                  <button
+                    onClick={testChatRoomAccess}
+                    className="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                    title="Test Chat Room Access"
+                  >
+                    🧪
+                  </button>
                 </div>
               </div>
 
