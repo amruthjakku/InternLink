@@ -118,8 +118,10 @@ export function AIDeveloperInternDashboard() {
   useEffect(() => {
     if (user?.gitlabUsername) {
       loadUserPreferences();
+      // Preload tasks data for the top navigation stats
+      preloadTab('tasks');
     }
-  }, [user?.gitlabUsername, loadUserPreferences]);
+  }, [user?.gitlabUsername, loadUserPreferences, preloadTab]);
 
   // Save user preferences
   const saveUserPreferences = async (newTabOrder) => {
@@ -244,6 +246,8 @@ export function AIDeveloperInternDashboard() {
       await refreshUserData();
       // Refresh current tab data since role might have changed
       await refreshCurrentTab();
+      // Also refresh tasks data for the top navigation stats
+      await refreshData('tasks');
       alert('✅ Session refreshed! Your dashboard has been updated with the latest permissions.');
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -251,7 +255,7 @@ export function AIDeveloperInternDashboard() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshUserData, refreshCurrentTab, refreshing]);
+  }, [refreshUserData, refreshCurrentTab, refreshData, refreshing]);
 
   // Preload next tabs for better UX
   const preloadNextTabs = useCallback(() => {
@@ -319,6 +323,12 @@ export function AIDeveloperInternDashboard() {
   const tasks = getData('tasks')?.tasks || [];
   const performance = getData('performance') || {};
   const announcements = getData('announcements')?.announcements || [];
+
+  // Debug logging for tasks
+  console.log('Dashboard tasks data:', tasks);
+  console.log('Tasks completed:', tasks.filter(t => t.status === 'done').length);
+  console.log('Tasks in progress:', tasks.filter(t => t.status === 'in_progress').length);
+  console.log('Total tasks:', tasks.length);
 
   const renderTabContent = () => {
     const commonProps = { 
@@ -393,19 +403,19 @@ export function AIDeveloperInternDashboard() {
               <div className="flex items-center space-x-4">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-blue-600">
-                    {tasks.filter(t => t.status === 'done').length}
+                    {isLoading('tasks') ? '...' : tasks.filter(t => t.status === 'done').length}
                   </div>
                   <div className="text-xs text-gray-500">Completed</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-orange-600">
-                    {tasks.filter(t => t.status === 'in_progress').length}
+                    {isLoading('tasks') ? '...' : tasks.filter(t => t.status === 'in_progress').length}
                   </div>
                   <div className="text-xs text-gray-500">In Progress</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-gray-600">
-                    {tasks.length}
+                    {isLoading('tasks') ? '...' : tasks.length}
                   </div>
                   <div className="text-xs text-gray-500">Total Tasks</div>
                 </div>
