@@ -97,40 +97,69 @@ export async function POST(request, { params }) {
     console.log('📝 Chat room message data received:', { roomId: id, content: content?.substring(0, 50), type });
     
     if (!content || !content.trim()) {
+      console.log('❌ Empty message content');
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
     }
 
     // Check if user has access to this chat room
+    console.log('🔍 Looking for chat room:', id);
     const chatRoom = await ChatRoom.findById(id);
     if (!chatRoom || !chatRoom.isActive) {
+      console.log('❌ Chat room not found or inactive:', { found: !!chatRoom, active: chatRoom?.isActive });
       return NextResponse.json({ error: 'Chat room not found' }, { status: 404 });
     }
 
+    console.log('✅ Chat room found:', { name: chatRoom.name, visibility: chatRoom.visibility });
+
+    // Get the actual user from database to ensure we have the correct _id
+    const User = require('../../../../../models/User');
+    const dbUser = await User.findOne({
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ]
+    });
+
+    if (!dbUser) {
+      console.log('❌ User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    console.log('✅ Database user found:', { id: dbUser._id, name: dbUser.name });
+
     const hasAccess = 
       chatRoom.visibility === 'public' ||
-      (chatRoom.visibility === 'college-only' && chatRoom.college?.toString() === session.user.college?.toString()) ||
-      chatRoom.participants.some(p => p.user.toString() === session.user._id.toString()) ||
-      chatRoom.createdBy.toString() === session.user._id.toString() ||
+      (chatRoom.visibility === 'college-only' && chatRoom.college?.toString() === dbUser.college?.toString()) ||
+      chatRoom.participants.some(p => p.user.toString() === dbUser._id.toString()) ||
+      chatRoom.createdBy.toString() === dbUser._id.toString() ||
       session.user.role === 'admin';
 
     if (!hasAccess) {
+      console.log('❌ Access denied to chat room');
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
+    console.log('✅ User has access to chat room');
+
     // Create message
+    console.log('💾 Creating message...');
     const message = new Message({
       chatRoom: id,
-      sender: session.user._id,
+      sender: dbUser._id,
       content: content.trim(),
       type: type || 'text',
       replyTo: replyTo || null,
       mentions: mentions || []
     });
 
+    console.log('💾 Saving message to database...');
     await message.save();
+    console.log('✅ Message saved successfully:', message._id);
 
     // Update chat room last activity
+    console.log('🔄 Updating chat room activity...');
     await chatRoom.updateActivity();
+    console.log('✅ Chat room activity updated');
 
     // Populate message for response
     await message.populate('sender', 'name email role');
