@@ -28,10 +28,10 @@ export function TaskManagementTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTasksAndAI Developer Interns();
+    fetchTasksAndAIDeveloperInterns();
   }, []);
 
-  const fetchTasksAndAI Developer Interns = async () => {
+  const fetchTasksAndAIDeveloperInterns = async () => {
     try {
       setLoading(true);
       

@@ -7,6 +7,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
 import { EnhancedUserManagement } from '../../../components/admin/EnhancedUserManagement';
+import { ComprehensiveUserManagement } from '../../../components/admin/ComprehensiveUserManagement';
 import { DataIntegrityChecker } from '../../../components/admin/DataIntegrityChecker';
 import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
 import { CombinedAttendanceSystem } from '../../../components/admin/CombinedAttendanceSystem';
@@ -1340,7 +1341,7 @@ export default function AdminDashboard() {
         {activeTab === 'attendance-ip' && <CombinedAttendanceSystem />}
         
         {/* User Management Tab */}
-        {activeTab === 'user-management' && <EnhancedUserManagement />}
+        {activeTab === 'user-management' && <ComprehensiveUserManagement />}
         
         {/* Cohort System Tab */}
         {activeTab === 'cohort-system' && (

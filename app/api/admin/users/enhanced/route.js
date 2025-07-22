@@ -92,9 +92,11 @@ export async function POST(request) {
   } catch (error) {
     await session.abortTransaction();
     console.error('❌ Enhanced user management error:', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json({ 
       error: 'User management operation failed',
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      action: action || 'unknown'
     }, { status: 500 });
   } finally {
     session.endSession();
