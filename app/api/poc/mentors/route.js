@@ -25,8 +25,8 @@ export async function POST(request) {
     await connectToDatabase();
 
     // Verify super-mentor can manage this college
-    const superTech Lead = await User.findById(session.user.id);
-    if (!superTech Lead || superTech Lead.college.toString() !== college) {
+    const superTechLead = await User.findById(session.user.id);
+    if (!superTechLead || superTechLead.college.toString() !== college) {
       return NextResponse.json({ error: 'Cannot create mentor for different college' }, { status: 403 });
     }
 
@@ -54,18 +54,18 @@ export async function POST(request) {
       isActive: true
     };
 
-    const newTech Lead = new User(userData);
-    await newTech Lead.save();
+    const newTechLead = new User(userData);
+    await newTechLead.save();
 
     return NextResponse.json({ 
       success: true, 
       message: 'Tech Lead created successfully',
       mentor: {
-        _id: newTech Lead._id,
-        gitlabUsername: newTech Lead.gitlabUsername,
-        name: newTech Lead.name,
-        email: newTech Lead.email,
-        role: newTech Lead.role
+        _id: newTechLead._id,
+        gitlabUsername: newTechLead.gitlabUsername,
+        name: newTechLead.name,
+        email: newTechLead.email,
+        role: newTechLead.role
       }
     });
 

@@ -15,15 +15,15 @@ export async function GET() {
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superTech Lead = await User.findById(session.user.id).populate('college');
-    if (!superTech Lead || !superTech Lead.college) {
+    const superTechLead = await User.findById(session.user.id).populate('college');
+    if (!superTechLead || !superTechLead.college) {
       return NextResponse.json({ error: 'Super-mentor college not found' }, { status: 404 });
     }
 
     // Get all mentors in the same college
     const mentors = await User.find({ 
       role: 'Tech Lead', 
-      college: superTech Lead.college._id,
+      college: superTechLead.college._id,
       isActive: true 
     })
     .populate('college', 'name')
@@ -32,7 +32,7 @@ export async function GET() {
 
     // Get assigned interns count for each mentor
     const mentorsWithStats = await Promise.all(mentors.map(async (mentor) => {
-      const assignedAI Developer Interns = await User.countDocuments({
+      const assignedAIDeveloperInterns = await User.countDocuments({
         role: 'AI Developer Intern',
         college: mentor.college._id,
         assignedBy: mentor.gitlabUsername,
@@ -48,7 +48,7 @@ export async function GET() {
         status: mentor.isActive ? 'active' : 'inactive',
         createdAt: mentor.createdAt,
         lastLoginAt: mentor.lastLoginAt,
-        assignedAI Developer Interns: assignedAI Developer Interns,
+        assignedAIDeveloperInterns: assignedAIDeveloperInterns,
         specialization: 'General' // This would come from a profile field
       };
     }));

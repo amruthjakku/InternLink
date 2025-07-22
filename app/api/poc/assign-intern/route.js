@@ -23,8 +23,8 @@ export async function POST(request) {
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superTech Lead = await User.findById(session.user.id).populate('college');
-    if (!superTech Lead || !superTech Lead.college) {
+    const superTechLead = await User.findById(session.user.id).populate('college');
+    if (!superTechLead || !superTechLead.college) {
       return NextResponse.json({ 
         error: 'Super-mentor college not found' 
       }, { status: 404 });
@@ -33,7 +33,7 @@ export async function POST(request) {
     // Verify intern belongs to the same college
     const intern = await User.findById(internId);
     if (!intern || intern.role !== 'AI Developer Intern' || 
-        intern.college.toString() !== superTech Lead.college._id.toString()) {
+        intern.college.toString() !== superTechLead.college._id.toString()) {
       return NextResponse.json({ 
         error: 'AI Developer Intern not found or not in your college' 
       }, { status: 404 });
@@ -42,14 +42,14 @@ export async function POST(request) {
     // Verify mentor belongs to the same college
     const mentor = await User.findById(mentorId);
     if (!mentor || mentor.role !== 'Tech Lead' || 
-        mentor.college.toString() !== superTech Lead.college._id.toString()) {
+        mentor.college.toString() !== superTechLead.college._id.toString()) {
       return NextResponse.json({ 
         error: 'Tech Lead not found or not in your college' 
       }, { status: 404 });
     }
 
     // Update intern's assigned mentor (we'll add this field to the User model)
-    intern.assignedTech Lead = mentorId;
+    intern.assignedTechLead = mentorId;
     await intern.save();
 
     return NextResponse.json({ 
@@ -95,8 +95,8 @@ export async function DELETE(request) {
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superTech Lead = await User.findById(session.user.id).populate('college');
-    if (!superTech Lead || !superTech Lead.college) {
+    const superTechLead = await User.findById(session.user.id).populate('college');
+    if (!superTechLead || !superTechLead.college) {
       return NextResponse.json({ 
         error: 'Super-mentor college not found' 
       }, { status: 404 });
@@ -105,14 +105,14 @@ export async function DELETE(request) {
     // Verify intern belongs to the same college
     const intern = await User.findById(internId);
     if (!intern || intern.role !== 'AI Developer Intern' || 
-        intern.college.toString() !== superTech Lead.college._id.toString()) {
+        intern.college.toString() !== superTechLead.college._id.toString()) {
       return NextResponse.json({ 
         error: 'AI Developer Intern not found or not in your college' 
       }, { status: 404 });
     }
 
     // Remove mentor assignment
-    intern.assignedTech Lead = null;
+    intern.assignedTechLead = null;
     await intern.save();
 
     return NextResponse.json({ 

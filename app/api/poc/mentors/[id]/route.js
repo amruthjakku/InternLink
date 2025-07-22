@@ -24,13 +24,13 @@ export async function PUT(request, { params }) {
     }
 
     // Verify super-mentor can manage this mentor
-    const superTech Lead = await User.findById(session.user.id);
-    if (!superTech Lead || superTech Lead.college.toString() !== mentor.college.toString()) {
+    const superTechLead = await User.findById(session.user.id);
+    if (!superTechLead || superTechLead.college.toString() !== mentor.college.toString()) {
       return NextResponse.json({ error: 'Cannot update mentor from different college' }, { status: 403 });
     }
 
     // Update mentor
-    const updatedTech Lead = await User.findByIdAndUpdate(
+    const updatedTechLead = await User.findByIdAndUpdate(
       id,
       {
         name: updateData.name,
@@ -44,7 +44,7 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ 
       success: true, 
       message: 'Tech Lead updated successfully',
-      mentor: updatedTech Lead
+      mentor: updatedTechLead
     });
 
   } catch (error) {
@@ -74,8 +74,8 @@ export async function DELETE(request, { params }) {
     }
 
     // Verify super-mentor can manage this mentor
-    const superTech Lead = await User.findById(session.user.id);
-    if (!superTech Lead || superTech Lead.college.toString() !== mentor.college.toString()) {
+    const superTechLead = await User.findById(session.user.id);
+    if (!superTechLead || superTechLead.college.toString() !== mentor.college.toString()) {
       return NextResponse.json({ error: 'Cannot delete mentor from different college' }, { status: 403 });
     }
 

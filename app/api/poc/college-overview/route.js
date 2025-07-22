@@ -16,19 +16,19 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Find the POC's college
-    const superTech Lead = await User.findOne({
+    const superTechLead = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
       role: 'POC',
       isActive: true
     }).populate('college');
 
-    if (!superTech Lead || !superTech Lead.college) {
+    if (!superTechLead || !superTechLead.college) {
       return NextResponse.json({ 
         error: 'POC not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superTech Lead.college._id;
+    const collegeId = superTechLead.college._id;
 
     // Fetch all users from this college
     const allUsers = await User.find({
@@ -45,23 +45,23 @@ export async function GET(request) {
 
     // Calculate statistics
     const stats = {
-      totalTech Leads: mentors.filter(m => m.role === 'Tech Lead').length,
+      totalTechLeads: mentors.filter(m => m.role === 'Tech Lead').length,
       totalPOCs: mentors.filter(m => m.role === 'POC').length,
       totalAIDeveloperInterns: interns.length,
-      assignedAI Developer Interns: interns.filter(intern => intern.mentorId).length,
-      unassignedAI Developer Interns: interns.filter(intern => !intern.mentorId).length,
+      assignedAIDeveloperInterns: interns.filter(intern => intern.mentorId).length,
+      unassignedAIDeveloperInterns: interns.filter(intern => !intern.mentorId).length,
       totalUsers: allUsers.length
     };
 
     return NextResponse.json({
-      college: superTech Lead.college,
+      college: superTechLead.college,
       stats,
       mentors,
       interns,
-      superTech Lead: {
-        name: superTech Lead.name,
-        gitlabUsername: superTech Lead.gitlabUsername,
-        email: superTech Lead.email
+      superTechLead: {
+        name: superTechLead.name,
+        gitlabUsername: superTechLead.gitlabUsername,
+        email: superTechLead.email
       }
     });
 
