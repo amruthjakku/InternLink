@@ -67,18 +67,30 @@ export default async function handler(req, res) {
     const collegeUsers = await db.collection('users').find(collegeQuery).toArray();
     console.log(`Found ${collegeUsers.length} users for college:`, college.name);
 
-    // Separate mentors (Tech Leads) and interns (AI Developer Interns)
-    const mentors = collegeUsers.filter(user => 
-      user.role === 'Tech Lead' || 
-      user.role === 'TechLead' ||
-      user.role === 'Mentor'
-    );
+    // Separate mentors (Tech Leads) and interns (AI Developer Interns) with flexible role matching
+    const mentors = collegeUsers.filter(user => {
+      const role = user.role?.toLowerCase().replace(/\s+/g, '');
+      return role === 'techlead' || 
+             role === 'tech-lead' ||
+             role === 'mentor' ||
+             user.role === 'Tech Lead' ||
+             user.role === 'TechLead' ||
+             user.role === 'Mentor';
+    });
 
-    const interns = collegeUsers.filter(user => 
-      user.role === 'AI Developer Intern' || 
-      user.role === 'AIDeveloperIntern' ||
-      user.role === 'Intern'
-    );
+    const interns = collegeUsers.filter(user => {
+      const role = user.role?.toLowerCase().replace(/\s+/g, '');
+      return role === 'aideveloperintern' ||
+             role === 'ai-developer-intern' ||
+             role === 'intern' ||
+             user.role === 'AI Developer Intern' ||
+             user.role === 'AIDeveloperIntern' ||
+             user.role === 'Intern';
+    });
+
+    console.log(`Separated users: ${mentors.length} mentors, ${interns.length} interns`);
+    console.log('Mentor roles:', mentors.map(m => m.role));
+    console.log('Intern roles:', interns.map(i => i.role));
 
     // Calculate statistics
     const stats = {
