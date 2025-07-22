@@ -148,12 +148,13 @@ function EnhancedChat({ userRole, selectedRoomId }) {
     if (message.sender._id !== user._id) return null;
     
     // Mock read status - in real app, this would come from API
-    const isRead = Math.random() > 0.5;
-    const isDelivered = true;
+    const messageAge = Date.now() - new Date(message.createdAt).getTime();
+    const isRead = messageAge > 30000; // Simulate read after 30 seconds
+    const isDelivered = messageAge > 5000; // Simulate delivered after 5 seconds
     
-    if (isRead) return '✓✓'; // Read (blue)
-    if (isDelivered) return '✓✓'; // Delivered (gray)
-    return '✓'; // Sent
+    if (isRead) return { icon: '✓✓', color: 'text-blue-400', status: 'Read' };
+    if (isDelivered) return { icon: '✓✓', color: 'text-gray-400', status: 'Delivered' };
+    return { icon: '✓', color: 'text-gray-300', status: 'Sent' };
   };
 
   // Play notification sound
@@ -716,11 +717,17 @@ function EnhancedChat({ userRole, selectedRoomId }) {
                                 isOwnMessage ? 'text-blue-100' : 'text-gray-500'
                               }`}>
                                 <span className="text-xs">{formatMessageTime(message.createdAt)}</span>
-                                {isOwnMessage && (
-                                  <span className={`text-xs ${Math.random() > 0.5 ? 'text-blue-200' : 'text-blue-100'}`}>
-                                    {getMessageStatus(message)}
-                                  </span>
-                                )}
+                                {isOwnMessage && (() => {
+                                  const status = getMessageStatus(message);
+                                  return status ? (
+                                    <span 
+                                      className={`text-xs ${isOwnMessage ? status.color.replace('text-', 'text-blue-') : status.color}`}
+                                      title={status.status}
+                                    >
+                                      {status.icon}
+                                    </span>
+                                  ) : null;
+                                })()}
                               </div>
                               
                               {/* Message Reactions */}
@@ -1071,10 +1078,17 @@ function EnhancedChat({ userRole, selectedRoomId }) {
                             <p className="text-sm font-medium text-gray-900">
                               {participant.name} {participant.isYou && '(You)'}
                             </p>
-                            <p className="text-xs text-gray-500">{participant.role}</p>
+                            <p className="text-xs text-gray-500">
+                              {participant.role}
+                              {!participant.isOnline && !participant.isYou && (
+                                <span className="ml-1">• Last seen {Math.floor(Math.random() * 60)} min ago</span>
+                              )}
+                            </p>
                           </div>
-                          {participant.isOnline && (
-                            <span className="text-xs text-green-600">Online</span>
+                          {participant.isOnline ? (
+                            <span className="text-xs text-green-600 font-medium">Online</span>
+                          ) : !participant.isYou && (
+                            <span className="text-xs text-gray-400">Offline</span>
                           )}
                         </div>
                       );
