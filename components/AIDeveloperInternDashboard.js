@@ -324,12 +324,6 @@ export function AIDeveloperInternDashboard() {
   const performance = getData('performance') || {};
   const announcements = getData('announcements')?.announcements || [];
 
-  // Debug logging for tasks
-  console.log('Dashboard tasks data:', tasks);
-  console.log('Tasks completed:', tasks.filter(t => t.status === 'done').length);
-  console.log('Tasks in progress:', tasks.filter(t => t.status === 'in_progress').length);
-  console.log('Total tasks:', tasks.length);
-
   const renderTabContent = () => {
     const commonProps = { 
       user: user || null, 

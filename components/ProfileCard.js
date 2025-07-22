@@ -10,11 +10,6 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Debug logging
-  console.log('ProfileCard user:', user);
-  console.log('ProfileCard user.college:', user?.college);
-  console.log('ProfileCard user.cohortId:', user?.cohortId);
-
   useEffect(() => {
     if (user) {
       fetchProfileData();
