@@ -369,7 +369,7 @@ export default function EnhancedAdminDashboard() {
         setStats(statsData.stats || {
           totalUsers: 0,
           totalColleges: 0,
-          totalTech Leads: 0,
+          totalTechLeads: 0,
           totalAIDeveloperInterns: 0,
           activeUsers: 0,
           systemHealth: 100,
@@ -380,7 +380,7 @@ export default function EnhancedAdminDashboard() {
         setStats({
           totalUsers: 0,
           totalColleges: 0,
-          totalTech Leads: 0,
+          totalTechLeads: 0,
           totalAIDeveloperInterns: 0,
           activeUsers: 0,
           systemHealth: 100,
@@ -393,7 +393,7 @@ export default function EnhancedAdminDashboard() {
       setStats({
         totalUsers: 0,
         totalColleges: 0,
-        totalTech Leads: 0,
+        totalTechLeads: 0,
         totalAIDeveloperInterns: 0,
         activeUsers: 0,
         systemHealth: 100,
@@ -611,7 +611,7 @@ export default function EnhancedAdminDashboard() {
                   />
                   <MetricCard
                     title="Total Tech Leads"
-                    value={stats.totalTech Leads || 0}
+                    value={stats.totalTechLeads || 0}
                     change={2.1}
                     icon="👨‍🏫"
                     color="orange"

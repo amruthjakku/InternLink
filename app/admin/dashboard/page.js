@@ -43,7 +43,7 @@ const CombinedCollegeManagement = () => {
     description: '',
     location: '',
     website: '',
-    superTech LeadUsername: ''
+    superTechLeadUsername: ''
   });
 
   // Fetch colleges
@@ -78,7 +78,7 @@ const CombinedCollegeManagement = () => {
 
       if (response.ok) {
         setShowAddModal(false);
-        setNewCollege({ name: '', description: '', location: '', website: '', superTech LeadUsername: '' });
+        setNewCollege({ name: '', description: '', location: '', website: '', superTechLeadUsername: '' });
         fetchColleges(); // Refresh the list
       } else {
         const error = await response.json();
@@ -114,7 +114,7 @@ const CombinedCollegeManagement = () => {
   const filteredColleges = colleges.filter(college =>
     college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     college.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (college.superTech LeadName && college.superTech LeadName.toLowerCase().includes(searchTerm.toLowerCase()))
+    (college.superTechLeadName && college.superTechLeadName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Fetch POCs for dropdowns
@@ -138,7 +138,7 @@ const CombinedCollegeManagement = () => {
       description: college.description || '',
       location: college.location || '',
       website: college.website || '',
-      superTech LeadUsername: college.superTech LeadUsername || ''
+      superTechLeadUsername: college.superTechLeadUsername || ''
     });
     setShowEditModal(true);
   };
@@ -437,8 +437,8 @@ const CombinedCollegeManagement = () => {
                   Super-mentor
                 </label>
                 <select
-                  value={newCollege.superTech LeadUsername}
-                  onChange={(e) => setNewCollege({...newCollege, superTech LeadUsername: e.target.value})}
+                  value={newCollege.superTechLeadUsername}
+                  onChange={(e) => setNewCollege({...newCollege, superTechLeadUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="">Select a POC</option>
@@ -538,8 +538,8 @@ const CombinedCollegeManagement = () => {
                   Assigned Super-mentor
                 </label>
                 <select
-                  value={editingCollege.superTech LeadUsername}
-                  onChange={(e) => setEditingCollege({...editingCollege, superTech LeadUsername: e.target.value})}
+                  value={editingCollege.superTechLeadUsername}
+                  onChange={(e) => setEditingCollege({...editingCollege, superTechLeadUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">No POC assigned</option>
@@ -1117,7 +1117,7 @@ export default function AdminDashboard() {
                   />
                   <MetricCard
                     title="Total Tech Leads"
-                    value={`${stats.totalTech Leads || 0} + ${stats.totalPOCs || 0}`}
+                    value={`${stats.totalTechLeads || 0} + ${stats.totalPOCs || 0}`}
                     change={stats.totalPOCs || 0}
                     icon="👨‍🏫"
                     color="orange"
