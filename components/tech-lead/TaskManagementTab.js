@@ -38,7 +38,7 @@ export function TaskManagementTab() {
       // Fetch real tasks and interns data
       const [tasksResponse, internsResponse] = await Promise.all([
         fetch('/api/tasks'),
-        fetch('/api/admin/users?role=intern')
+        fetch('/api/admin/users?role=AI%20developer%20Intern')
       ]);
 
       if (tasksResponse.ok) {

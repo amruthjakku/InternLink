@@ -49,7 +49,7 @@ export function CollegesTab() {
 
   const fetchInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=intern');
+      const response = await fetch('/api/admin/users?role=AI%20developer%20Intern');
       if (response.ok) {
         const data = await response.json();
         setInterns(data.users || []);

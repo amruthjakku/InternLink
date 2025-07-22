@@ -49,11 +49,11 @@ export function AttendanceTab({ userRole = 'mentor' }) {
   const fetchInterns = async () => {
     try {
       // Different API endpoints based on user role
-      let endpoint = '/api/admin/users?role=intern';
-      if (userRole === 'mentor') {
-        endpoint = '/api/mentor/assigned-interns';
-      } else if (userRole === 'super-mentor') {
-        endpoint = '/api/super-mentor/college-interns';
+      let endpoint = '/api/admin/users?role=AI%20developer%20Intern';
+      if (userRole === 'Tech Lead') {
+        endpoint = '/api/tech-lead/assigned-interns';
+      } else if (userRole === 'POC') {
+        endpoint = '/api/poc/college-interns';
       }
       
       const response = await fetch(endpoint);

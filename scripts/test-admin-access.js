@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'mentor', 'intern'] },
+  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'] },
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
   assignedBy: { type: String, required: true },
   isActive: { type: Boolean, default: true },
@@ -75,8 +75,8 @@ async function testAdminAccess() {
     // Test 4: Admin-specific data access
     console.log('\n4️⃣ Admin Data Access:');
     const adminUsers = await User.find({ role: 'admin' });
-    const mentorUsers = await User.find({ role: 'mentor' });
-    const internUsers = await User.find({ role: 'intern' });
+    const mentorUsers = await User.find({ role: 'Tech Lead' });
+    const internUsers = await User.find({ role: 'AI developer Intern' });
     
     console.log(`   Admins: ${adminUsers.length}`);
     console.log(`   Mentors: ${mentorUsers.length}`);

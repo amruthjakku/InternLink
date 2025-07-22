@@ -49,7 +49,7 @@ async function testTaskProgressSystem() {
     // 2. Find interns in the cohort
     const cohortInterns = await User.find({
       cohortId: cohortTask.cohortId,
-      role: 'intern',
+      role: 'AI developer Intern',
       isActive: true
     }).limit(3); // Test with first 3 interns
     

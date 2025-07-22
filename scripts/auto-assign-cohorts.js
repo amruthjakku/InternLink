@@ -10,7 +10,7 @@ async function autoAssignCohorts() {
     
     // Get all interns without cohort assignments
     const internsWithoutCohorts = await User.find({ 
-      role: 'intern',
+      role: 'AI developer Intern',
       $or: [
         { cohortId: { $exists: false } },
         { cohortId: null }
@@ -50,7 +50,7 @@ async function autoAssignCohorts() {
     
     // Show summary
     const updatedInterns = await User.find({ 
-      role: 'intern',
+      role: 'AI developer Intern',
       cohortId: activeCohort._id
     }).populate('cohortId', 'name');
     
