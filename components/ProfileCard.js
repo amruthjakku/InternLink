@@ -10,6 +10,11 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Debug logging
+  console.log('ProfileCard user:', user);
+  console.log('ProfileCard user.college:', user?.college);
+  console.log('ProfileCard user.cohortId:', user?.cohortId);
+
   useEffect(() => {
     if (user) {
       fetchProfileData();
@@ -150,13 +155,13 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
           {user?.college && (
             <div className="flex items-center space-x-2">
               <span>🏢</span>
-              <span className="truncate">{getCollegeName(user.college)}</span>
+              <span className="truncate">{String(getCollegeName(user.college) || 'Unknown College')}</span>
             </div>
           )}
           {user?.cohortId && (
             <div className="flex items-center space-x-2">
               <span>👥</span>
-              <span>Cohort: {getCohortName(user.cohortName || user.cohortId) || 'Not assigned'}</span>
+              <span>Cohort: {String(getCohortName(user.cohortName || user.cohortId) || 'Not assigned')}</span>
             </div>
           )}
           <div className="flex items-center space-x-2">
