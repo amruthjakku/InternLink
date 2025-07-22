@@ -27,6 +27,8 @@ const POCDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (session?.user?.role === 'POC') {
@@ -34,8 +36,14 @@ const POCDashboard = () => {
     }
   }, [session]);
 
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchAllData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    
     try {
       await Promise.all([
         fetchCollegeData(),
@@ -47,8 +55,10 @@ const POCDashboard = () => {
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -159,6 +169,16 @@ const POCDashboard = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => fetchAllData(true)}
+                disabled={refreshing}
+                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
+              >
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
               <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 POC
               </div>
@@ -166,6 +186,33 @@ const POCDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
@@ -666,15 +713,27 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
 // Task Oversight Tab
 const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showTaskDetails, setShowTaskDetails] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     priority: 'medium',
     assignedTo: '',
-    dueDate: ''
+    dueDate: '',
+    estimatedHours: '',
+    points: ''
   });
 
   const handleCreateTask = async () => {
+    if (!newTask.title.trim()) {
+      alert('Please enter a task title');
+      return;
+    }
+
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
@@ -682,7 +741,9 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
         body: JSON.stringify({
           ...newTask,
           createdBy: 'POC',
-          college: collegeData?.college?._id
+          college: collegeData?.college?._id,
+          estimatedHours: newTask.estimatedHours ? parseInt(newTask.estimatedHours) : null,
+          points: newTask.points ? parseInt(newTask.points) : null
         })
       });
 
@@ -694,14 +755,35 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
           description: '',
           priority: 'medium',
           assignedTo: '',
-          dueDate: ''
+          dueDate: '',
+          estimatedHours: '',
+          points: ''
         });
         fetchTasks();
+      } else {
+        const error = await response.json();
+        alert(`Failed to create task: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating task:', error);
       alert('Failed to create task');
     }
+  };
+
+  // Filter tasks based on status, priority, and search term
+  const filteredTasks = tasks.filter(task => {
+    const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
+    const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+    const matchesSearch = !searchTerm || 
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesStatus && matchesPriority && matchesSearch;
+  });
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetails(true);
   };
 
   return (
@@ -720,6 +802,47 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
         </button>
       </div>
 
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="flex gap-3">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="not_started">Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="blocked">Blocked</option>
+            </select>
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Priority</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-2 text-sm text-gray-600">
+          Showing {filteredTasks.length} of {tasks.length} tasks
+        </div>
+      </div>
+
       {/* Task Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -729,7 +852,7 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Tasks</p>
-              <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredTasks.length}</p>
             </div>
           </div>
         </div>
@@ -742,7 +865,7 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">In Progress</p>
               <p className="text-2xl font-bold text-gray-900">
-                {tasks.filter(t => t.status === 'in-progress').length}
+                {filteredTasks.filter(t => t.status === 'in_progress').length}
               </p>
             </div>
           </div>
@@ -756,7 +879,7 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Completed</p>
               <p className="text-2xl font-bold text-gray-900">
-                {tasks.filter(t => t.status === 'completed').length}
+                {filteredTasks.filter(t => t.status === 'completed').length}
               </p>
             </div>
           </div>
@@ -770,7 +893,7 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Overdue</p>
               <p className="text-2xl font-bold text-gray-900">
-                {tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length}
+                {filteredTasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length}
               </p>
             </div>
           </div>
@@ -783,13 +906,22 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
           <h4 className="text-lg font-medium text-gray-900">Recent Tasks</h4>
         </div>
         <div className="p-6">
-          {tasks.length > 0 ? (
+          {filteredTasks.length > 0 ? (
             <div className="space-y-4">
-              {tasks.slice(0, 10).map((task) => (
-                <div key={task._id} className="border border-gray-200 rounded-lg p-4">
+              {filteredTasks.slice(0, 20).map((task) => (
+                <div 
+                  key={task._id} 
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleTaskClick(task)}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-medium text-gray-900">{task.title}</h5>
                     <div className="flex items-center space-x-2">
+                      {task.points && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                          {task.points} pts
+                        </span>
+                      )}
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         task.priority === 'high' ? 'bg-red-100 text-red-800' :
                         task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -799,24 +931,34 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
                       </span>
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        task.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        task.status === 'blocked' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {task.status}
+                        {task.status?.replace('_', ' ') || 'not started'}
                       </span>
+                      <EyeIcon className="w-4 h-4 text-gray-400" />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Assigned to: {task.assignedToName || 'Unassigned'}</span>
-                    <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{task.description || 'No description provided'}</p>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <div className="flex items-center space-x-4">
+                      <span>Assigned to: {task.assignedToName || 'Unassigned'}</span>
+                      {task.estimatedHours && (
+                        <span>Est: {task.estimatedHours}h</span>
+                      )}
+                    </div>
+                    <span>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No tasks created yet. Create your first task to get started.
+              {tasks.length === 0 
+                ? "No tasks created yet. Create your first task to get started."
+                : "No tasks match your current filters."
+              }
             </div>
           )}
         </div>
@@ -825,16 +967,17 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
       {/* Create Task Modal */}
       {showCreateTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Create New Task</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                 <input
                   type="text"
                   value={newTask.title}
                   onChange={(e) => setNewTask({...newTask, title: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter task title..."
                 />
               </div>
               <div>
@@ -844,43 +987,203 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
                   onChange={(e) => setNewTask({...newTask, description: e.target.value})}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Describe the task..."
                 />
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select
+                    value={newTask.priority}
+                    onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+                  <input
+                    type="number"
+                    value={newTask.estimatedHours}
+                    onChange={(e) => setNewTask({...newTask, estimatedHours: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 8"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
+                  <input
+                    type="number"
+                    value={newTask.points}
+                    onChange={(e) => setNewTask({...newTask, points: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., 10"
+                    min="1"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
                 <select
-                  value={newTask.priority}
-                  onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                  value={newTask.assignedTo}
+                  onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="">Select assignee (optional)</option>
+                  {collegeData?.interns?.map((intern) => (
+                    <option key={intern._id} value={intern._id}>
+                      {intern.name} (@{intern.gitlabUsername})
+                    </option>
+                  ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowCreateTask(false)}
+                  onClick={() => {
+                    setShowCreateTask(false);
+                    setNewTask({
+                      title: '',
+                      description: '',
+                      priority: 'medium',
+                      assignedTo: '',
+                      dueDate: '',
+                      estimatedHours: '',
+                      points: ''
+                    });
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateTask}
-                  disabled={!newTask.title || !newTask.description}
+                  disabled={!newTask.title.trim()}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Create Task
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Task Details Modal */}
+      {showTaskDetails && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Task Details</h3>
+              <button
+                onClick={() => setShowTaskDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xl font-semibold text-gray-900">{selectedTask.title}</h4>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    selectedTask.priority === 'high' ? 'bg-red-100 text-red-800' :
+                    selectedTask.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {selectedTask.priority} priority
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    selectedTask.status === 'blocked' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedTask.status?.replace('_', ' ') || 'not started'}
+                  </span>
+                  {selectedTask.points && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                      {selectedTask.points} points
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Description</h5>
+                <p className="text-gray-600">{selectedTask.description || 'No description provided'}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">Assigned To</h5>
+                  <p className="text-gray-600">{selectedTask.assignedToName || 'Unassigned'}</p>
+                </div>
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">Due Date</h5>
+                  <p className="text-gray-600">
+                    {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString() : 'No due date'}
+                  </p>
+                </div>
+              </div>
+
+              {(selectedTask.estimatedHours || selectedTask.actualHours) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedTask.estimatedHours && (
+                    <div>
+                      <h5 className="font-medium text-gray-900 mb-1">Estimated Hours</h5>
+                      <p className="text-gray-600">{selectedTask.estimatedHours}h</p>
+                    </div>
+                  )}
+                  {selectedTask.actualHours && (
+                    <div>
+                      <h5 className="font-medium text-gray-900 mb-1">Actual Hours</h5>
+                      <p className="text-gray-600">{selectedTask.actualHours}h</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedTask.progress !== undefined && (
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Progress</h5>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${selectedTask.progress || 0}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{selectedTask.progress || 0}% complete</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                <div>
+                  <span className="font-medium">Created:</span> {new Date(selectedTask.createdAt).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">Last Updated:</span> {new Date(selectedTask.updatedAt || selectedTask.createdAt).toLocaleDateString()}
+                </div>
               </div>
             </div>
           </div>
@@ -1131,21 +1434,32 @@ const PerformanceAnalyticsTab = ({ collegeData, performanceData }) => {
 // Communication Tab
 const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) => {
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [showAnnouncementDetails, setShowAnnouncementDetails] = useState(false);
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [filterAudience, setFilterAudience] = useState('all');
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     message: '',
     priority: 'normal',
-    targetAudience: 'all'
+    targetAudience: 'all',
+    expiresAt: ''
   });
 
   const handleCreateAnnouncement = async () => {
+    if (!newAnnouncement.title.trim() || !newAnnouncement.message.trim()) {
+      alert('Please fill in both title and message');
+      return;
+    }
+
     try {
       const response = await fetch('/api/poc/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newAnnouncement,
-          college: collegeData?.college?._id
+          college: collegeData?.college?._id,
+          expiresAt: newAnnouncement.expiresAt || null
         })
       });
 
@@ -1156,14 +1470,34 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
           title: '',
           message: '',
           priority: 'normal',
-          targetAudience: 'all'
+          targetAudience: 'all',
+          expiresAt: ''
         });
         fetchAnnouncements();
+      } else {
+        const error = await response.json();
+        alert(`Failed to create announcement: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating announcement:', error);
       alert('Failed to create announcement');
     }
+  };
+
+  // Filter announcements
+  const filteredAnnouncements = announcements.filter(announcement => {
+    const matchesPriority = filterPriority === 'all' || announcement.priority === filterPriority;
+    const matchesAudience = filterAudience === 'all' || announcement.targetAudience === filterAudience;
+    
+    // Check if announcement is not expired
+    const isNotExpired = !announcement.expiresAt || new Date(announcement.expiresAt) > new Date();
+    
+    return matchesPriority && matchesAudience && isNotExpired;
+  });
+
+  const handleAnnouncementClick = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowAnnouncementDetails(true);
   };
 
   return (
@@ -1182,41 +1516,143 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
         </button>
       </div>
 
+      {/* Announcement Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ChatBubbleLeftRightIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Announcements</p>
+              <p className="text-2xl font-bold text-gray-900">{announcements.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircleIcon className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Active</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredAnnouncements.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">High Priority</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {announcements.filter(a => a.priority === 'high').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <ClockIcon className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">This Week</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {announcements.filter(a => {
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return new Date(a.createdAt) >= weekAgo;
+                }).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex gap-3">
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Priorities</option>
+              <option value="high">High Priority</option>
+              <option value="normal">Normal Priority</option>
+              <option value="low">Low Priority</option>
+            </select>
+            <select
+              value={filterAudience}
+              onChange={(e) => setFilterAudience(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Audiences</option>
+              <option value="all">Everyone</option>
+              <option value="tech-leads">Tech Leads</option>
+              <option value="interns">AI Developer Interns</option>
+              <option value="mentors">Mentors</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600 flex items-center">
+            Showing {filteredAnnouncements.length} of {announcements.length} announcements
+          </div>
+        </div>
+      </div>
+
       {/* Recent Announcements */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="px-6 py-4 border-b border-gray-200">
           <h4 className="text-lg font-medium text-gray-900">Recent Announcements</h4>
         </div>
         <div className="p-6">
-          {announcements.length > 0 ? (
+          {filteredAnnouncements.length > 0 ? (
             <div className="space-y-4">
-              {announcements.map((announcement) => (
-                <div key={announcement._id} className="border border-gray-200 rounded-lg p-4">
+              {filteredAnnouncements.map((announcement) => (
+                <div 
+                  key={announcement._id} 
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleAnnouncementClick(announcement)}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="font-medium text-gray-900">{announcement.title}</h5>
                     <div className="flex items-center space-x-2">
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         announcement.priority === 'high' ? 'bg-red-100 text-red-800' :
                         announcement.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
+                        'bg-green-100 text-green-800'
                       }`}>
                         {announcement.priority}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(announcement.createdAt).toLocaleDateString()}
                       </span>
+                      <EyeIcon className="w-4 h-4 text-gray-400" />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{announcement.message}</p>
-                  <p className="text-xs text-gray-500">
-                    Target: {announcement.targetAudience}
-                  </p>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{announcement.message}</p>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Target: {announcement.targetAudience}</span>
+                    {announcement.expiresAt && (
+                      <span>Expires: {new Date(announcement.expiresAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No announcements yet. Create your first announcement to get started.
+              {announcements.length === 0 
+                ? "No announcements yet. Create your first announcement to get started."
+                : "No announcements match your current filters."
+              }
             </div>
           )}
         </div>
@@ -1225,65 +1661,162 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
       {/* Create Announcement Modal */}
       {showCreateAnnouncement && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Create New Announcement</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                 <input
                   type="text"
                   value={newAnnouncement.title}
                   onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter announcement title..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
                 <textarea
                   value={newAnnouncement.message}
                   onChange={(e) => setNewAnnouncement({...newAnnouncement, message: e.target.value})}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Write your announcement message..."
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                <select
-                  value={newAnnouncement.priority}
-                  onChange={(e) => setNewAnnouncement({...newAnnouncement, priority: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                </select>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <select
+                    value={newAnnouncement.priority}
+                    onChange={(e) => setNewAnnouncement({...newAnnouncement, priority: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="normal">Normal Priority</option>
+                    <option value="high">High Priority</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+                  <select
+                    value={newAnnouncement.targetAudience}
+                    onChange={(e) => setNewAnnouncement({...newAnnouncement, targetAudience: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Everyone</option>
+                    <option value="interns">AI Developer Interns Only</option>
+                    <option value="tech-leads">Tech Leads Only</option>
+                    <option value="mentors">Mentors Only</option>
+                  </select>
+                </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
-                <select
-                  value={newAnnouncement.targetAudience}
-                  onChange={(e) => setNewAnnouncement({...newAnnouncement, targetAudience: e.target.value})}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (Optional)</label>
+                <input
+                  type="datetime-local"
+                  value={newAnnouncement.expiresAt}
+                  onChange={(e) => setNewAnnouncement({...newAnnouncement, expiresAt: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Students</option>
-                  <option value="interns">AI Developer Interns Only</option>
-                  <option value="mentors">Tech Leads Only</option>
-                </select>
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty for permanent announcement</p>
               </div>
+
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowCreateAnnouncement(false)}
+                  onClick={() => {
+                    setShowCreateAnnouncement(false);
+                    setNewAnnouncement({
+                      title: '',
+                      message: '',
+                      priority: 'normal',
+                      targetAudience: 'all',
+                      expiresAt: ''
+                    });
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateAnnouncement}
-                  disabled={!newAnnouncement.title || !newAnnouncement.message}
+                  disabled={!newAnnouncement.title.trim() || !newAnnouncement.message.trim()}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Create Announcement
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Announcement Details Modal */}
+      {showAnnouncementDetails && selectedAnnouncement && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Announcement Details</h3>
+              <button
+                onClick={() => setShowAnnouncementDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xl font-semibold text-gray-900">{selectedAnnouncement.title}</h4>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    selectedAnnouncement.priority === 'high' ? 'bg-red-100 text-red-800' :
+                    selectedAnnouncement.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {selectedAnnouncement.priority} priority
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                    {selectedAnnouncement.targetAudience}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Message</h5>
+                <p className="text-gray-600 whitespace-pre-wrap">{selectedAnnouncement.message}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">Created</h5>
+                  <p className="text-gray-600">{new Date(selectedAnnouncement.createdAt).toLocaleString()}</p>
+                </div>
+                {selectedAnnouncement.expiresAt && (
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Expires</h5>
+                    <p className="text-gray-600">{new Date(selectedAnnouncement.expiresAt).toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4">
+                <h5 className="font-medium text-gray-900 mb-2">Status</h5>
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    Active
+                  </span>
+                  {selectedAnnouncement.expiresAt && new Date(selectedAnnouncement.expiresAt) > new Date() && (
+                    <span className="text-gray-600">
+                      Expires in {Math.ceil((new Date(selectedAnnouncement.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))} days
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
