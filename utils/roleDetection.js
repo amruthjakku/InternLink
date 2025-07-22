@@ -33,7 +33,7 @@ export function detectUserRole(gitlabUsername) {
   
   // Super-mentor patterns (higher priority than regular mentor)
   const superMentorPatterns = [
-    /^super_mentor/,    // starts with 'super_mentor'
+    /^poc/,    // starts with 'poc'
     /^chief/,           // starts with 'chief'
     /^head/,            // starts with 'head'
     /^principal/,       // starts with 'principal'
@@ -200,7 +200,7 @@ function calculateConfidence(username, role) {
     return 0.9;
   }
   
-  if (role === 'POC' && /^super_mentor|^chief|^head|^principal/.test(lowerUsername)) {
+  if (role === 'POC' && /^poc|^chief|^head|^principal/.test(lowerUsername)) {
     return 0.9;
   }
   

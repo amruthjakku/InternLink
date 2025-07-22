@@ -65,10 +65,10 @@ const OnboardingFlow = () => {
       
       if (data.onboardingComplete) {
         // Redirect to appropriate dashboard
-        if (data.role === 'mentor') {
-          router.push('/mentor/dashboard');
-        } else if (data.role === 'intern') {
-          router.push('/intern/dashboard');
+        if (data.role === 'Tech Lead') {
+          router.push('/tech-lead/dashboard');
+        } else if (data.role === 'AI developer Intern') {
+          router.push('/ai-developer-intern/dashboard');
         }
       } else {
         setLoading(false);
@@ -92,10 +92,10 @@ const OnboardingFlow = () => {
         // For demo mode, set localStorage and redirect to the appropriate dashboard
         localStorage.setItem('demoMode', 'true');
         localStorage.setItem('demoRole', selectedRole);
-        if (selectedRole === 'mentor') {
-          router.push('/mentor/dashboard?demo=true');
-        } else if (selectedRole === 'intern') {
-          router.push('/intern/dashboard?demo=true');
+        if (selectedRole === 'Tech Lead') {
+          router.push('/tech-lead/dashboard?demo=true');
+        } else if (selectedRole === 'AI developer Intern') {
+          router.push('/ai-developer-intern/dashboard?demo=true');
         }
         return;
       }
@@ -115,10 +115,10 @@ const OnboardingFlow = () => {
 
       if (result.success) {
         // Redirect to appropriate dashboard
-        if (selectedRole === 'mentor') {
-          router.push('/mentor/dashboard');
-        } else if (selectedRole === 'intern') {
-          router.push('/intern/dashboard');
+        if (selectedRole === 'Tech Lead') {
+          router.push('/tech-lead/dashboard');
+        } else if (selectedRole === 'AI developer Intern') {
+          router.push('/ai-developer-intern/dashboard');
         }
       } else {
         throw new Error(result.error || 'Onboarding failed');

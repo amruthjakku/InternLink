@@ -65,8 +65,8 @@ export function MentorDashboard() {
       }
     };
 
-    if (role === 'super-mentor') {
-      // Add super-mentor specific groups
+    if (role === 'POC') {
+      // Add POC specific groups
       return {
         ...baseGroups,
         administration: {
@@ -117,11 +117,11 @@ export function MentorDashboard() {
       
       console.log('Fetching interns for user role:', user?.role);
       
-      if (user?.role === 'mentor') {
-        endpoint = '/ap./tech-lead/assigned-interns';
-      } else if (user?.role === 'super-mentor') {
-        endpoint = '/api/super-mentor/college-interns';
-        console.log('Using super-mentor endpoint for college interns');
+      if (user?.role === 'Tech Lead') {
+        endpoint = '/api/tech-lead/assigned-interns';
+      } else if (user?.role === 'POC') {
+        endpoint = '/api/poc/college-interns';
+        console.log('Using POC endpoint for college interns');
       }
       
       // Use fetch with improved error handling

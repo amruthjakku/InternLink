@@ -133,7 +133,7 @@ export function EnhancedChat({ userRole }) {
               <div className="p-4 text-center">
                 <div className="text-gray-400 text-2xl mb-2">💬</div>
                 <p className="text-sm text-gray-500">No chat rooms available</p>
-                {userRole === 'super-mentor' && (
+                {userRole === 'POC' && (
                   <p className="text-xs text-gray-400 mt-1">
                     Create rooms in the Communication tab
                   </p>
