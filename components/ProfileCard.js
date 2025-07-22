@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { CollegeLogo } from './CollegeLogo';
-import { getCohortName } from '../utils/helpers';
+import { getCohortName, getCollegeName } from '../utils/helpers';
 
 export function ProfileCard({ user, showMilestones = true, compact = false }) {
   const [milestones, setMilestones] = useState([]);
@@ -150,13 +150,13 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
           {user?.college && (
             <div className="flex items-center space-x-2">
               <span>🏢</span>
-              <span className="truncate">{user.college}</span>
+              <span className="truncate">{getCollegeName(user.college)}</span>
             </div>
           )}
           {user?.cohortId && (
             <div className="flex items-center space-x-2">
               <span>👥</span>
-              <span>Cohort: {getCohortName(user.cohortName || user.cohortId)}</span>
+              <span>Cohort: {getCohortName(user.cohortName || user.cohortId) || 'Not assigned'}</span>
             </div>
           )}
           <div className="flex items-center space-x-2">
@@ -170,25 +170,25 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-2 bg-blue-50 rounded">
               <div className="text-lg font-bold text-blue-600">
-                {stats.repositoriesContributed || 0}
+                {Number(stats.repositoriesContributed) || 0}
               </div>
               <div className="text-xs text-gray-500">Repositories</div>
             </div>
             <div className="text-center p-2 bg-green-50 rounded">
               <div className="text-lg font-bold text-green-600">
-                {stats.commitCount || 0}
+                {Number(stats.commitCount) || 0}
               </div>
               <div className="text-xs text-gray-500">Total Commits</div>
             </div>
             <div className="text-center p-2 bg-purple-50 rounded">
               <div className="text-lg font-bold text-purple-600">
-                {stats.currentStreak || 0}
+                {Number(stats.currentStreak) || 0}
               </div>
               <div className="text-xs text-gray-500">Day Streak</div>
             </div>
             <div className="text-center p-2 bg-orange-50 rounded">
               <div className="text-lg font-bold text-orange-600">
-                {stats.attendanceRate || 0}%
+                {Number(stats.attendanceRate) || 0}%
               </div>
               <div className="text-xs text-gray-500">Attendance</div>
             </div>
@@ -210,19 +210,19 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
           <div className="grid grid-cols-3 gap-2">
             <div className="text-center p-2 bg-green-50 rounded">
               <div className="text-sm font-bold text-green-600">
-                {stats.tasksCompleted || 0}
+                {Number(stats.tasksCompleted) || 0}
               </div>
               <div className="text-xs text-gray-500">Completed</div>
             </div>
             <div className="text-center p-2 bg-yellow-50 rounded">
               <div className="text-sm font-bold text-yellow-600">
-                {stats.tasksInProgress || 0}
+                {Number(stats.tasksInProgress) || 0}
               </div>
               <div className="text-xs text-gray-500">In Progress</div>
             </div>
             <div className="text-center p-2 bg-gray-50 rounded">
               <div className="text-sm font-bold text-gray-600">
-                {stats.totalTasks || 0}
+                {Number(stats.totalTasks) || 0}
               </div>
               <div className="text-xs text-gray-500">Total Tasks</div>
             </div>
@@ -231,12 +231,12 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
             <div className="mt-2">
               <div className="flex justify-between text-xs text-gray-600 mb-1">
                 <span>Completion Rate</span>
-                <span>{stats.averageTaskCompletion || 0}%</span>
+                <span>{Number(stats.averageTaskCompletion) || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div 
                   className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
-                  style={{ width: `${stats.averageTaskCompletion || 0}%` }}
+                  style={{ width: `${Number(stats.averageTaskCompletion) || 0}%` }}
                 ></div>
               </div>
             </div>
@@ -249,19 +249,19 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center p-2 bg-indigo-50 rounded">
                 <div className="text-sm font-bold text-indigo-600">
-                  {stats.taskPoints || 0}
+                  {Number(stats.taskPoints) || 0}
                 </div>
                 <div className="text-xs text-gray-500">Task Points</div>
               </div>
               <div className="text-center p-2 bg-pink-50 rounded">
                 <div className="text-sm font-bold text-pink-600">
-                  {stats.bonusPoints || 0}
+                  {Number(stats.bonusPoints) || 0}
                 </div>
                 <div className="text-xs text-gray-500">Bonus Points</div>
               </div>
               <div className="text-center p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded border border-blue-200">
                 <div className="text-sm font-bold text-blue-600">
-                  {stats.pointsEarned || 0}
+                  {Number(stats.pointsEarned) || 0}
                 </div>
                 <div className="text-xs text-gray-500">Total Points</div>
               </div>
@@ -270,28 +270,28 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
         )}
 
         {/* Recent Achievement */}
-        {milestones.length > 0 && (
+        {milestones.length > 0 && milestones[0] && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <h4 className="text-xs font-medium text-gray-900 mb-2 flex items-center">
               <span className="mr-1">🏆</span>
               Recent Achievement
             </h4>
             <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-              <div className="text-lg">{milestones[0].icon}</div>
+              <div className="text-lg">{milestones[0].icon || '🏆'}</div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-gray-900 truncate">
-                  {milestones[0].title}
+                  {milestones[0].title || 'Achievement'}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                  {milestones[0].description}
+                  {milestones[0].description || 'No description'}
                 </div>
                 <div className="text-xs text-gray-400">
-                  {new Date(milestones[0].achievedAt).toLocaleDateString()}
+                  {milestones[0].achievedAt ? new Date(milestones[0].achievedAt).toLocaleDateString() : 'Recently'}
                 </div>
               </div>
               {milestones[0].points && (
                 <div className="text-xs font-bold text-blue-600">
-                  +{milestones[0].points}
+                  +{Number(milestones[0].points) || 0}
                 </div>
               )}
             </div>
