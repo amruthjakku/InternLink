@@ -67,3 +67,7 @@ logs
 .vercel
 test-results/
 playwright-report/
+
+# Zencoder files (AI assistant)
+*zencoder*
+.zencoder*

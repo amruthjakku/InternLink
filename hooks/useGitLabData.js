@@ -37,7 +37,7 @@ export function useGitLabData(dataType, options = {}) {
 
   // API endpoints mapping
   const apiEndpoints = {
-    analytics: '/api/gitlab/intern-analytics',
+    analytics: '/api/gitlab/ai-developer-intern-analytics',
     commits: '/api/gitlab/commits',
     repositories: '/api/gitlab/repositories',
     mergeRequests: '/api/gitlab/merge-requests',

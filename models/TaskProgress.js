@@ -8,8 +8,8 @@ const TaskProgressSchema = new mongoose.Schema({
     required: true
   },
   
-  // Reference to the intern
-  internId: {
+  // Reference to the AI developer intern
+  aiDeveloperInternId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true

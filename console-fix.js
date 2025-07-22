@@ -1,5 +1,5 @@
 // Copy and paste this into your browser console while logged in as admin
-// This will create a cohort and assign interns to it
+// This will create a cohort and assign AI developer interns to it
 
 async function fixCohortIssue() {
     console.log('🚀 Starting cohort fix...');
@@ -21,8 +21,8 @@ async function fixCohortIssue() {
             throw new Error(cohortResult.error || 'Failed to create cohort');
         }
         
-        // Step 2: Assign interns to cohort
-        console.log('👥 Assigning interns to cohort...');
+        // Step 2: Assign AI developer interns to cohort
+        console.log('👥 Assigning AI developer interns to cohort...');
         const assignResponse = await fetch('/api/admin/quick-assign-cohorts', {
             method: 'POST',
             headers: {
@@ -41,7 +41,7 @@ async function fixCohortIssue() {
             console.log('⚠️ ASSIGNMENT WARNING:', assignResult.error);
         }
         
-        console.log('🎉 FIX COMPLETE! Please refresh the page and try adding a new intern.');
+        console.log('🎉 FIX COMPLETE! Please refresh the page and try adding a new AI developer intern.');
         console.log('💡 The "Assigned Cohort" dropdown should now show "Default Cohort"');
         
         return {

@@ -398,7 +398,7 @@ async function setupWeeklyTasks() {
     
     console.log('\n🎉 Weekly task system setup completed successfully!');
     console.log('\n🔗 Next steps:');
-    console.log('  1. Check intern dashboard to see Week 1 & 2 tasks');
+    console.log('  1. Check AI developer intern dashboard to see Week 1 & 2 tasks');
     console.log('  2. Use weekly-tasks-admin.html to manage tasks');
     console.log('  3. Publish Week 3 & 4 tasks when ready');
     

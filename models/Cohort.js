@@ -18,7 +18,7 @@ const cohortSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  mentorId: {
+  techLeadId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
@@ -60,7 +60,7 @@ const cohortSchema = new mongoose.Schema({
 
 // Indexes for better performance
 cohortSchema.index({ name: 1 });
-cohortSchema.index({ mentorId: 1 });
+cohortSchema.index({ techLeadId: 1 });
 cohortSchema.index({ collegeId: 1 });
 cohortSchema.index({ isActive: 1 });
 
@@ -84,7 +84,7 @@ cohortSchema.methods.updateInternCount = async function() {
   const User = mongoose.models.User;
   const count = await User.countDocuments({ 
     cohortId: this._id,
-    role: 'intern',
+    role: 'AI developer Intern',
     isActive: true
   });
   
@@ -102,7 +102,7 @@ cohortSchema.methods.updateMemberCount = async function() {
   this.memberCount = count;
   this.currentInterns = await User.countDocuments({ 
     cohortId: this._id,
-    role: 'intern',
+    role: 'AI developer Intern',
     isActive: true
   });
   
