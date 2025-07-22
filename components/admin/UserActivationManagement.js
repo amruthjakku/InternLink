@@ -139,7 +139,7 @@ export function UserActivationManagement() {
       setActivating(true);
       
       // Fix mentor assignment if needed
-      if (issues.includes('hasTech LeadIfNeeded')) {
+      if (issues.includes('hasTechLeadIfNeeded')) {
         const response = await fetch('/api/debug/fix-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -301,7 +301,7 @@ export function UserActivationManagement() {
             <div className="text-sm text-orange-800 space-y-2">
               <p><strong>📋 Current Issues Found:</strong></p>
               <ul className="list-disc list-inside ml-4 space-y-1">
-                <li><strong>Missing Tech Leads:</strong> {users.filter(u => u.role === 'AI Developer Intern' && !u.assignedTech Lead && !u.isActive).length} inactive interns need mentor assignment</li>
+                <li><strong>Missing Tech Leads:</strong> {users.filter(u => u.role === 'AI Developer Intern' && !u.assignedTechLead && !u.isActive).length} inactive interns need mentor assignment</li>
                 <li><strong>Never Logged In:</strong> {users.filter(u => !u.lastLoginAt && !u.isActive).length} users created but never accessed the system</li>
                 <li><strong>Login Validation Failures:</strong> Users who failed required field checks during authentication</li>
                 <li><strong>Admin Actions:</strong> Some users were manually deactivated for security/management reasons</li>

@@ -100,7 +100,7 @@ const TeamManagement = () => {
             <POCsTab colleges={colleges} users={users} />
           )}
           {activeSubTab === 'mentor-teams' && (
-            <Tech LeadTeamsTab colleges={colleges} users={users} teams={teams} fetchTeams={fetchTeams} />
+            <TechLeadTeamsTab colleges={colleges} users={users} teams={teams} fetchTeams={fetchTeams} />
           )}
           {activeSubTab === 'team-overview' && (
             <TeamOverviewTab teams={teams} colleges={colleges} />
@@ -165,7 +165,7 @@ const POCsTab = ({ colleges, users }) => {
                     <div className="text-sm text-gray-500">{college.location}</div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {college.superTech LeadUsername && (
+                    {college.superTechLeadUsername && (
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
                         POC Assigned
                       </span>
@@ -191,10 +191,10 @@ const POCsTab = ({ colleges, users }) => {
                   <span className="text-lg mr-2">👨‍🏫</span>
                   POC
                 </h4>
-                {selectedCollege.superTech LeadUsername ? (
+                {selectedCollege.superTechLeadUsername ? (
                   <div className="bg-green-50 border border-green-200 rounded p-3">
                     <div className="font-medium text-green-800">
-                      {selectedCollege.superTech LeadUsername}
+                      {selectedCollege.superTechLeadUsername}
                     </div>
                     <div className="text-sm text-green-600">Active POC</div>
                   </div>
@@ -261,16 +261,16 @@ const POCsTab = ({ colleges, users }) => {
   );
 };
 
-const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
+const TechLeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
   const [selectedCollege, setSelectedCollege] = useState(null);
   const [mentors, setTechLeads] = useState([]);
   const [interns, setAIDeveloperInterns] = useState([]);
-  const [selectedTech Lead, setSelectedTech Lead] = useState(null);
+  const [selectedTechLead, setSelectedTechLead] = useState(null);
   const [selectedAIDeveloperInterns, setSelectedAIDeveloperInterns] = useState([]);
 
   const handleCollegeSelect = async (college) => {
     setSelectedCollege(college);
-    setSelectedTech Lead(null);
+    setSelectedTechLead(null);
     setSelectedAIDeveloperInterns([]);
     
     try {
@@ -285,7 +285,7 @@ const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
     }
   };
 
-  const handleAI Developer InternToggle = (intern) => {
+  const handleAIDeveloperInternToggle = (intern) => {
     const isSelected = selectedAIDeveloperInterns.find(i => i._id === intern._id);
     if (isSelected) {
       setSelectedAIDeveloperInterns(selectedAIDeveloperInterns.filter(i => i._id !== intern._id));
@@ -295,23 +295,23 @@ const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
   };
 
   const handleCreateTeam = async () => {
-    if (!selectedTech Lead || selectedAIDeveloperInterns.length === 0) return;
+    if (!selectedTechLead || selectedAIDeveloperInterns.length === 0) return;
 
     try {
       const response = await fetch('/api/admin/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorId: selectedTech Lead._id,
+          mentorId: selectedTechLead._id,
           internIds: selectedAIDeveloperInterns.map(i => i._id),
           collegeId: selectedCollege._id,
-          name: `${selectedTech Lead.name}'s Team`
+          name: `${selectedTechLead.name}'s Team`
         })
       });
 
       if (response.ok) {
         alert('Team created successfully!');
-        setSelectedTech Lead(null);
+        setSelectedTechLead(null);
         setSelectedAIDeveloperInterns([]);
         fetchTeams();
         // Refresh the college data
@@ -365,9 +365,9 @@ const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
               {mentors.map((mentor) => (
                 <div
                   key={mentor._id}
-                  onClick={() => setSelectedTech Lead(mentor)}
+                  onClick={() => setSelectedTechLead(mentor)}
                   className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedTech Lead?._id === mentor._id
+                    selectedTechLead?._id === mentor._id
                       ? 'border-green-500 bg-green-50'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
@@ -382,14 +382,14 @@ const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
         )}
 
         {/* AI Developer Intern Selection */}
-        {selectedTech Lead && (
+        {selectedTechLead && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">3. Select AI Developer Interns</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {interns.filter(intern => !intern.mentorId).map((intern) => (
                 <div
                   key={intern._id}
-                  onClick={() => handleAI Developer InternToggle(intern)}
+                  onClick={() => handleAIDeveloperInternToggle(intern)}
                   className={`p-3 border rounded-lg cursor-pointer transition-all ${
                     selectedAIDeveloperInterns.find(i => i._id === intern._id)
                       ? 'border-green-500 bg-green-50'

@@ -67,7 +67,7 @@ export function CohortAssignmentTab() {
     setSelectedAIDeveloperInterns([]);
   };
 
-  const handleAI Developer InternSelection = (internId) => {
+  const handleAIDeveloperInternSelection = (internId) => {
     console.log(`Toggling selection for intern ID: ${internId}`);
     
     // Ensure internId is a string
@@ -85,18 +85,18 @@ export function CohortAssignmentTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedAIDeveloperInterns.length === filteredAI Developer Interns.length) {
+    if (selectedAIDeveloperInterns.length === filteredAIDeveloperInterns.length) {
       console.log('Deselecting all interns');
       setSelectedAIDeveloperInterns([]);
     } else {
       // Ensure all IDs are strings
-      const internIds = filteredAI Developer Interns.map(intern => String(intern._id));
+      const internIds = filteredAIDeveloperInterns.map(intern => String(intern._id));
       console.log(`Selecting all ${internIds.length} interns`);
       setSelectedAIDeveloperInterns(internIds);
     }
   };
 
-  const handleAssignAI Developer Interns = async () => {
+  const handleAssignAIDeveloperInterns = async () => {
     // Clear previous messages
     setErrorMessage('');
     setSuccessMessage('');
@@ -120,12 +120,12 @@ export function CohortAssignmentTab() {
     }
 
     // Verify selected interns exist
-    const validAI Developer Interns = selectedAIDeveloperInterns.filter(internId => 
+    const validAIDeveloperInterns = selectedAIDeveloperInterns.filter(internId => 
       interns.some(intern => intern._id === internId)
     );
     
-    if (validAI Developer Interns.length !== selectedAIDeveloperInterns.length) {
-      setErrorMessage(`Some selected interns are invalid. Found ${validAI Developer Interns.length} out of ${selectedAIDeveloperInterns.length}`);
+    if (validAIDeveloperInterns.length !== selectedAIDeveloperInterns.length) {
+      setErrorMessage(`Some selected interns are invalid. Found ${validAIDeveloperInterns.length} out of ${selectedAIDeveloperInterns.length}`);
       return;
     }
 
@@ -220,7 +220,7 @@ export function CohortAssignmentTab() {
   };
 
   // Filter interns based on search term
-  const filteredAI Developer Interns = interns.filter(intern => {
+  const filteredAIDeveloperInterns = interns.filter(intern => {
     const searchLower = searchTerm.toLowerCase();
     return (
       intern.name.toLowerCase().includes(searchLower) ||
@@ -237,7 +237,7 @@ export function CohortAssignmentTab() {
   };
   
   // Debug function to log intern and cohort data
-  const logAI Developer InternData = (e) => {
+  const logAIDeveloperInternData = (e) => {
     e.preventDefault();
     console.log('Available cohorts:', cohorts);
     console.log('AI Developer Interns:', interns);
@@ -309,7 +309,7 @@ export function CohortAssignmentTab() {
           </div>
           <div>
             <button 
-              onClick={logAI Developer InternData}
+              onClick={logAIDeveloperInternData}
               className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
             >
               Debug Info
@@ -334,7 +334,7 @@ export function CohortAssignmentTab() {
             <option value="">-- Select a Cohort --</option>
             {cohorts.map(cohort => (
               <option key={cohort._id} value={cohort._id}>
-                {cohort.name} ({cohort.currentAI Developer Interns || 0}/{cohort.maxAI Developer Interns || 'unlimited'})
+                {cohort.name} ({cohort.currentAIDeveloperInterns || 0}/{cohort.maxAIDeveloperInterns || 'unlimited'})
               </option>
             ))}
           </select>
@@ -376,16 +376,16 @@ export function CohortAssignmentTab() {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                checked={selectedAIDeveloperInterns.length === filteredAI Developer Interns.length && filteredAI Developer Interns.length > 0}
+                checked={selectedAIDeveloperInterns.length === filteredAIDeveloperInterns.length && filteredAIDeveloperInterns.length > 0}
                 onChange={handleSelectAll}
                 className="h-4 w-4 text-blue-600 rounded"
               />
               <span className="ml-2 text-sm font-medium text-gray-700">
-                Select All ({filteredAI Developer Interns.length})
+                Select All ({filteredAIDeveloperInterns.length})
               </span>
             </div>
             <button
-              onClick={handleAssignAI Developer Interns}
+              onClick={handleAssignAIDeveloperInterns}
               disabled={selectedAIDeveloperInterns.length === 0 || !selectedCohort || assigningAIDeveloperInterns}
               className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -394,7 +394,7 @@ export function CohortAssignmentTab() {
           </div>
           
           <div className="max-h-96 overflow-y-auto">
-            {filteredAI Developer Interns.length === 0 ? (
+            {filteredAIDeveloperInterns.length === 0 ? (
               <div className="px-4 py-3 text-center text-gray-500">
                 No interns found matching your search
               </div>
@@ -417,13 +417,13 @@ export function CohortAssignmentTab() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAI Developer Interns.map(intern => (
+                  {filteredAIDeveloperInterns.map(intern => (
                     <tr key={intern._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedAIDeveloperInterns.includes(String(intern._id))}
-                          onChange={() => handleAI Developer InternSelection(String(intern._id))}
+                          onChange={() => handleAIDeveloperInternSelection(String(intern._id))}
                           className="h-4 w-4 text-blue-600 rounded"
                         />
                         <div className="text-xs text-gray-400 mt-1">{String(intern._id)}</div>

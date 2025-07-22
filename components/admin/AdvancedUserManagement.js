@@ -38,7 +38,7 @@ export function AdvancedUserManagement() {
     fetchUserSegments();
     fetchActivityLogs();
     fetchPermissions();
-    fetchTech Leads();
+    fetchTechLeads();
   }, []);
 
   const fetchUsers = async () => {
@@ -157,7 +157,7 @@ export function AdvancedUserManagement() {
     }
   };
 
-  const fetchTech Leads = async (collegeName = null) => {
+  const fetchTechLeads = async (collegeName = null) => {
     try {
       let url = '/api/admin/users?role=Tech%20Lead';
       if (collegeName) {
@@ -191,7 +191,7 @@ export function AdvancedUserManagement() {
       role: user.role,
       college: user.college,
       status: user.status,
-      assignedTech Lead: user.assignedTech Lead || '',
+      assignedTechLead: user.assignedTechLead || '',
     });
     setShowUserModal(true);
   };
@@ -200,8 +200,8 @@ export function AdvancedUserManagement() {
     setEditFormData((prev) => {
       const updated = { ...prev, [field]: value };
       if ((field === 'college' || field === 'role') && updated.role === 'AI Developer Intern') {
-        fetchTech Leads(updated.college);
-        updated.assignedTech Lead = '';
+        fetchTechLeads(updated.college);
+        updated.assignedTechLead = '';
       }
       return updated;
     });
@@ -213,7 +213,7 @@ export function AdvancedUserManagement() {
       const method = userData.id ? 'PUT' : 'POST';
       const payload = { ...userData };
       if (payload.role !== 'AI Developer Intern') {
-        delete payload.assignedTech Lead;
+        delete payload.assignedTechLead;
       }
       const response = await fetch(url, {
         method,
@@ -336,7 +336,7 @@ export function AdvancedUserManagement() {
       college: '',
       cohort: '',
       status: 'active',
-      assignedTech Lead: '',
+      assignedTechLead: '',
     });
     setShowUserModal(true);
   };
@@ -952,7 +952,7 @@ export function AdvancedUserManagement() {
             const method = userData.id ? 'PUT' : 'POST';
             const payload = { ...userData };
             if (payload.role !== 'AI Developer Intern') {
-              delete payload.assignedTech Lead;
+              delete payload.assignedTechLead;
             }
             const response = await fetch(url, {
               method,

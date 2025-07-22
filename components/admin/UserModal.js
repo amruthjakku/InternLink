@@ -26,9 +26,9 @@ export default function UserModal({
   const handleFormFieldChange = (field, value) => {
     setEditFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      // If college or role changes, clear assignedTech Lead
+      // If college or role changes, clear assignedTechLead
       if ((field === 'college' || field === 'role') && updated.role === 'AI Developer Intern') {
-        updated.assignedTech Lead = '';
+        updated.assignedTechLead = '';
       }
       return updated;
     });
@@ -155,8 +155,8 @@ export default function UserModal({
                         Assigned Tech Lead *
                       </label>
                       <select
-                        value={editFormData?.assignedTech Lead || ''}
-                        onChange={e => handleFormFieldChange('assignedTech Lead', e.target.value)}
+                        value={editFormData?.assignedTechLead || ''}
+                        onChange={e => handleFormFieldChange('assignedTechLead', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       >
@@ -180,8 +180,8 @@ export default function UserModal({
                         <option value="">Select Cohort</option>
                         {cohorts && cohorts.length > 0 ? (
                           cohorts.map(cohort => {
-                            const currentCount = cohort.currentAI Developer Interns || cohort.memberCount || 0;
-                            const maxCount = cohort.maxAI Developer Interns || cohort.maxMembers || 'unlimited';
+                            const currentCount = cohort.currentAIDeveloperInterns || cohort.memberCount || 0;
+                            const maxCount = cohort.maxAIDeveloperInterns || cohort.maxMembers || 'unlimited';
                             return (
                               <option key={cohort.id || cohort._id} value={cohort.id || cohort._id}>
                                 {cohort.name} ({currentCount}/{maxCount})

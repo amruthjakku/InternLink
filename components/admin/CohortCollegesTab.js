@@ -333,7 +333,7 @@ export function CohortCollegesTab() {
                 <div className="text-xs text-gray-600">AI Developer Interns</div>
               </div>
               <div className="bg-purple-50 p-2 rounded-lg text-center">
-                <div className="text-lg font-bold text-purple-600">{cohort.totalTech Leads || 0}</div>
+                <div className="text-lg font-bold text-purple-600">{cohort.totalTechLeads || 0}</div>
                 <div className="text-xs text-gray-600">Tech Leads</div>
               </div>
               <div className="bg-orange-50 p-2 rounded-lg text-center">
@@ -375,7 +375,7 @@ export function CohortCollegesTab() {
             {/* Cohort Info */}
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-xs text-gray-600">
-                <span>Members: {cohort.totalUsers}/{cohort.maxAI Developer Interns}</span>
+                <span>Members: {cohort.totalUsers}/{cohort.maxAIDeveloperInterns}</span>
                 <span>
                   {cohort.startDate && cohort.endDate
                     ? `${new Date(cohort.startDate).toLocaleDateString()} - ${new Date(cohort.endDate).toLocaleDateString()}`
