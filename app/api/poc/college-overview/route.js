@@ -9,26 +9,26 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || session.user.role !== 'POC') {
-      return NextResponse.json({ error: 'Unauthorized - POC access required' }, { status: 401 });
+    if (!session?.user || !['POC', 'Super Tech Lead', 'Tech Lead'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Unauthorized - POC or Tech Lead access required' }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    // Find the POC's college
-    const superTechLead = await User.findOne({
+    // Find the user's college
+    const user = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
-      role: 'POC',
+      role: { $in: ['POC', 'Super Tech Lead', 'Tech Lead'] },
       isActive: true
     }).populate('college');
 
-    if (!superTechLead || !superTechLead.college) {
+    if (!user || !user.college) {
       return NextResponse.json({ 
-        error: 'POC not found or not assigned to a college' 
+        error: 'User not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superTechLead.college._id;
+    const collegeId = user.college._id;
 
     // Fetch all users from this college
     const allUsers = await User.find({
@@ -54,14 +54,15 @@ export async function GET(request) {
     };
 
     return NextResponse.json({
-      college: superTechLead.college,
+      college: user.college,
       stats,
       mentors,
       interns,
-      superTechLead: {
-        name: superTechLead.name,
-        gitlabUsername: superTechLead.gitlabUsername,
-        email: superTechLead.email
+      user: {
+        name: user.name,
+        gitlabUsername: user.gitlabUsername,
+        email: user.email,
+        role: user.role
       }
     });
 

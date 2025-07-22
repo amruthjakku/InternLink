@@ -699,15 +699,37 @@ const InternManagementTab = ({ collegeData, fetchAllData }) => {
 
 // Tech Lead Management Tab
 const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
+  const [selectedTechLead, setSelectedTechLead] = useState(null);
+  const [showTechLeadDetails, setShowTechLeadDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
   if (!collegeData) {
     return <div className="text-center py-8 text-gray-500">Loading tech lead data...</div>;
   }
 
-  const { mentors } = collegeData;
-  const techLeads = mentors.filter(m => m.role === 'TechLead');
+  const { mentors, interns } = collegeData;
+  const techLeads = mentors.filter(m => m.role === 'Tech Lead');
+
+  // Filter tech leads
+  const filteredTechLeads = techLeads.filter(techLead => {
+    const matchesSearch = techLead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         techLead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         techLead.gitlabUsername.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && techLead.isActive) ||
+                         (filterStatus === 'inactive' && !techLead.isActive);
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleTechLeadClick = (techLead) => {
+    setSelectedTechLead(techLead);
+    setShowTechLeadDetails(true);
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Tech Lead Management</h3>
@@ -715,34 +737,111 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <UserGroupIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Tech Leads</p>
+              <p className="text-2xl font-bold text-gray-900">{techLeads.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircleIcon className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Active</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {techLeads.filter(tl => tl.isActive).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <UserIcon className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">With Interns</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {techLeads.filter(tl => interns.some(intern => intern.mentorId === tl._id)).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <AcademicCapIcon className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Interns Managed</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {interns.filter(intern => intern.mentorId).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search tech leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <div className="text-sm text-gray-600 flex items-center">
+            Showing {filteredTechLeads.length} of {techLeads.length} tech leads
+          </div>
+        </div>
+      </div>
+
       {/* Tech Leads Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {techLeads.map((techLead) => {
-          const assignedInterns = collegeData.interns.filter(intern => 
-            intern.assignedTechLead === techLead._id
-          );
+        {filteredTechLeads.map((techLead) => {
+          const assignedInterns = interns.filter(intern => intern.mentorId === techLead._id);
           
           return (
-            <div key={techLead._id} className="bg-white rounded-lg shadow-sm border p-6">
+            <div 
+              key={techLead._id} 
+              className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleTechLeadClick(techLead)}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-semibold text-gray-900">{techLead.name}</h4>
                   <p className="text-sm text-gray-600">{techLead.email}</p>
                   <p className="text-xs text-gray-500">@{techLead.gitlabUsername}</p>
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                  Tech Lead
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Assigned Interns:</span>
-                  <span className="font-medium text-gray-900">{assignedInterns.length}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Status:</span>
+                <div className="flex flex-col items-end space-y-1">
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    Tech Lead
+                  </span>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     techLead.isActive 
                       ? 'bg-green-100 text-green-800' 
@@ -752,35 +851,161 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
                   </span>
                 </div>
               </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Assigned Interns:</span>
+                  <span className="font-medium text-gray-900">{assignedInterns.length}</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Specialization:</span>
+                  <span className="text-sm text-gray-900">{techLead.specialization || 'General'}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Joined:</span>
+                  <span className="text-sm text-gray-900">
+                    {techLead.createdAt ? new Date(techLead.createdAt).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
 
               {assignedInterns.length > 0 && (
                 <div className="mt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Assigned Interns:</h5>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {assignedInterns.map((intern) => (
-                      <div key={intern._id} className="text-xs bg-gray-50 p-2 rounded">
-                        {intern.name}
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Interns:</h5>
+                  <div className="space-y-1 max-h-20 overflow-y-auto">
+                    {assignedInterns.slice(0, 3).map((intern) => (
+                      <div key={intern._id} className="text-xs bg-gray-50 p-2 rounded flex justify-between">
+                        <span>{intern.name}</span>
+                        <span className="text-gray-500">@{intern.gitlabUsername}</span>
                       </div>
                     ))}
+                    {assignedInterns.length > 3 && (
+                      <div className="text-xs text-gray-500 text-center">
+                        +{assignedInterns.length - 3} more
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
+
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Click to view details</span>
+                  <EyeIcon className="w-4 h-4" />
+                </div>
+              </div>
             </div>
           );
         })}
       </div>
+
+      {filteredTechLeads.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          {techLeads.length === 0 
+            ? "No tech leads found in your college."
+            : "No tech leads match your current filters."
+          }
+        </div>
+      )}
+
+      {/* Tech Lead Details Modal */}
+      {showTechLeadDetails && selectedTechLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Tech Lead Details</h3>
+              <button
+                onClick={() => setShowTechLeadDetails(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Tech Lead Info */}
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xl font-semibold text-gray-900">{selectedTechLead.name}</h4>
+                  <p className="text-gray-600">{selectedTechLead.email}</p>
+                  <p className="text-sm text-gray-500">@{selectedTechLead.gitlabUsername}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Role</h5>
+                    <p className="text-gray-600">{selectedTechLead.role}</p>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Status</h5>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      selectedTechLead.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedTechLead.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Specialization</h5>
+                    <p className="text-gray-600">{selectedTechLead.specialization || 'General'}</p>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Joined</h5>
+                    <p className="text-gray-600">
+                      {selectedTechLead.createdAt ? new Date(selectedTechLead.createdAt).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Interns */}
+              <div>
+                <h5 className="font-medium text-gray-900 mb-3">
+                  Assigned Interns ({interns.filter(intern => intern.mentorId === selectedTechLead._id).length})
+                </h5>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {interns.filter(intern => intern.mentorId === selectedTechLead._id).map((intern) => (
+                    <div key={intern._id} className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-gray-900">{intern.name}</p>
+                          <p className="text-sm text-gray-600">{intern.email}</p>
+                          <p className="text-xs text-gray-500">@{intern.gitlabUsername}</p>
+                        </div>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          AI Developer Intern
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {interns.filter(intern => intern.mentorId === selectedTechLead._id).length === 0 && (
+                    <p className="text-gray-500 text-center py-4">No interns assigned</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Task Oversight Tab
+// Task Oversight Tab - Weekly Tasks Structure
 const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
+  const [selectedWeek, setSelectedWeek] = useState(1);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetails, setShowTaskDetails] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'all'
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -788,8 +1013,113 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
     assignedTo: '',
     dueDate: '',
     estimatedHours: '',
-    points: ''
+    points: '',
+    weekNumber: 1
   });
+
+  // Helper function to organize tasks by week
+  const organizeTasksByWeek = (tasks) => {
+    const weeklyTasks = {};
+    
+    tasks.forEach(task => {
+      let week = task.weekNumber;
+      
+      if (!week) {
+        // Calculate week from due date or creation date
+        const taskDate = new Date(task.dueDate || task.createdAt || task.startDate);
+        const internshipStart = new Date();
+        internshipStart.setDate(1);
+        internshipStart.setHours(0, 0, 0, 0);
+        
+        const daysDiff = Math.max(0, Math.ceil((taskDate - internshipStart) / (24 * 60 * 60 * 1000)));
+        week = Math.max(1, Math.ceil((daysDiff + 1) / 7));
+        week = Math.min(week, 12);
+        
+        task.weekNumber = week;
+      }
+      
+      if (!weeklyTasks[week]) {
+        weeklyTasks[week] = [];
+      }
+      weeklyTasks[week].push(task);
+    });
+    
+    return weeklyTasks;
+  };
+
+  // Calculate weekly statistics
+  const calculateWeeklyStats = (tasks) => {
+    const weekStats = {};
+    
+    tasks.forEach(task => {
+      const week = task.weekNumber || 1;
+      
+      if (!weekStats[week]) {
+        weekStats[week] = {
+          total: 0,
+          completed: 0,
+          inProgress: 0,
+          notStarted: 0,
+          totalPoints: 0,
+          completedPoints: 0
+        };
+      }
+      
+      weekStats[week].total++;
+      weekStats[week].totalPoints += parseInt(task.points) || 0;
+      
+      if (task.status === 'completed' || task.status === 'done') {
+        weekStats[week].completed++;
+        weekStats[week].completedPoints += parseInt(task.points) || 0;
+      } else if (task.status === 'in_progress') {
+        weekStats[week].inProgress++;
+      } else {
+        weekStats[week].notStarted++;
+      }
+    });
+    
+    return weekStats;
+  };
+
+  const weeklyTasks = organizeTasksByWeek(tasks || []);
+  const weeklyStats = calculateWeeklyStats(tasks || []);
+  const availableWeeks = Object.keys(weeklyTasks).map(Number).sort((a, b) => a - b);
+  
+  // Filter tasks based on current view
+  const getFilteredTasks = () => {
+    let filteredTasks = tasks || [];
+    
+    if (viewMode === 'weekly') {
+      filteredTasks = weeklyTasks[selectedWeek] || [];
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      filteredTasks = filteredTasks.filter(task =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.status === filterStatus);
+    }
+    
+    // Apply priority filter
+    if (filterPriority !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.priority === filterPriority);
+    }
+    
+    return filteredTasks;
+  };
+
+  const filteredTasks = getFilteredTasks();
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetails(true);
+  };
 
   const handleCreateTask = async () => {
     if (!newTask.title.trim()) {
@@ -820,7 +1150,8 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
           assignedTo: '',
           dueDate: '',
           estimatedHours: '',
-          points: ''
+          points: '',
+          weekNumber: selectedWeek
         });
         fetchTasks();
       } else {
@@ -833,37 +1164,144 @@ const TaskOversightTab = ({ collegeData, tasks, fetchTasks }) => {
     }
   };
 
-  // Filter tasks based on status, priority, and search term
-  const filteredTasks = tasks.filter(task => {
-    const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
-    const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-    const matchesSearch = !searchTerm || 
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesPriority && matchesSearch;
-  });
 
-  const handleTaskClick = (task) => {
-    setSelectedTask(task);
-    setShowTaskDetails(true);
-  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Task Oversight</h3>
-          <p className="text-gray-600">Create and monitor tasks for your college</p>
+          <p className="text-gray-600">Create and monitor weekly tasks for your college</p>
         </div>
-        <button
-          onClick={() => setShowCreateTask(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span>Create Task</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setViewMode('weekly')}
+              className={`px-3 py-1 rounded-md text-sm ${
+                viewMode === 'weekly' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Weekly View
+            </button>
+            <button
+              onClick={() => setViewMode('all')}
+              className={`px-3 py-1 rounded-md text-sm ${
+                viewMode === 'all' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Tasks
+            </button>
+          </div>
+          <button
+            onClick={() => setShowCreateTask(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            <span>Create Task</span>
+          </button>
+        </div>
       </div>
+
+      {/* Weekly Navigation */}
+      {viewMode === 'weekly' && (
+        <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-gray-900">Week Navigation</h4>
+            <div className="text-sm text-gray-600">
+              {availableWeeks.length > 0 ? `${availableWeeks.length} weeks with tasks` : 'No tasks yet'}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(week => {
+              const hasTask = availableWeeks.includes(week);
+              const stats = weeklyStats[week];
+              
+              return (
+                <button
+                  key={week}
+                  onClick={() => setSelectedWeek(week)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedWeek === week
+                      ? 'bg-blue-600 text-white'
+                      : hasTask
+                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div>Week {week}</div>
+                    {stats && (
+                      <div className="text-xs mt-1">
+                        {stats.completed}/{stats.total}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Stats */}
+      {viewMode === 'weekly' && weeklyStats[selectedWeek] && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+                <p className="text-2xl font-bold text-gray-900">{weeklyStats[selectedWeek].total}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{weeklyStats[selectedWeek].completed}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <ClockIcon className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900">{weeklyStats[selectedWeek].inProgress}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <StarIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Points</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {weeklyStats[selectedWeek].completedPoints}/{weeklyStats[selectedWeek].totalPoints}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
