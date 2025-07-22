@@ -138,6 +138,19 @@ export function ChatTab({ user }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const testAuth = async () => {
+    try {
+      console.log('🧪 Testing authentication...');
+      const response = await fetch('/api/test-auth');
+      const data = await response.json();
+      console.log('🧪 Auth test result:', data);
+      alert(`Auth test: ${data.authenticated ? 'SUCCESS' : 'FAILED'}\n${JSON.stringify(data, null, 2)}`);
+    } catch (error) {
+      console.error('🧪 Auth test error:', error);
+      alert(`Auth test error: ${error.message}`);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -232,7 +245,16 @@ export function ChatTab({ user }) {
       <div className="w-1/4 border-r border-gray-200 flex flex-col">
         {/* Chat List */}
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Chats</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">Chats</h3>
+            <button
+              onClick={testAuth}
+              className="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+              title="Test Authentication"
+            >
+              🧪
+            </button>
+          </div>
           <div className="space-y-2">
             {chats.length === 0 ? (
               <p className="text-sm text-gray-500">No chats available</p>
