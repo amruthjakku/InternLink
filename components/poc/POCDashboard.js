@@ -3538,7 +3538,7 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
       </div>
 
       {/* Chat Interface Modal */}
-      {showChatInterface && selectedChatRoom && (
+      {showChatInterface && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
              onClick={(e) => {
                console.log('🖱️ Modal backdrop clicked');
@@ -3551,23 +3551,23 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  selectedChatRoom.type === 'announcement' ? 'bg-red-100 text-red-600' :
-                  selectedChatRoom.type === 'project' ? 'bg-blue-100 text-blue-600' :
-                  selectedChatRoom.type === 'support' ? 'bg-green-100 text-green-600' :
-                  selectedChatRoom.type === 'social' ? 'bg-purple-100 text-purple-600' :
+                  selectedChatRoom?.type === 'announcement' ? 'bg-red-100 text-red-600' :
+                  selectedChatRoom?.type === 'project' ? 'bg-blue-100 text-blue-600' :
+                  selectedChatRoom?.type === 'support' ? 'bg-green-100 text-green-600' :
+                  selectedChatRoom?.type === 'social' ? 'bg-purple-100 text-purple-600' :
                   'bg-gray-100 text-gray-600'
                 }`}>
                   <span className="text-sm">
-                    {selectedChatRoom.type === 'announcement' ? '📢' :
-                     selectedChatRoom.type === 'project' ? '📁' :
-                     selectedChatRoom.type === 'support' ? '🆘' :
-                     selectedChatRoom.type === 'social' ? '🎉' : '💬'}
+                    {selectedChatRoom?.type === 'announcement' ? '📢' :
+                     selectedChatRoom?.type === 'project' ? '📁' :
+                     selectedChatRoom?.type === 'support' ? '🆘' :
+                     selectedChatRoom?.type === 'social' ? '🎉' : '💬'}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selectedChatRoom.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedChatRoom?.name || 'Chat Room'}</h3>
                   <p className="text-sm text-gray-500">
-                    {selectedChatRoom.description} • {selectedChatRoom.participantCount || 0} participants
+                    {selectedChatRoom?.description || 'Loading...'} • {selectedChatRoom?.participantCount || 0} participants
                   </p>
                 </div>
               </div>
@@ -3586,6 +3586,7 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
               ) : (
                 <div className="p-8 text-center">
                   <p>Loading chat room...</p>
+                  <p className="text-sm text-gray-500 mt-2">Modal is working! Chat room data: {JSON.stringify(selectedChatRoom)}</p>
                 </div>
               )}
             </div>
