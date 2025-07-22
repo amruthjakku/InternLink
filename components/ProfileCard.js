@@ -107,7 +107,8 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
   if (compact) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center space-x-3">
+        {/* Profile Header */}
+        <div className="flex items-center space-x-3 mb-4">
           {user?.gitlabAvatarUrl ? (
             <img
               src={user.gitlabAvatarUrl}
@@ -120,26 +121,182 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-semibold text-gray-900 truncate">
-                {user?.name || 'Unknown User'}
-              </h3>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user?.role)}`}>
-                <span className="mr-1">{getRoleIcon(user?.role)}</span>
-                {user?.role || 'Unknown'}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 truncate">
-              {user?.gitlabUsername ? (
-                <>
-                  🦊 <a href={user?.gitlabProfileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">@{user.gitlabUsername}</a>
-                </>
-              ) : (
-                '@unknown'
-              )}
-            </p>
+            <h3 className="text-sm font-semibold text-gray-900 truncate">
+              {user?.name || 'Unknown User'}
+            </h3>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user?.role)}`}>
+              <span className="mr-1">{getRoleIcon(user?.role)}</span>
+              {user?.role || 'Unknown'}
+            </span>
           </div>
         </div>
+
+        {/* Essential Info */}
+        <div className="space-y-2 text-xs text-gray-600">
+          {user?.gitlabUsername && (
+            <div className="flex items-center space-x-2">
+              <span>🦊</span>
+              <a href={user?.gitlabProfileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate">
+                @{user.gitlabUsername}
+              </a>
+            </div>
+          )}
+          {(user?.gitlabEmail || user?.email) && (
+            <div className="flex items-center space-x-2">
+              <span>📧</span>
+              <span className="truncate">{user.gitlabEmail || user.email}</span>
+            </div>
+          )}
+          {user?.college && (
+            <div className="flex items-center space-x-2">
+              <span>🏢</span>
+              <span className="truncate">{user.college}</span>
+            </div>
+          )}
+          {user?.cohortId && (
+            <div className="flex items-center space-x-2">
+              <span>👥</span>
+              <span>Cohort: {getCohortName(user.cohortName || user.cohortId)}</span>
+            </div>
+          )}
+          <div className="flex items-center space-x-2">
+            <span>📅</span>
+            <span>Joined {formatJoinDate(user?.createdAt)}</span>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-2 bg-blue-50 rounded">
+              <div className="text-lg font-bold text-blue-600">
+                {stats.repositoriesContributed || 0}
+              </div>
+              <div className="text-xs text-gray-500">Repositories</div>
+            </div>
+            <div className="text-center p-2 bg-green-50 rounded">
+              <div className="text-lg font-bold text-green-600">
+                {stats.commitCount || 0}
+              </div>
+              <div className="text-xs text-gray-500">Total Commits</div>
+            </div>
+            <div className="text-center p-2 bg-purple-50 rounded">
+              <div className="text-lg font-bold text-purple-600">
+                {stats.currentStreak || 0}
+              </div>
+              <div className="text-xs text-gray-500">Day Streak</div>
+            </div>
+            <div className="text-center p-2 bg-orange-50 rounded">
+              <div className="text-lg font-bold text-orange-600">
+                {stats.attendanceRate || 0}%
+              </div>
+              <div className="text-xs text-gray-500">Attendance</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Task Progress */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-900">Task Progress</span>
+            <button 
+              onClick={fetchProfileData}
+              disabled={loading}
+              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              Refresh
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center p-2 bg-green-50 rounded">
+              <div className="text-sm font-bold text-green-600">
+                {stats.tasksCompleted || 0}
+              </div>
+              <div className="text-xs text-gray-500">Completed</div>
+            </div>
+            <div className="text-center p-2 bg-yellow-50 rounded">
+              <div className="text-sm font-bold text-yellow-600">
+                {stats.tasksInProgress || 0}
+              </div>
+              <div className="text-xs text-gray-500">In Progress</div>
+            </div>
+            <div className="text-center p-2 bg-gray-50 rounded">
+              <div className="text-sm font-bold text-gray-600">
+                {stats.totalTasks || 0}
+              </div>
+              <div className="text-xs text-gray-500">Total Tasks</div>
+            </div>
+          </div>
+          {stats.totalTasks > 0 && (
+            <div className="mt-2">
+              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <span>Completion Rate</span>
+                <span>{stats.averageTaskCompletion || 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${stats.averageTaskCompletion || 0}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Points Summary */}
+        {(stats.pointsEarned > 0 || stats.taskPoints > 0) && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 bg-indigo-50 rounded">
+                <div className="text-sm font-bold text-indigo-600">
+                  {stats.taskPoints || 0}
+                </div>
+                <div className="text-xs text-gray-500">Task Points</div>
+              </div>
+              <div className="text-center p-2 bg-pink-50 rounded">
+                <div className="text-sm font-bold text-pink-600">
+                  {stats.bonusPoints || 0}
+                </div>
+                <div className="text-xs text-gray-500">Bonus Points</div>
+              </div>
+              <div className="text-center p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded border border-blue-200">
+                <div className="text-sm font-bold text-blue-600">
+                  {stats.pointsEarned || 0}
+                </div>
+                <div className="text-xs text-gray-500">Total Points</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recent Achievement */}
+        {milestones.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <h4 className="text-xs font-medium text-gray-900 mb-2 flex items-center">
+              <span className="mr-1">🏆</span>
+              Recent Achievement
+            </h4>
+            <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+              <div className="text-lg">{milestones[0].icon}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-900 truncate">
+                  {milestones[0].title}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {milestones[0].description}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {new Date(milestones[0].achievedAt).toLocaleDateString()}
+                </div>
+              </div>
+              {milestones[0].points && (
+                <div className="text-xs font-bold text-blue-600">
+                  +{milestones[0].points}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

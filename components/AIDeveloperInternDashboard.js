@@ -516,16 +516,11 @@ export function AIDeveloperInternDashboard() {
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {renderTabContent()}
-          </div>
-          
-          {/* Sidebar with Profile Card */}
+          {/* Left Sidebar with Simplified Profile Card */}
           <div className="lg:col-span-1 space-y-6">
-            <ProfileCard user={user} showMilestones={true} />
+            <ProfileCard user={user} showMilestones={false} compact={true} />
             
-            {/* Quick Actions */}
+            {/* Essential Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
               <div className="space-y-2">
@@ -551,7 +546,7 @@ export function AIDeveloperInternDashboard() {
                   <span>Mark Attendance</span>
                 </button>
                 <button
-                  onClick={() => switchTab('meetings')}
+                  onClick={() => switchTab('communication')}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
                 >
                   <span>📹</span>
@@ -559,6 +554,11 @@ export function AIDeveloperInternDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+          
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {renderTabContent()}
           </div>
         </div>
       </div>
