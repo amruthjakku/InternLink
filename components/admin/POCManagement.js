@@ -63,13 +63,13 @@ export function POCManagement() {
     setShowUserModal(true);
   };
 
-  const handleEditClick = (superMentor) => {
-    setFormData({ ...superMentor, role: 'super-mentor' });
+  const handleEditClick = (poc) => {
+    setFormData({ ...poc, role: 'POC' });
     setIsEditMode(true);
     setShowUserModal(true);
   };
 
-  const handleSaveSuperMentor = async (data) => {
+  const handleSavePOC = async (data) => {
     if (isEditMode && data._id) {
       // Edit
       try {
@@ -88,8 +88,8 @@ export function POCManagement() {
           alert(`Error: ${error.message}`);
         }
       } catch (error) {
-        console.error('Error updating super-mentor:', error);
-        alert('Failed to update super-mentor');
+        console.error('Error updating POC:', error);
+        alert('Failed to update POC');
       }
     } else {
       // Add
@@ -109,17 +109,17 @@ export function POCManagement() {
           alert(`Error: ${error.message}`);
         }
       } catch (error) {
-        console.error('Error adding super-mentor:', error);
-        alert('Failed to add super-mentor');
+        console.error('Error adding POC:', error);
+        alert('Failed to add POC');
       }
     }
   };
 
-  const handleDeleteSuperMentor = async (superMentorId) => {
-    if (!confirm('Are you sure you want to delete this super-mentor? This will affect all their assigned mentors and interns.')) return;
+  const handleDeletePOC = async (pocId) => {
+    if (!confirm('Are you sure you want to delete this POC? This will affect all their assigned mentors and interns.')) return;
 
     try {
-      const response = await fetch(`/api/admin/users/${superMentorId}`, {
+      const response = await fetch(`/api/admin/users/${pocId}`, {
         method: 'DELETE'
       });
 
@@ -131,8 +131,8 @@ export function POCManagement() {
         alert(`Error: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error deleting super-mentor:', error);
-      alert('Failed to delete super-mentor');
+      console.error('Error deleting POC:', error);
+      alert('Failed to delete POC');
     }
   };
 
@@ -160,7 +160,7 @@ export function POCManagement() {
     }
   };
 
-  const filteredSuperMentors = superMentors.filter(sm => {
+  const filteredPOCs = pocs.filter(sm => {
     const matchesSearch = sm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          sm.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          sm.gitlabUsername.toLowerCase().includes(searchTerm.toLowerCase());
@@ -193,8 +193,8 @@ export function POCManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Super-Mentor Management</h2>
-          <p className="text-gray-600">Manage super-mentors and their college assignments</p>
+          <h2 className="text-2xl font-bold text-gray-900">POC Management</h2>
+          <p className="text-gray-600">Manage POCs and their college assignments</p>
         </div>
         <button
           onClick={handleAddClick}
@@ -215,8 +215,8 @@ export function POCManagement() {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Super-Mentors</p>
-              <p className="text-2xl font-bold text-gray-900">{superMentors.length}</p>
+              <p className="text-sm font-medium text-gray-500">Total POCs</p>
+              <p className="text-2xl font-bold text-gray-900">{pocs.length}</p>
             </div>
           </div>
         </div>
@@ -229,9 +229,9 @@ export function POCManagement() {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Active Super-Mentors</p>
+              <p className="text-sm font-medium text-gray-500">Active POCs</p>
               <p className="text-2xl font-bold text-gray-900">
-                {superMentors.filter(sm => sm.status === 'active').length}
+                {pocs.filter(sm => sm.status === 'active').length}
               </p>
             </div>
           </div>
@@ -247,7 +247,7 @@ export function POCManagement() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Colleges Covered</p>
               <p className="text-2xl font-bold text-gray-900">
-                {new Set(superMentors.map(sm => sm.college)).size}
+                {new Set(pocs.map(sm => sm.college)).size}
               </p>
             </div>
           </div>
@@ -314,7 +314,7 @@ export function POCManagement() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
-            Super-Mentors ({filteredSuperMentors.length})
+            POCs ({filteredPOCs.length})
           </h3>
         </div>
         <div className="overflow-x-auto">
@@ -342,40 +342,40 @@ export function POCManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSuperMentors.map((superMentor) => (
-                <tr key={superMentor._id} className="hover:bg-gray-50">
+              {filteredPOCs.map((poc) => (
+                <tr key={poc._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-bold">
-                          {superMentor.name.charAt(0).toUpperCase()}
+                          {poc.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{superMentor.name}</div>
-                        <div className="text-sm text-gray-500">{superMentor.email}</div>
-                        <div className="text-xs text-gray-400">@{superMentor.gitlabUsername}</div>
+                        <div className="text-sm font-medium text-gray-900">{poc.name}</div>
+                        <div className="text-sm text-gray-500">{poc.email}</div>
+                        <div className="text-xs text-gray-400">@{poc.gitlabUsername}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getCollegeName(superMentor.college)}
+                    {getCollegeName(poc.college)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {superMentor.specialization || 'General Management'}
+                    {poc.specialization || 'General Management'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      superMentor.status === 'active' 
+                      poc.status === 'active' 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {superMentor.status || 'active'}
+                      {poc.status || 'active'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {superMentor.lastLoginAt 
-                      ? new Date(superMentor.lastLoginAt).toLocaleDateString()
+                    {poc.lastLoginAt 
+                      ? new Date(poc.lastLoginAt).toLocaleDateString()
                       : 'Never'
                     }
                   </td>
@@ -387,15 +387,15 @@ export function POCManagement() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteSuperMentor(superMentor._id)}
+                      onClick={() => handleDeletePOC(poc._id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       Delete
                     </button>
                     <button
-                      onClick={() => handleImpersonate(superMentor._id, 'super-mentor')}
+                      onClick={() => handleImpersonate(poc._id, 'POC')}
                       className="text-purple-600 hover:text-purple-900"
-                      title="Impersonate this super-mentor"
+                      title="Impersonate this POC"
                     >
                       Impersonate
                     </button>
@@ -414,9 +414,9 @@ export function POCManagement() {
         setFormData={setFormData}
         colleges={colleges}
         onClose={() => setShowUserModal(false)}
-        onSave={handleSaveSuperMentor}
-        mode="super-mentor"
-        title={isEditMode ? 'Edit Super-Mentor' : 'Add New Super-Mentor'}
+        onSave={handleSavePOC}
+        mode="POC"
+        title={isEditMode ? 'Edit POC' : 'Add New POC'}
       />
     </div>
   );

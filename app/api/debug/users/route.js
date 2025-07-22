@@ -34,8 +34,9 @@ export async function GET(request) {
       inactiveUsers: allUsers.filter(u => !u.isActive).length,
       roleBreakdown: {
         admin: allUsers.filter(u => u.role === 'admin').length,
-        mentor: allUsers.filter(u => u.role === 'mentor').length,
-        intern: allUsers.filter(u => u.role === 'intern').length,
+        'POC': allUsers.filter(u => u.role === 'POC').length,
+        'Tech Lead': allUsers.filter(u => u.role === 'Tech Lead').length,
+        'AI developer Intern': allUsers.filter(u => u.role === 'AI developer Intern').length,
         pending: allUsers.filter(u => u.role === 'pending').length
       }
     };

@@ -74,7 +74,7 @@ console.log(`
 📋 SAMPLE WEEKLY TASKS CREATOR
 
 To create sample tasks with subtasks:
-1. Make sure you're logged in as admin/mentor
+1. Make sure you're logged in as admin/Tech Lead
 2. Run: createAllSampleTasks()
 3. Go to Tasks tab and select "Weekly" view
 4. Click on week headers to expand/collapse

@@ -55,21 +55,21 @@ const collegeSchema = new mongoose.Schema({
 collegeSchema.index({ superMentorUsername: 1 });
 collegeSchema.index({ isActive: 1 });
 
-// Virtual for super-mentor details
-collegeSchema.virtual('superMentor', {
+// Virtual for POC details
+collegeSchema.virtual('poc', {
   ref: 'User',
   localField: 'superMentorUsername',
   foreignField: 'gitlabUsername',
   justOne: true
 });
 
-// Virtual for interns count
-collegeSchema.virtual('internsCount', {
+// Virtual for AI developer interns count
+collegeSchema.virtual('aiDeveloperInternsCount', {
   ref: 'User',
   localField: '_id',
   foreignField: 'college',
   count: true,
-  match: { role: 'intern', isActive: true }
+  match: { role: 'AI developer Intern', isActive: true }
 });
 
 // Ensure virtual fields are serialized
@@ -92,24 +92,24 @@ collegeSchema.statics.findBySuperMentor = function(superMentorUsername) {
 collegeSchema.statics.getAllActive = function() {
   return this.find({ isActive: true })
     .populate('superMentor')
-    .populate('internsCount');
+    .populate('aiDeveloperInternsCount');
 };
 
 // Instance methods
-collegeSchema.methods.getInterns = function() {
+collegeSchema.methods.getAIDeveloperInterns = function() {
   const User = mongoose.model('User');
   return User.find({ 
     college: this._id, 
-    role: 'intern', 
+    role: 'AI developer Intern', 
     isActive: true 
   });
 };
 
-collegeSchema.methods.addIntern = function(internData) {
+collegeSchema.methods.addAIDeveloperIntern = function(internData) {
   const User = mongoose.model('User');
   return new User({
     ...internData,
-    role: 'intern',
+    role: 'AI developer Intern',
     college: this._id
   }).save();
 };

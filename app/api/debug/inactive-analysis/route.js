@@ -20,9 +20,9 @@ export async function GET() {
       // Inactive users by role
       inactiveByRole: {
         admin: allUsers.filter(u => !u.isActive && u.role === 'admin').length,
-        'super-mentor': allUsers.filter(u => !u.isActive && u.role === 'super-mentor').length,
-        mentor: allUsers.filter(u => !u.isActive && u.role === 'mentor').length,
-        intern: allUsers.filter(u => !u.isActive && u.role === 'intern').length,
+        'POC': allUsers.filter(u => !u.isActive && u.role === 'POC').length,
+        'Tech Lead': allUsers.filter(u => !u.isActive && u.role === 'Tech Lead').length,
+        'AI developer Intern': allUsers.filter(u => !u.isActive && u.role === 'AI developer Intern').length,
         pending: allUsers.filter(u => !u.isActive && u.role === 'pending').length,
       },
       
@@ -40,14 +40,14 @@ export async function GET() {
         assignedMentor: user.assignedMentor?.gitlabUsername || 'None',
         hasRequiredFields: {
           hasCollege: !!user.college,
-          hasMentor: user.role !== 'intern' || !!user.assignedMentor,
+          hasMentor: user.role !== 'AI developer Intern' || !!user.assignedMentor,
           hasAssignedBy: !!user.assignedBy
         }
       })),
       
       // Common patterns
       patterns: {
-        missingMentors: allUsers.filter(u => u.role === 'intern' && !u.assignedMentor).length,
+        missingMentors: allUsers.filter(u => u.role === 'AI developer Intern' && !u.assignedMentor).length,
         missingColleges: allUsers.filter(u => !u.college && u.role !== 'admin').length,
         neverLoggedIn: allUsers.filter(u => !u.lastLoginAt).length,
         oldAccounts: allUsers.filter(u => {

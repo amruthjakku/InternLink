@@ -7,7 +7,7 @@ async function setupWeeklyTasks() {
     console.log('🚀 Starting Weekly Tasks Setup...');
     
     // Connect to MongoDB directly
-    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/internlink';
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/aidevlink';
     client = new MongoClient(uri);
     await client.connect();
     console.log('✅ Connected to MongoDB');
@@ -415,10 +415,10 @@ async function setupWeeklyTasks() {
     console.log('  Week 4: Advanced JavaScript & APIs (1 task) - DRAFT 📝');
     
     console.log('\n🔗 Next steps:');
-    console.log('  1. ✅ Check intern dashboard - they should see Week 1 & 2 tasks');
+    console.log('  1. ✅ Check AI developer intern dashboard - they should see Week 1 & 2 tasks');
     console.log('  2. 🔧 Use weekly-tasks-admin.html to manage tasks');
     console.log('  3. 📅 Publish Week 3 & 4 tasks when ready');
-    console.log('  4. 📊 Monitor intern progress and submissions');
+    console.log('  4. 📊 Monitor AI developer intern progress and submissions');
     
   } catch (error) {
     console.error('❌ Setup failed:', error);

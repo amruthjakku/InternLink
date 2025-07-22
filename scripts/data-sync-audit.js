@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'mentor', 'intern', 'super-mentor'] },
+  role: { type: String, required: true, enum: ['admin', 'Tech Lead', 'AI developer Intern', 'POC'] },
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
   cohortId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cohort' },
   assignedBy: { type: String, required: true },

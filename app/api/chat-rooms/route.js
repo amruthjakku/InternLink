@@ -108,7 +108,7 @@ export async function POST(request) {
     }
 
     // Only super-mentors and admins can create chat rooms
-    if (!['super-mentor', 'admin'].includes(session.user.role)) {
+    if (!['POC', 'admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Not authorized to create chat rooms' }, { status: 403 });
     }
 

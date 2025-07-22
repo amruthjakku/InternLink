@@ -39,7 +39,7 @@ class EnhancedSystemTester {
         gitlabId: 'test-123',
         name: 'Test Soft Delete User',
         email: 'test-soft-delete@example.com',
-        role: 'intern',
+        role: 'AI developer Intern',
         assignedBy: 'test-admin'
       });
 
@@ -104,7 +104,7 @@ class EnhancedSystemTester {
         gitlabId: 'test-456',
         name: 'Test Duplicate User',
         email: 'test-soft-delete@example.com', // Same email
-        role: 'intern',
+        role: 'AI developer Intern',
         assignedBy: 'test-admin'
       });
 
@@ -208,7 +208,7 @@ class EnhancedSystemTester {
           gitlabId: `bulk-${i}`,
           name: `Test Bulk User ${i}`,
           email: `test-bulk-${i}@example.com`,
-          role: 'intern',
+          role: 'AI developer Intern',
           assignedBy: 'test-admin'
         });
 
