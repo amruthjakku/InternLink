@@ -93,7 +93,7 @@ export function AttendanceTab({ userRole = 'Tech Lead' }) {
     return attendance.filter(record => record.date === date);
   };
 
-  const getAI Developer InternAttendanceStats = (internId) => {
+  const getAIDeveloperInternAttendanceStats = (internId) => {
     const internAttendance = attendance.filter(record => record.intern_id === internId);
     const presentDays = internAttendance.filter(record => record.status === 'present').length;
     const totalDays = internAttendance.length;
@@ -396,12 +396,12 @@ export function AttendanceTab({ userRole = 'Tech Lead' }) {
           <div className="space-y-3">
             {interns
               .sort((a, b) => {
-                const statsA = getAI Developer InternAttendanceStats(a.id);
-                const statsB = getAI Developer InternAttendanceStats(b.id);
+                const statsA = getAIDeveloperInternAttendanceStats(a.id);
+                const statsB = getAIDeveloperInternAttendanceStats(b.id);
                 return parseFloat(statsB.attendanceRate) - parseFloat(statsA.attendanceRate);
               })
               .map(intern => {
-                const stats = getAI Developer InternAttendanceStats(intern.id);
+                const stats = getAIDeveloperInternAttendanceStats(intern.id);
                 return (
                   <div key={intern.id} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -456,7 +456,7 @@ export function AttendanceTab({ userRole = 'Tech Lead' }) {
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
                   {interns.filter(intern => {
-                    const stats = getAI Developer InternAttendanceStats(intern.id);
+                    const stats = getAIDeveloperInternAttendanceStats(intern.id);
                     return parseFloat(stats.attendanceRate) >= 90;
                   }).length}
                 </div>

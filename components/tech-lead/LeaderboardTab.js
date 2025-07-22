@@ -63,26 +63,26 @@ export function LeaderboardTab() {
   };
 
   const getLeaderboardData = () => {
-    let sortedAI Developer Interns = [...interns];
+    let sortedAIDeveloperInterns = [...interns];
     
     switch (selectedMetric) {
       case 'performance':
-        sortedAI Developer Interns.sort((a, b) => b.performance_score - a.performance_score);
+        sortedAIDeveloperInterns.sort((a, b) => b.performance_score - a.performance_score);
         break;
       case 'completion':
-        sortedAI Developer Interns.sort((a, b) => b.completion_rate - a.completion_rate);
+        sortedAIDeveloperInterns.sort((a, b) => b.completion_rate - a.completion_rate);
         break;
       case 'commits':
-        sortedAI Developer Interns.sort((a, b) => b.total_commits - a.total_commits);
+        sortedAIDeveloperInterns.sort((a, b) => b.total_commits - a.total_commits);
         break;
       case 'attendance':
-        sortedAI Developer Interns.sort((a, b) => b.attendance_rate - a.attendance_rate);
+        sortedAIDeveloperInterns.sort((a, b) => b.attendance_rate - a.attendance_rate);
         break;
       default:
-        sortedAI Developer Interns.sort((a, b) => b.performance_score - a.performance_score);
+        sortedAIDeveloperInterns.sort((a, b) => b.performance_score - a.performance_score);
     }
     
-    return sortedAI Developer Interns;
+    return sortedAIDeveloperInterns;
   };
 
   const getMetricValue = (intern, metric) => {
@@ -115,7 +115,7 @@ export function LeaderboardTab() {
     }
   };
 
-  const AI Developer InternLeaderboard = () => {
+  const AIDeveloperInternLeaderboard = () => {
     const leaderboardData = getLeaderboardData();
 
     return (
@@ -220,20 +220,20 @@ export function LeaderboardTab() {
 
   const CollegeRankings = () => {
     const collegeStats = colleges.map(college => {
-      const collegeAI Developer Interns = interns.filter(intern => intern.college_id === college.id);
-      const avgPerformance = collegeAI Developer Interns.length > 0 
-        ? collegeAI Developer Interns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAI Developer Interns.length 
+      const collegeAIDeveloperInterns = interns.filter(intern => intern.college_id === college.id);
+      const avgPerformance = collegeAIDeveloperInterns.length > 0 
+        ? collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAIDeveloperInterns.length 
         : 0;
-      const totalTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.total_tasks, 0);
-      const completedTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
+      const totalTasks = collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.total_tasks, 0);
+      const completedTasks = collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
       const avgCompletion = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
       return {
         ...college,
         avgPerformance,
         avgCompletion,
-        totalAIDeveloperInterns: collegeAI Developer Interns.length,
-        activeAIDeveloperInterns: collegeAI Developer Interns.filter(intern => intern.status === 'active').length
+        totalAIDeveloperInterns: collegeAIDeveloperInterns.length,
+        activeAIDeveloperInterns: collegeAIDeveloperInterns.filter(intern => intern.status === 'active').length
       };
     }).sort((a, b) => b.avgPerformance - a.avgPerformance);
 
@@ -432,7 +432,7 @@ export function LeaderboardTab() {
 
   return (
     <div className="space-y-6">
-      <AI Developer InternLeaderboard />
+      <AIDeveloperInternLeaderboard />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CollegeRankings />
         <PerformanceInsights />

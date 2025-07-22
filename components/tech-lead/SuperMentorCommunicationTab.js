@@ -39,7 +39,7 @@ export function POCCommunicationTab() {
   useEffect(() => {
     fetchChatRooms();
     fetchAIDeveloperInterns();
-    fetchTech Leads();
+    fetchTechLeads();
   }, []);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function POCCommunicationTab() {
     }
   };
 
-  const fetchTech Leads = async () => {
+  const fetchTechLeads = async () => {
     try {
       const response = await fetch('/api/super-mentor/college-mentors');
       if (response.ok) {

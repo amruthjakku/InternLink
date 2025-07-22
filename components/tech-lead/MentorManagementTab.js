@@ -9,8 +9,8 @@ export function TechLeadManagementTab() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingTech Lead, setEditingTech Lead] = useState(null);
-  const [newTech Lead, setNewTech Lead] = useState({
+  const [editingTechLead, setEditingTechLead] = useState(null);
+  const [newTechLead, setNewTechLead] = useState({
     gitlabUsername: '',
     name: '',
     email: '',
@@ -18,10 +18,10 @@ export function TechLeadManagementTab() {
   });
 
   useEffect(() => {
-    fetchTech Leads();
+    fetchTechLeads();
   }, []);
 
-  const fetchTech Leads = async () => {
+  const fetchTechLeads = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/super-mentor/college-mentors');
@@ -39,14 +39,14 @@ export function TechLeadManagementTab() {
     }
   };
 
-  const handleAddTech Lead = async (e) => {
+  const handleAddTechLead = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch('/api/super-mentor/mentors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...newTech Lead,
+          ...newTechLead,
           role: 'Tech Lead',
           college: user?.college?._id || user?.college,
           assignedBy: user?.gitlabUsername
@@ -55,8 +55,8 @@ export function TechLeadManagementTab() {
 
       if (response.ok) {
         setShowAddModal(false);
-        setNewTech Lead({ gitlabUsername: '', name: '', email: '', specialization: '' });
-        fetchTech Leads();
+        setNewTechLead({ gitlabUsername: '', name: '', email: '', specialization: '' });
+        fetchTechLeads();
         alert('Tech Lead added successfully!');
       } else {
         const error = await response.json();
@@ -68,19 +68,19 @@ export function TechLeadManagementTab() {
     }
   };
 
-  const handleEditTech Lead = async (e) => {
+  const handleEditTechLead = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/super-mentor/mentors/${editingTech Lead._id}`, {
+      const response = await fetch(`/api/super-mentor/mentors/${editingTechLead._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingTech Lead)
+        body: JSON.stringify(editingTechLead)
       });
 
       if (response.ok) {
         setShowEditModal(false);
-        setEditingTech Lead(null);
-        fetchTech Leads();
+        setEditingTechLead(null);
+        fetchTechLeads();
         alert('Tech Lead updated successfully!');
       } else {
         const error = await response.json();
@@ -92,7 +92,7 @@ export function TechLeadManagementTab() {
     }
   };
 
-  const handleDeleteTech Lead = async (mentorId) => {
+  const handleDeleteTechLead = async (mentorId) => {
     if (!confirm('Are you sure you want to remove this mentor? This will unassign all their interns.')) return;
 
     try {
@@ -101,7 +101,7 @@ export function TechLeadManagementTab() {
       });
 
       if (response.ok) {
-        fetchTech Leads();
+        fetchTechLeads();
         alert('Tech Lead removed successfully!');
       } else {
         const error = await response.json();
@@ -160,7 +160,7 @@ export function TechLeadManagementTab() {
           </div>
           <div className="bg-purple-50 p-4 rounded-lg">
             <div className="text-2xl font-bold text-purple-600">
-              {mentors.reduce((sum, m) => sum + (m.assignedAI Developer Interns || 0), 0)}
+              {mentors.reduce((sum, m) => sum + (m.assignedAIDeveloperInterns || 0), 0)}
             </div>
             <div className="text-sm text-gray-600">Total Assigned AI Developer Interns</div>
           </div>
@@ -211,7 +211,7 @@ export function TechLeadManagementTab() {
                     {mentor.specialization || 'General'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {mentor.assignedAI Developer Interns || 0}
+                    {mentor.assignedAIDeveloperInterns || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -228,7 +228,7 @@ export function TechLeadManagementTab() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
                       onClick={() => {
-                        setEditingTech Lead(mentor);
+                        setEditingTechLead(mentor);
                         setShowEditModal(true);
                       }}
                       className="text-blue-600 hover:text-blue-900"
@@ -236,7 +236,7 @@ export function TechLeadManagementTab() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteTech Lead(mentor._id)}
+                      onClick={() => handleDeleteTechLead(mentor._id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       Remove
@@ -255,14 +255,14 @@ export function TechLeadManagementTab() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Tech Lead</h3>
-              <form onSubmit={handleAddTech Lead} className="space-y-4">
+              <form onSubmit={handleAddTechLead} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">GitLab Username</label>
                   <input
                     type="text"
                     required
-                    value={newTech Lead.gitlabUsername}
-                    onChange={(e) => setNewTech Lead({...newTech Lead, gitlabUsername: e.target.value})}
+                    value={newTechLead.gitlabUsername}
+                    onChange={(e) => setNewTechLead({...newTechLead, gitlabUsername: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -271,8 +271,8 @@ export function TechLeadManagementTab() {
                   <input
                     type="text"
                     required
-                    value={newTech Lead.name}
-                    onChange={(e) => setNewTech Lead({...newTech Lead, name: e.target.value})}
+                    value={newTechLead.name}
+                    onChange={(e) => setNewTechLead({...newTechLead, name: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -281,8 +281,8 @@ export function TechLeadManagementTab() {
                   <input
                     type="email"
                     required
-                    value={newTech Lead.email}
-                    onChange={(e) => setNewTech Lead({...newTech Lead, email: e.target.value})}
+                    value={newTechLead.email}
+                    onChange={(e) => setNewTechLead({...newTechLead, email: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -290,8 +290,8 @@ export function TechLeadManagementTab() {
                   <label className="block text-sm font-medium text-gray-700">Specialization</label>
                   <input
                     type="text"
-                    value={newTech Lead.specialization}
-                    onChange={(e) => setNewTech Lead({...newTech Lead, specialization: e.target.value})}
+                    value={newTechLead.specialization}
+                    onChange={(e) => setNewTechLead({...newTechLead, specialization: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="e.g., Frontend, Backend, DevOps"
                   />
@@ -318,19 +318,19 @@ export function TechLeadManagementTab() {
       )}
 
       {/* Edit Tech Lead Modal */}
-      {showEditModal && editingTech Lead && (
+      {showEditModal && editingTechLead && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Tech Lead</h3>
-              <form onSubmit={handleEditTech Lead} className="space-y-4">
+              <form onSubmit={handleEditTechLead} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Full Name</label>
                   <input
                     type="text"
                     required
-                    value={editingTech Lead.name}
-                    onChange={(e) => setEditingTech Lead({...editingTech Lead, name: e.target.value})}
+                    value={editingTechLead.name}
+                    onChange={(e) => setEditingTechLead({...editingTechLead, name: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -339,8 +339,8 @@ export function TechLeadManagementTab() {
                   <input
                     type="email"
                     required
-                    value={editingTech Lead.email}
-                    onChange={(e) => setEditingTech Lead({...editingTech Lead, email: e.target.value})}
+                    value={editingTechLead.email}
+                    onChange={(e) => setEditingTechLead({...editingTechLead, email: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -348,8 +348,8 @@ export function TechLeadManagementTab() {
                   <label className="block text-sm font-medium text-gray-700">Specialization</label>
                   <input
                     type="text"
-                    value={editingTech Lead.specialization || ''}
-                    onChange={(e) => setEditingTech Lead({...editingTech Lead, specialization: e.target.value})}
+                    value={editingTechLead.specialization || ''}
+                    onChange={(e) => setEditingTechLead({...editingTechLead, specialization: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder="e.g., Frontend, Backend, DevOps"
                   />
@@ -379,4 +379,4 @@ export function TechLeadManagementTab() {
 }
 
 // Export alias for backwards compatibility
-export const TechLeadManagementTab = TechLeadManagementTab;
+export { TechLeadManagementTab as MentorManagementTab };

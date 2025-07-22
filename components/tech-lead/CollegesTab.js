@@ -63,17 +63,17 @@ export function CollegesTab() {
   };
 
   const getCollegeStats = (collegeId) => {
-    const collegeAI Developer Interns = interns.filter(intern => intern.college_id === collegeId);
+    const collegeAIDeveloperInterns = interns.filter(intern => intern.college_id === collegeId);
     const collegeCohorts = cohorts.filter(cohort => cohort.college_id === collegeId);
-    const totalTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.total_tasks, 0);
-    const completedTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
-    const avgPerformance = collegeAI Developer Interns.length > 0 
-      ? collegeAI Developer Interns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAI Developer Interns.length 
+    const totalTasks = collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.total_tasks, 0);
+    const completedTasks = collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
+    const avgPerformance = collegeAIDeveloperInterns.length > 0 
+      ? collegeAIDeveloperInterns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAIDeveloperInterns.length 
       : 0;
 
     return {
-      totalAIDeveloperInterns: collegeAI Developer Interns.length,
-      activeAIDeveloperInterns: collegeAI Developer Interns.filter(intern => intern.status === 'active').length,
+      totalAIDeveloperInterns: collegeAIDeveloperInterns.length,
+      activeAIDeveloperInterns: collegeAIDeveloperInterns.filter(intern => intern.status === 'active').length,
       totalCohorts: collegeCohorts.length,
       activeCohorts: collegeCohorts.filter(cohort => cohort.status === 'active').length,
       completionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,

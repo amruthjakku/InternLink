@@ -18,7 +18,7 @@ export function CohortManagementTab() {
     startDate: '',
     endDate: '',
     mentorId: '',
-    maxAI Developer Interns: 10
+    maxAIDeveloperInterns: 10
   });
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export function CohortManagementTab() {
           startDate: '',
           endDate: '',
           mentorId: '',
-          maxAI Developer Interns: 10
+          maxAIDeveloperInterns: 10
         });
         fetchData();
         alert('Cohort created successfully!');
@@ -135,7 +135,7 @@ export function CohortManagementTab() {
     }
   };
 
-  const assignAI Developer InternToCohort = async (internId, cohortId) => {
+  const assignAIDeveloperInternToCohort = async (internId, cohortId) => {
     try {
       const response = await fetch('/api/super-mentor/assign-intern-cohort', {
         method: 'POST',
@@ -156,11 +156,11 @@ export function CohortManagementTab() {
     }
   };
 
-  const getUnassignedAI Developer Interns = () => {
+  const getUnassignedAIDeveloperInterns = () => {
     return interns.filter(intern => !intern.cohortId);
   };
 
-  const getCohortAI Developer Interns = (cohortId) => {
+  const getCohortAIDeveloperInterns = (cohortId) => {
     return interns.filter(intern => intern.cohortId === cohortId);
   };
 
@@ -227,7 +227,7 @@ export function CohortManagementTab() {
           </div>
           <div className="bg-orange-50 p-4 rounded-lg">
             <div className="text-2xl font-bold text-orange-600">
-              {getUnassignedAI Developer Interns().length}
+              {getUnassignedAIDeveloperInterns().length}
             </div>
             <div className="text-sm text-gray-600">Unassigned AI Developer Interns</div>
           </div>
@@ -238,7 +238,7 @@ export function CohortManagementTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cohorts.map((cohort) => {
           const cohortStatus = getCohortStatus(cohort);
-          const cohortAI Developer Interns = getCohortAI Developer Interns(cohort._id);
+          const cohortAIDeveloperInterns = getCohortAIDeveloperInterns(cohort._id);
           const mentor = mentors.find(m => m._id === cohort.mentorId);
 
           return (
@@ -274,7 +274,7 @@ export function CohortManagementTab() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="mr-2">👥</span>
-                  <span>{cohortAI Developer Interns.length}/{cohort.maxAI Developer Interns} interns</span>
+                  <span>{cohortAIDeveloperInterns.length}/{cohort.maxAIDeveloperInterns} interns</span>
                 </div>
               </div>
 
@@ -282,22 +282,22 @@ export function CohortManagementTab() {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Capacity</span>
-                  <span>{Math.round((cohortAI Developer Interns.length / cohort.maxAI Developer Interns) * 100)}%</span>
+                  <span>{Math.round((cohortAIDeveloperInterns.length / cohort.maxAIDeveloperInterns) * 100)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${Math.min((cohortAI Developer Interns.length / cohort.maxAI Developer Interns) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((cohortAIDeveloperInterns.length / cohort.maxAIDeveloperInterns) * 100, 100)}%` }}
                   ></div>
                 </div>
               </div>
 
               {/* AI Developer Interns List */}
-              {cohortAI Developer Interns.length > 0 && (
+              {cohortAIDeveloperInterns.length > 0 && (
                 <div className="mb-4">
                   <h5 className="text-sm font-medium text-gray-900 mb-2">Assigned AI Developer Interns</h5>
                   <div className="space-y-1">
-                    {cohortAI Developer Interns.slice(0, 3).map(intern => (
+                    {cohortAIDeveloperInterns.slice(0, 3).map(intern => (
                       <div key={intern._id} className="flex items-center text-sm text-gray-600">
                         <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
                           <span className="text-white text-xs">{intern.name.charAt(0)}</span>
@@ -305,9 +305,9 @@ export function CohortManagementTab() {
                         <span>{intern.name}</span>
                       </div>
                     ))}
-                    {cohortAI Developer Interns.length > 3 && (
+                    {cohortAIDeveloperInterns.length > 3 && (
                       <div className="text-sm text-gray-500">
-                        +{cohortAI Developer Interns.length - 3} more interns
+                        +{cohortAIDeveloperInterns.length - 3} more interns
                       </div>
                     )}
                   </div>
@@ -338,11 +338,11 @@ export function CohortManagementTab() {
       </div>
 
       {/* Unassigned AI Developer Interns */}
-      {getUnassignedAI Developer Interns().length > 0 && (
+      {getUnassignedAIDeveloperInterns().length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Unassigned AI Developer Interns</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getUnassignedAI Developer Interns().map(intern => (
+            {getUnassignedAIDeveloperInterns().map(intern => (
               <div key={intern._id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center mb-3">
                   <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center mr-3">
@@ -356,7 +356,7 @@ export function CohortManagementTab() {
                 <select
                   onChange={(e) => {
                     if (e.target.value) {
-                      assignAI Developer InternToCohort(intern._id, e.target.value);
+                      assignAIDeveloperInternToCohort(intern._id, e.target.value);
                     }
                   }}
                   className="w-full text-sm border-gray-300 rounded-md"
@@ -364,10 +364,10 @@ export function CohortManagementTab() {
                 >
                   <option value="">Assign to cohort...</option>
                   {cohorts
-                    .filter(c => getCohortAI Developer Interns(c._id).length < c.maxAI Developer Interns)
+                    .filter(c => getCohortAIDeveloperInterns(c._id).length < c.maxAIDeveloperInterns)
                     .map(cohort => (
                       <option key={cohort._id} value={cohort._id}>
-                        {cohort.name} ({getCohortAI Developer Interns(cohort._id).length}/{cohort.maxAI Developer Interns})
+                        {cohort.name} ({getCohortAIDeveloperInterns(cohort._id).length}/{cohort.maxAIDeveloperInterns})
                       </option>
                     ))}
                 </select>
@@ -449,8 +449,8 @@ export function CohortManagementTab() {
                     min="1"
                     max="50"
                     required
-                    value={newCohort.maxAI Developer Interns}
-                    onChange={(e) => setNewCohort({...newCohort, maxAI Developer Interns: parseInt(e.target.value)})}
+                    value={newCohort.maxAIDeveloperInterns}
+                    onChange={(e) => setNewCohort({...newCohort, maxAIDeveloperInterns: parseInt(e.target.value)})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -545,8 +545,8 @@ export function CohortManagementTab() {
                     min="1"
                     max="50"
                     required
-                    value={editingCohort.maxAI Developer Interns}
-                    onChange={(e) => setEditingCohort({...editingCohort, maxAI Developer Interns: parseInt(e.target.value)})}
+                    value={editingCohort.maxAIDeveloperInterns}
+                    onChange={(e) => setEditingCohort({...editingCohort, maxAIDeveloperInterns: parseInt(e.target.value)})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>

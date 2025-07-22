@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { getCollegeName } from '../../utils/helpers';
 import { CollegeBadge } from '../CollegeLogo';
 
-export function AI Developer InternManagement() {
+export function AIDeveloperInternManagement() {
   const { data: session } = useSession();
   const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);

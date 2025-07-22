@@ -19,9 +19,9 @@ export function AIDeveloperInternManagementTab({ userRole }) {
 
   useEffect(() => {
     fetchAIDeveloperInterns();
-    fetchAI Developer InternAnalytics();
+    fetchAIDeveloperInternAnalytics();
     if (userRole === 'POC') {
-      fetchTech Leads();
+      fetchTechLeads();
     }
   }, [userRole]);
 
@@ -47,7 +47,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
     }
   };
 
-  const fetchTech Leads = async () => {
+  const fetchTechLeads = async () => {
     try {
       const response = await fetch('/api/super-mentor/college-mentors');
       if (response.ok) {
@@ -62,7 +62,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
     }
   };
 
-  const fetchAI Developer InternAnalytics = async () => {
+  const fetchAIDeveloperInternAnalytics = async () => {
     try {
       const response = await fetch('/api/analytics/interns');
       if (response.ok) {
@@ -78,7 +78,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
   };
 
   // Filter interns
-  const filteredAI Developer Interns = interns.filter(intern => {
+  const filteredAIDeveloperInterns = interns.filter(intern => {
     if (filterStatus !== 'all' && intern.status !== filterStatus) return false;
     if (filterPerformance !== 'all') {
       if (filterPerformance === 'high' && intern.performanceScore < 85) return false;
@@ -105,7 +105,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
     return 'text-red-600';
   };
 
-  const handleAssignAI Developer Intern = async (mentorId) => {
+  const handleAssignAIDeveloperIntern = async (mentorId) => {
     if (!assigningAIDeveloperIntern || !mentorId) return;
 
     try {
@@ -133,7 +133,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
     }
   };
 
-  const handleUnassignAI Developer Intern = async (internId) => {
+  const handleUnassignAIDeveloperIntern = async (internId) => {
     if (!confirm('Are you sure you want to unassign this intern from their mentor?')) return;
 
     try {
@@ -185,7 +185,7 @@ export function AIDeveloperInternManagementTab({ userRole }) {
         />
         <MetricCard
           title="At Risk"
-          value={aIDeveloperInternAnalytics.atRiskAI Developer Interns || 0}
+          value={aIDeveloperInternAnalytics.atRiskAIDeveloperInterns || 0}
           icon="⚠️"
           color="red"
         />
@@ -243,16 +243,16 @@ export function AIDeveloperInternManagementTab({ userRole }) {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">
-            AI Developer Interns ({filteredAI Developer Interns.length})
+            AI Developer Interns ({filteredAIDeveloperInterns.length})
           </h3>
         </div>
         <div className="divide-y divide-gray-200">
-          {filteredAI Developer Interns.length === 0 ? (
+          {filteredAIDeveloperInterns.length === 0 ? (
             <div className="px-6 py-8 text-center text-gray-500">
               No interns found matching your criteria
             </div>
           ) : (
-            filteredAI Developer Interns.map((intern) => (
+            filteredAIDeveloperInterns.map((intern) => (
               <div
                 key={intern.id}
                 className="px-6 py-4 hover:bg-gray-50 cursor-pointer"
@@ -277,9 +277,9 @@ export function AIDeveloperInternManagementTab({ userRole }) {
                       <p className="text-xs text-gray-500">
                         {intern.tasksCompleted || 0}/{intern.totalTasks || 0} tasks
                       </p>
-                      {intern.assignedTech Lead && (
+                      {intern.assignedTechLead && (
                         <p className="text-xs text-blue-600">
-                          Tech Lead: {intern.assignedTech LeadName || 'Assigned'}
+                          Tech Lead: {intern.assignedTechLeadName || 'Assigned'}
                         </p>
                       )}
                     </div>
@@ -296,13 +296,13 @@ export function AIDeveloperInternManagementTab({ userRole }) {
                           }}
                           className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                         >
-                          {intern.assignedTech Lead ? 'Reassign' : 'Assign'}
+                          {intern.assignedTechLead ? 'Reassign' : 'Assign'}
                         </button>
-                        {intern.assignedTech Lead && (
+                        {intern.assignedTechLead && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleUnassignAI Developer Intern(intern._id);
+                              handleUnassignAIDeveloperIntern(intern._id);
                             }}
                             className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                           >
@@ -392,12 +392,12 @@ export function AIDeveloperInternManagementTab({ userRole }) {
                         <div className="text-sm font-medium text-gray-900">{mentor.name}</div>
                         <div className="text-xs text-gray-500">{mentor.email}</div>
                         <div className="text-xs text-gray-400">
-                          {mentor.assignedAI Developer Interns || 0} interns assigned
+                          {mentor.assignedAIDeveloperInterns || 0} interns assigned
                         </div>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleAssignAI Developer Intern(mentor._id)}
+                      onClick={() => handleAssignAIDeveloperIntern(mentor._id)}
                       className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                       Assign
