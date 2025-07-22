@@ -45,21 +45,28 @@ export function ChatTab({ user }) {
 
   const fetchChats = async () => {
     try {
+      console.log('🔄 Fetching chats...');
       const response = await fetch('/api/chats');
+      console.log('📥 Chats response status:', response.status, response.statusText);
+      
       if (response.ok) {
         const data = await response.json();
         const chatList = data.chats || [];
+        console.log('💬 Loaded chats:', chatList);
         setChats(chatList);
         
         // Set the first chat as active if no active chat is selected
         if (chatList.length > 0 && !activeChat) {
+          console.log('🎯 Setting active chat to:', chatList[0].id);
           setActiveChat(chatList[0].id);
         }
       } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to fetch chats:', errorData);
         setChats([]);
       }
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error('❌ Error fetching chats:', error);
       setChats([]);
     }
   };
@@ -134,6 +141,8 @@ export function ChatTab({ user }) {
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    console.log('🚀 Sending message:', { activeChat, message: newMessage, user: user?.name });
+
     const messageData = {
       chatId: activeChat,
       message: newMessage,
@@ -141,6 +150,7 @@ export function ChatTab({ user }) {
     };
 
     try {
+      console.log('📤 Sending request to /api/messages with data:', messageData);
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {
@@ -149,8 +159,11 @@ export function ChatTab({ user }) {
         body: JSON.stringify(messageData),
       });
 
+      console.log('📥 Response status:', response.status, response.statusText);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('✅ Message sent successfully:', result);
         
         // Add the actual saved message to local state
         if (result.data) {
@@ -182,9 +195,9 @@ export function ChatTab({ user }) {
           fetchMessages(activeChat);
         }, 1000);
       } else {
-        const errorData = await response.json();
-        console.error('Failed to send message:', errorData);
-        alert('Failed to send message. Please try again.');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to send message:', errorData);
+        alert(`Failed to send message: ${errorData.error || 'Please try again.'}`);
       }
     } catch (error) {
       console.error('Error sending message:', error);

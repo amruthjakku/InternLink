@@ -57,21 +57,28 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    console.log('🔐 Checking session for message POST...');
     const session = await getServerSession(authOptions);
     
     if (!session) {
+      console.log('❌ No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('✅ Session found:', { userId: session.user.id, name: session.user.name });
+
     const { chatId, message, type } = await request.json();
+    console.log('📝 Message data received:', { chatId, message: message?.substring(0, 50), type });
 
     if (!chatId || !message) {
+      console.log('❌ Missing required fields:', { chatId: !!chatId, message: !!message });
       return NextResponse.json({ error: 'Chat ID and message are required' }, { status: 400 });
     }
 
     await connectToDatabase();
 
     // Create and save the message
+    console.log('💾 Creating message...');
     const newMessage = new Message({
       chatRoom: chatId,
       sender: session.user.id,
@@ -79,7 +86,9 @@ export async function POST(request) {
       type: type || 'text'
     });
 
+    console.log('💾 Saving message to database...');
     const savedMessage = await newMessage.save();
+    console.log('✅ Message saved:', savedMessage._id);
 
     // Update chat room's last activity
     await ChatRoom.findByIdAndUpdate(chatId, {

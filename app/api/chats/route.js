@@ -6,11 +6,15 @@ import ChatRoom from '../../../models/ChatRoom';
 
 export async function GET() {
   try {
+    console.log('🔐 Checking session for chats GET...');
     const session = await getServerSession(authOptions);
     
     if (!session) {
+      console.log('❌ No session found for chats');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('✅ Session found for chats:', { userId: session.user.id, name: session.user.name });
 
     await connectToDatabase();
 
