@@ -201,7 +201,7 @@ const TaskSchema = new mongoose.Schema({
     }
   }],
   submissions: [{
-    aiDeveloperAI Developer InternId: {
+    aiDeveloperInternId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },

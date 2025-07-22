@@ -9,7 +9,7 @@ const TaskProgressSchema = new mongoose.Schema({
   },
   
   // Reference to the AI developer intern
-  aiDeveloperAI Developer InternId: {
+  aiDeveloperInternId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -302,7 +302,7 @@ TaskProgressSchema.statics.findOrCreateProgress = async function(taskId, internI
   return progress;
 };
 
-TaskProgressSchema.statics.getAI Developer InternProgress = function(internId, options = {}) {
+TaskProgressSchema.statics.getAIDeveloperInternProgress = function(internId, options = {}) {
   const query = { internId };
   
   if (options.status) {
@@ -330,7 +330,7 @@ TaskProgressSchema.statics.getTaskProgress = function(taskId, options = {}) {
     .sort({ updatedAt: -1 });
 };
 
-TaskProgressSchema.statics.getCompletedTasksForAI Developer Intern = function(internId, dateFilter = {}) {
+TaskProgressSchema.statics.getCompletedTasksForAIDeveloperIntern = function(internId, dateFilter = {}) {
   const query = {
     internId,
     status: { $in: ['completed', 'done'] },
@@ -342,7 +342,7 @@ TaskProgressSchema.statics.getCompletedTasksForAI Developer Intern = function(in
     .sort({ completedAt: -1 });
 };
 
-TaskProgressSchema.statics.calculateAI Developer InternStats = async function(internId, dateFilter = {}) {
+TaskProgressSchema.statics.calculateAIDeveloperInternStats = async function(internId, dateFilter = {}) {
   const query = { internId, ...dateFilter };
   
   const allProgress = await this.find(query).populate('taskId', 'points');

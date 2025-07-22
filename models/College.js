@@ -22,7 +22,7 @@ const collegeSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-  superTech LeadUsername: {
+  superTechLeadUsername: {
     type: String,
     required: false,
     trim: true,
@@ -52,13 +52,13 @@ const collegeSchema = new mongoose.Schema({
 
 // Indexes
 // Note: name already has unique index from schema definition
-collegeSchema.index({ superTech LeadUsername: 1 });
+collegeSchema.index({ superTechLeadUsername: 1 });
 collegeSchema.index({ isActive: 1 });
 
 // Virtual for POC details
 collegeSchema.virtual('poc', {
   ref: 'User',
-  localField: 'superTech LeadUsername',
+  localField: 'superTechLeadUsername',
   foreignField: 'gitlabUsername',
   justOne: true
 });
@@ -84,14 +84,14 @@ collegeSchema.pre('save', function(next) {
 // Static methods
 collegeSchema.statics.findByPOC = function(pocUsername) {
   return this.findOne({ 
-    superTech LeadUsername: pocUsername.toLowerCase(), 
+    superTechLeadUsername: pocUsername.toLowerCase(), 
     isActive: true 
-  }).populate('superTech Lead');
+  }).populate('superTechLead');
 };
 
 collegeSchema.statics.getAllActive = function() {
   return this.find({ isActive: true })
-    .populate('superTech Lead')
+    .populate('superTechLead')
     .populate('aiDeveloperAI Developer InternsCount');
 };
 

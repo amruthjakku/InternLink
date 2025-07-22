@@ -26,11 +26,11 @@ const cohortSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College'
   },
-  maxAI Developer Interns: {
+  maxAIDeveloperInterns: {
     type: Number,
     default: 50
   },
-  currentAI Developer Interns: {
+  currentAIDeveloperInterns: {
     type: Number,
     default: 0
   },
@@ -80,7 +80,7 @@ cohortSchema.statics.getCohortById = function(id) {
 };
 
 // Instance methods
-cohortSchema.methods.updateAI Developer InternCount = async function() {
+cohortSchema.methods.updateAIDeveloperInternCount = async function() {
   const User = mongoose.models.User;
   const count = await User.countDocuments({ 
     cohortId: this._id,
@@ -88,7 +88,7 @@ cohortSchema.methods.updateAI Developer InternCount = async function() {
     isActive: true
   });
   
-  this.currentAI Developer Interns = count;
+  this.currentAIDeveloperInterns = count;
   return this.save();
 };
 
@@ -100,7 +100,7 @@ cohortSchema.methods.updateMemberCount = async function() {
   });
   
   this.memberCount = count;
-  this.currentAI Developer Interns = await User.countDocuments({ 
+  this.currentAIDeveloperInterns = await User.countDocuments({ 
     cohortId: this._id,
     role: 'AI Developer Intern',
     isActive: true
