@@ -1,4 +1,4 @@
-import { connectToDatabase } from '../../../utils/mongodb';
+import { connectToDatabase } from '../../../utils/database.js';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import { ObjectId } from 'mongodb';

@@ -1,6 +1,7 @@
-import { connectToDatabase } from '../../../utils/mongodb';
+import { connectToDatabase } from '../../../lib/mongoose.js';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
+import User from '../../../models/User.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -13,58 +14,28 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     
     // Get POC's college information
-    const pocUser = await db.collection('users').findOne({
+    const pocUser = await User.findOne({
       $or: [
         { gitlabUsername: session.user.gitlabUsername },
         { email: session.user.email }
       ]
-    });
+    }).populate('college');
 
     if (!pocUser || !pocUser.college) {
       return res.status(404).json({ message: 'POC college information not found' });
     }
 
     // Get college details
-    let college;
-    if (typeof pocUser.college === 'string') {
-      // If college is stored as a string (college name)
-      college = {
-        _id: pocUser.college,
-        name: pocUser.college,
-        location: '',
-        email: '',
-        phone: '',
-        website: ''
-      };
-    } else {
-      // If college is stored as an object
-      college = pocUser.college;
-    }
+    const college = pocUser.college;
 
-    // Get all users from the same college with comprehensive matching
-    const collegeQuery = {
-      $or: [
-        { college: college._id },
-        { college: college.name },
-        { 'college.name': college.name },
-        { 'college._id': college._id }
-      ]
-    };
+    // Get all users from the same college
+    const collegeUsers = await User.find({
+      college: college._id
+    });
 
-    // Add additional matching patterns if college name contains spaces or special characters
-    if (college.name && college.name.includes(' ')) {
-      collegeQuery.$or.push(
-        { college: college.name.replace(/\s+/g, '') }, // Without spaces
-        { college: college.name.toLowerCase() }, // Lowercase
-        { college: college.name.toUpperCase() } // Uppercase
-      );
-    }
-
-    console.log('College query:', JSON.stringify(collegeQuery, null, 2));
-    const collegeUsers = await db.collection('users').find(collegeQuery).toArray();
     console.log(`Found ${collegeUsers.length} users for college:`, college.name);
 
     // Separate mentors (Tech Leads) and interns (AI Developer Interns) with flexible role matching
