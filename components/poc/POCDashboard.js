@@ -68,9 +68,52 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setCollegeData(data);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', response.status, errorData);
+        setError(`Failed to load college data: ${errorData.error || 'Unknown error'}`);
+        
+        // Fallback data if API fails - empty structure only
+        setCollegeData({
+          college: {
+            name: (typeof session?.user?.college === 'string' ? session?.user?.college : session?.user?.college?.name) || 'Your College',
+            location: 'Location not set',
+            email: session?.user?.email || 'email@college.edu',
+            established: '2020',
+            website: 'https://college.edu'
+          },
+          stats: {
+            totalTechLeads: 0,
+            totalAIDeveloperInterns: 0,
+            assignedAIDeveloperInterns: 0,
+            unassignedAIDeveloperInterns: 0
+          },
+          mentors: [],
+          interns: []
+        });
       }
     } catch (error) {
       console.error('Error fetching college data:', error);
+      setError(`Network error: ${error.message}`);
+      
+      // Fallback data on error - empty structure only
+      setCollegeData({
+        college: {
+          name: (typeof session?.user?.college === 'string' ? session?.user?.college : session?.user?.college?.name) || 'Your College',
+          location: 'Location not set',
+          email: session?.user?.email || 'email@college.edu',
+          established: '2020',
+          website: 'https://college.edu'
+        },
+        stats: {
+          totalTechLeads: 0,
+          totalAIDeveloperInterns: 0,
+          assignedAIDeveloperInterns: 0,
+          unassignedAIDeveloperInterns: 0
+        },
+        mentors: [],
+        interns: []
+      });
     }
   };
 
@@ -80,9 +123,12 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setTeams(data.teams || []);
+      } else {
+        setTeams([]);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
+      setTeams([]);
     }
   };
 
@@ -92,9 +138,12 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setTasks(data.tasks || []);
+      } else {
+        setTasks([]);
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      setTasks([]);
     }
   };
 
@@ -104,9 +153,12 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setAttendance(data.attendance || []);
+      } else {
+        setAttendance([]);
       }
     } catch (error) {
       console.error('Error fetching attendance:', error);
+      setAttendance([]);
     }
   };
 
@@ -116,9 +168,12 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setPerformanceData(data);
+      } else {
+        setPerformanceData({ metrics: [], trends: [] });
       }
     } catch (error) {
       console.error('Error fetching performance data:', error);
+      setPerformanceData({ metrics: [], trends: [] });
     }
   };
 
@@ -128,9 +183,12 @@ const POCDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setAnnouncements(data.announcements || []);
+      } else {
+        setAnnouncements([]);
       }
     } catch (error) {
       console.error('Error fetching announcements:', error);
+      setAnnouncements([]);
     }
   };
 
@@ -165,8 +223,13 @@ const POCDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">POC Dashboard</h1>
               <p className="text-gray-600">
-                Welcome back, {session?.user?.name} - {collegeData?.college?.name}
+                Welcome back, {session?.user?.name} - {collegeData?.college?.name || (typeof session?.user?.college === 'string' ? session?.user?.college : session?.user?.college?.name) || 'College'}
               </p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Role: {session?.user?.role} | GitLab: {session?.user?.gitlabUsername}
+                </p>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -348,7 +411,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-600">Established</p>
-            <p className="text-lg text-gray-900">{new Date(college.createdAt).getFullYear()}</p>
+            <p className="text-lg text-gray-900">{college.createdAt ? new Date(college.createdAt).getFullYear() : college.established || '2020'}</p>
           </div>
         </div>
       </div>
