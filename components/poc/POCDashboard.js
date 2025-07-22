@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import { useTabData, useDashboardData } from '../../hooks/useTabData';
+import { cachedFetch, CacheKeys, CacheTTL, invalidateCollegeCache, invalidateAnnouncementCache } from '../../utils/cache';
 import { 
   ChartBarIcon, 
   UserGroupIcon, 
@@ -21,178 +23,136 @@ import {
 
 const POCDashboard = () => {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [collegeData, setCollegeData] = useState(null);
-  const [teams, setTeams] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [performanceData, setPerformanceData] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (session?.user?.role === 'POC') {
-      fetchAllData();
-    }
-  }, [session]);
+  // Initialize dashboard data management with caching
+  const { globalData, globalLoading, dataFetchers } = useDashboardData(
+    session?.user?.gitlabUsername || session?.user?.email, 
+    'POC'
+  );
 
-  const fetchAllData = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-    
-    try {
-      await Promise.all([
-        fetchCollegeData(),
-        fetchTeams(),
-        fetchTasks(),
-        fetchAttendance(),
-        fetchPerformanceData(),
-        fetchAnnouncements()
-      ]);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load dashboard data. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  // Tab-specific data fetchers with caching
+  const tabDataFetchers = useMemo(() => ({
+    overview: () => cachedFetch('/api/poc/college-overview', {}, CacheKeys.POC_COLLEGE_DATA(session?.user?.gitlabUsername), CacheTTL.LONG),
+    announcements: () => cachedFetch('/api/poc/announcements', {}, CacheKeys.POC_ANNOUNCEMENTS(session?.user?.gitlabUsername), CacheTTL.ANNOUNCEMENTS),
+    chatRooms: () => cachedFetch('/api/chat-rooms', {}, CacheKeys.USER_CHAT_ROOMS(session?.user?.gitlabUsername), CacheTTL.CHAT_ROOMS),
+    users: () => cachedFetch('/api/poc/users', {}, CacheKeys.COLLEGE_USERS(session?.user?.college), CacheTTL.MEDIUM),
+    attendance: () => cachedFetch('/api/poc/attendance', {}, CacheKeys.COLLEGE_STATS(session?.user?.college), CacheTTL.MEDIUM),
+    tasks: () => cachedFetch('/api/tasks?college=true', {}, CacheKeys.COLLEGE_TASKS(session?.user?.college), CacheTTL.SHORT),
+    teams: () => cachedFetch('/api/poc/teams', {}, CacheKeys.COLLEGE_TEAMS(session?.user?.college), CacheTTL.MEDIUM),
+    performance: () => cachedFetch('/api/poc/performance', {}, CacheKeys.COLLEGE_PERFORMANCE(session?.user?.college), CacheTTL.MEDIUM),
+  }), [session?.user?.gitlabUsername, session?.user?.college]);
+
+  // Use tab data management with smart loading
+  const {
+    activeTab,
+    switchTab,
+    tabData,
+    loading: tabLoading,
+    errors: tabErrors,
+    getData,
+    isLoading,
+    refresh: refreshCurrentTab,
+    refreshData,
+    preloadTab
+  } = useTabData('overview', tabDataFetchers, {
+    autoLoad: true,
+    refreshOnTabSwitch: false, // Don't refresh on tab switch
+    cacheTimeout: CacheTTL.MEDIUM
+  });
+
+  // Get cached data with fallbacks
+  const collegeData = getData('overview') || {
+    college: {
+      name: 'Your College',
+      location: 'Location not set',
+      email: 'email@college.edu',
+      established: '2020',
+      website: 'https://college.edu'
+    },
+    stats: {
+      totalTechLeads: 0,
+      totalAIDeveloperInterns: 0,
+      assignedAIDeveloperInterns: 0,
+      unassignedAIDeveloperInterns: 0
+    },
+    mentors: [],
+    interns: []
   };
+  const announcements = getData('announcements')?.announcements || [];
+  const chatRooms = getData('chatRooms')?.chatRooms || [];
+  const users = getData('users')?.users || [];
+  const attendance = getData('attendance') || [];
+  const tasks = getData('tasks')?.tasks || [];
+  const teams = getData('teams')?.teams || [];
+  const performanceData = getData('performance') || { metrics: [], trends: [] };
 
-  const fetchCollegeData = async () => {
+  // Loading states
+  const loading = isLoading('overview');
+  const refreshing = false; // Managed by cache system
+
+  // Refresh functions using cache
+  const refreshAllData = useCallback(async () => {
     try {
-      const response = await fetch('/api/poc/college-overview');
-      if (response.ok) {
-        const data = await response.json();
-        setCollegeData(data);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', response.status, errorData);
-        setError(`Failed to load college data: ${errorData.error || 'Unknown error'}`);
-        
-        // Fallback data if API fails - empty structure only
-        setCollegeData({
-          college: {
-            name: (typeof session?.user?.college === 'string' ? session?.user?.college : session?.user?.college?.name) || 'Your College',
-            location: 'Location not set',
-            email: session?.user?.email || 'email@college.edu',
-            established: '2020',
-            website: 'https://college.edu'
-          },
-          stats: {
-            totalTechLeads: 0,
-            totalAIDeveloperInterns: 0,
-            assignedAIDeveloperInterns: 0,
-            unassignedAIDeveloperInterns: 0
-          },
-          mentors: [],
-          interns: []
-        });
-      }
+      setError(null);
+      await refreshCurrentTab();
     } catch (error) {
-      console.error('Error fetching college data:', error);
-      setError(`Network error: ${error.message}`);
-      
-      // Fallback data on error - empty structure only
-      setCollegeData({
-        college: {
-          name: (typeof session?.user?.college === 'string' ? session?.user?.college : session?.user?.college?.name) || 'Your College',
-          location: 'Location not set',
-          email: session?.user?.email || 'email@college.edu',
-          established: '2020',
-          website: 'https://college.edu'
-        },
-        stats: {
-          totalTechLeads: 0,
-          totalAIDeveloperInterns: 0,
-          assignedAIDeveloperInterns: 0,
-          unassignedAIDeveloperInterns: 0
-        },
-        mentors: [],
-        interns: []
+      console.error('Error refreshing data:', error);
+      setError('Failed to refresh dashboard data. Please try again.');
+    }
+  }, [refreshCurrentTab]);
+
+  // Create announcement with cache invalidation
+  const createAnnouncement = useCallback(async (announcementData) => {
+    try {
+      const response = await fetch('/api/poc/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(announcementData)
       });
-    }
-  };
 
-  const fetchTeams = async () => {
-    try {
-      const response = await fetch('/api/poc/teams');
       if (response.ok) {
-        const data = await response.json();
-        setTeams(data.teams || []);
+        // Invalidate announcements cache
+        invalidateAnnouncementCache();
+        // Refresh announcements data
+        await refreshData('announcements');
+        return await response.json();
       } else {
-        setTeams([]);
+        throw new Error('Failed to create announcement');
       }
     } catch (error) {
-      console.error('Error fetching teams:', error);
-      setTeams([]);
+      console.error('Error creating announcement:', error);
+      throw error;
     }
-  };
+  }, [refreshData]);
 
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks?college=true');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      } else {
-        setTasks([]);
+  // Preload next tabs for better UX
+  const preloadNextTabs = useCallback(() => {
+    const tabIds = ['overview', 'announcements', 'chatRooms'];
+    const currentIndex = tabIds.indexOf(activeTab);
+    const nextTabs = [
+      tabIds[currentIndex + 1],
+      tabIds[currentIndex - 1]
+    ].filter(Boolean);
+    
+    nextTabs.forEach(tab => {
+      if (tab && tabDataFetchers[tab]) {
+        preloadTab(tab);
       }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      setTasks([]);
-    }
-  };
+    });
+  }, [activeTab, tabDataFetchers, preloadTab]);
 
-  const fetchAttendance = async () => {
-    try {
-      const response = await fetch('/api/attendance?college=true');
-      if (response.ok) {
-        const data = await response.json();
-        setAttendance(data.attendance || []);
-      } else {
-        setAttendance([]);
-      }
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
-      setAttendance([]);
-    }
-  };
+  // Preload adjacent tabs when switching
+  useEffect(() => {
+    const timer = setTimeout(preloadNextTabs, 1000);
+    return () => clearTimeout(timer);
+  }, [activeTab, preloadNextTabs]);
 
-  const fetchPerformanceData = async () => {
-    try {
-      const response = await fetch('/api/poc/performance');
-      if (response.ok) {
-        const data = await response.json();
-        setPerformanceData(data);
-      } else {
-        setPerformanceData({ metrics: [], trends: [] });
-      }
-    } catch (error) {
-      console.error('Error fetching performance data:', error);
-      setPerformanceData({ metrics: [], trends: [] });
-    }
-  };
-
-  const fetchAnnouncements = async () => {
-    try {
-      const response = await fetch('/api/poc/announcements');
-      if (response.ok) {
-        const data = await response.json();
-        setAnnouncements(data.announcements || []);
-      } else {
-        setAnnouncements([]);
-      }
-    } catch (error) {
-      console.error('Error fetching announcements:', error);
-      setAnnouncements([]);
-    }
-  };
+  // Legacy function references for backward compatibility
+  const fetchAllData = refreshAllData;
+  const fetchTasks = useCallback(() => refreshData('tasks'), [refreshData]);
+  const fetchAnnouncements = useCallback(() => refreshData('announcements'), [refreshData]);
+  const fetchCollegeData = useCallback(() => refreshData('overview'), [refreshData]);
 
   const tabs = [
     { id: 'overview', name: 'College Overview', icon: AcademicCapIcon },
@@ -235,7 +195,7 @@ const POCDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => fetchAllData(true)}
+                onClick={refreshAllData}
                 disabled={refreshing}
                 className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
               >
@@ -288,7 +248,7 @@ const POCDashboard = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => switchTab(tab.id)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -340,7 +300,23 @@ const CollegeOverviewTab = ({ collegeData }) => {
     return <div className="text-center py-8 text-gray-500">Loading college overview...</div>;
   }
 
-  const { college, stats, mentors, interns } = collegeData;
+  const { 
+    college = {
+      name: 'Your College',
+      location: 'Location not set',
+      email: 'email@college.edu',
+      established: '2020',
+      website: 'https://college.edu'
+    }, 
+    stats = {
+      totalTechLeads: 0,
+      totalAIDeveloperInterns: 0,
+      assignedAIDeveloperInterns: 0,
+      unassignedAIDeveloperInterns: 0
+    }, 
+    mentors = [], 
+    interns = [] 
+  } = collegeData;
 
   return (
     <div className="space-y-6">
@@ -401,15 +377,15 @@ const CollegeOverviewTab = ({ collegeData }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <p className="text-sm font-medium text-gray-600">College Name</p>
-            <p className="text-lg text-gray-900">{college.name}</p>
+            <p className="text-lg text-gray-900">{college.name || 'Your College'}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-600">Location</p>
-            <p className="text-lg text-gray-900">{college.location}</p>
+            <p className="text-lg text-gray-900">{college.location || 'Location not set'}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-600">Contact Email</p>
-            <p className="text-lg text-gray-900">{college.email}</p>
+            <p className="text-lg text-gray-900">{college.email || 'email@college.edu'}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-600">Established</p>
@@ -471,12 +447,26 @@ const InternManagementTab = ({ collegeData, fetchAllData }) => {
   const [selectedIntern, setSelectedIntern] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTechLead, setSelectedTechLead] = useState('');
+  const [showAddIntern, setShowAddIntern] = useState(false);
+  const [showImportInterns, setShowImportInterns] = useState(false);
+  const [newIntern, setNewIntern] = useState({
+    name: '',
+    email: '',
+    gitlabUsername: '',
+    phone: '',
+    college: '',
+    skills: '',
+    cohortId: ''
+  });
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   if (!collegeData) {
     return <div className="text-center py-8 text-gray-500">Loading intern data...</div>;
   }
 
-  const { interns, mentors } = collegeData;
+  const { interns = [], mentors = [] } = collegeData;
   const assignedInterns = interns.filter(intern => intern.assignedTechLead);
   const unassignedInterns = interns.filter(intern => !intern.assignedTechLead);
 
@@ -509,6 +499,88 @@ const InternManagementTab = ({ collegeData, fetchAllData }) => {
     }
   };
 
+  const handleAddIntern = async () => {
+    if (!newIntern.name || !newIntern.email || !newIntern.gitlabUsername) {
+      alert('Please fill in all required fields (Name, Email, GitLab Username)');
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const response = await fetch('/api/poc/interns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newIntern,
+          college: collegeData?.college?._id,
+          role: 'AI Developer Intern',
+          skills: newIntern.skills.split(',').map(s => s.trim()).filter(Boolean)
+        }),
+      });
+
+      if (response.ok) {
+        alert('✅ AI Developer Intern added successfully!');
+        setShowAddIntern(false);
+        setNewIntern({
+          name: '',
+          email: '',
+          gitlabUsername: '',
+          phone: '',
+          college: '',
+          skills: '',
+          cohortId: ''
+        });
+        await fetchAllData();
+      } else {
+        const error = await response.json();
+        alert(`❌ Failed to add intern: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error adding intern:', error);
+      alert('❌ Failed to add intern. Please try again.');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleImportInterns = async () => {
+    if (!importFile) {
+      alert('Please select a CSV file to import');
+      return;
+    }
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', importFile);
+    formData.append('college', collegeData?.college?._id);
+    formData.append('role', 'AI Developer Intern');
+
+    try {
+      const response = await fetch('/api/poc/import-users', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Successfully imported ${result.imported} AI Developer Interns! ${result.skipped > 0 ? `(${result.skipped} duplicates skipped)` : ''}`);
+        setShowImportInterns(false);
+        setImportFile(null);
+        await fetchAllData();
+      } else {
+        const error = await response.json();
+        alert(`❌ Import failed: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error importing interns:', error);
+      alert('❌ Import failed. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -517,12 +589,34 @@ const InternManagementTab = ({ collegeData, fetchAllData }) => {
           <h3 className="text-lg font-semibold text-gray-900">Intern Management</h3>
           <p className="text-gray-600">Manage AI Developer Interns from your college</p>
         </div>
-        <div className="flex space-x-3">
-          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-            {assignedInterns.length} Assigned
+        <div className="flex items-center space-x-3">
+          <div className="flex space-x-2">
+            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+              {assignedInterns.length} Assigned
+            </div>
+            <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
+              {unassignedInterns.length} Unassigned
+            </div>
           </div>
-          <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
-            {unassignedInterns.length} Unassigned
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowImportInterns(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+              <span>Import Interns</span>
+            </button>
+            <button
+              onClick={() => setShowAddIntern(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Add Intern</span>
+            </button>
           </div>
         </div>
       </div>
@@ -695,6 +789,153 @@ const InternManagementTab = ({ collegeData, fetchAllData }) => {
           </div>
         </div>
       )}
+
+      {/* Add Intern Modal */}
+      {showAddIntern && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Add New AI Developer Intern</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={newIntern.name}
+                  onChange={(e) => setNewIntern({...newIntern, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter full name..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={newIntern.email}
+                  onChange={(e) => setNewIntern({...newIntern, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter email address..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">GitLab Username *</label>
+                <input
+                  type="text"
+                  value={newIntern.gitlabUsername}
+                  onChange={(e) => setNewIntern({...newIntern, gitlabUsername: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter GitLab username..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={newIntern.phone}
+                  onChange={(e) => setNewIntern({...newIntern, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter phone number..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Skills</label>
+                <input
+                  type="text"
+                  value={newIntern.skills}
+                  onChange={(e) => setNewIntern({...newIntern, skills: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter skills (comma-separated)..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cohort ID</label>
+                <input
+                  type="text"
+                  value={newIntern.cohortId}
+                  onChange={(e) => setNewIntern({...newIntern, cohortId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter cohort ID..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddIntern(false);
+                  setNewIntern({
+                    name: '',
+                    email: '',
+                    gitlabUsername: '',
+                    phone: '',
+                    college: '',
+                    skills: '',
+                    cohortId: ''
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddIntern}
+                disabled={adding}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {adding ? 'Adding...' : 'Add Intern'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Interns Modal */}
+      {showImportInterns && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Import AI Developer Interns</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setImportFile(e.target.files[0])}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  CSV should contain: name, email, gitlabUsername, phone, skills, cohortId
+                </p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-md">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">CSV Format Example:</h4>
+                <code className="text-xs text-blue-800 block">
+                  name,email,gitlabUsername,phone,skills,cohortId<br/>
+                  Jane Doe,jane@example.com,janedoe,+1234567890,"Python,React","COHORT-2024-01"
+                </code>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowImportInterns(false);
+                  setImportFile(null);
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImportInterns}
+                disabled={importing || !importFile}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {importing ? 'Importing...' : 'Import Interns'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -705,12 +946,25 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
   const [showTechLeadDetails, setShowTechLeadDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showAddTechLead, setShowAddTechLead] = useState(false);
+  const [showImportTechLeads, setShowImportTechLeads] = useState(false);
+  const [newTechLead, setNewTechLead] = useState({
+    name: '',
+    email: '',
+    gitlabUsername: '',
+    phone: '',
+    skills: '',
+    experience: ''
+  });
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   if (!collegeData) {
     return <div className="text-center py-8 text-gray-500">Loading tech lead data...</div>;
   }
 
-  const { mentors, interns } = collegeData;
+  const { mentors = [], interns = [] } = collegeData;
   const techLeads = mentors.filter(m => m.role === 'Tech Lead');
 
   // Filter tech leads
@@ -729,6 +983,87 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
     setShowTechLeadDetails(true);
   };
 
+  const handleAddTechLead = async () => {
+    if (!newTechLead.name || !newTechLead.email || !newTechLead.gitlabUsername) {
+      alert('Please fill in all required fields (Name, Email, GitLab Username)');
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const response = await fetch('/api/poc/tech-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newTechLead,
+          college: collegeData?.college?._id,
+          role: 'Tech Lead',
+          skills: newTechLead.skills.split(',').map(s => s.trim()).filter(Boolean)
+        }),
+      });
+
+      if (response.ok) {
+        alert('✅ Tech Lead added successfully!');
+        setShowAddTechLead(false);
+        setNewTechLead({
+          name: '',
+          email: '',
+          gitlabUsername: '',
+          phone: '',
+          skills: '',
+          experience: ''
+        });
+        await fetchAllData();
+      } else {
+        const error = await response.json();
+        alert(`❌ Failed to add Tech Lead: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error adding tech lead:', error);
+      alert('❌ Failed to add Tech Lead. Please try again.');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleImportTechLeads = async () => {
+    if (!importFile) {
+      alert('Please select a CSV file to import');
+      return;
+    }
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', importFile);
+    formData.append('college', collegeData?.college?._id);
+    formData.append('role', 'Tech Lead');
+
+    try {
+      const response = await fetch('/api/poc/import-users', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Successfully imported ${result.imported} Tech Leads! ${result.skipped > 0 ? `(${result.skipped} duplicates skipped)` : ''}`);
+        setShowImportTechLeads(false);
+        setImportFile(null);
+        await fetchAllData();
+      } else {
+        const error = await response.json();
+        alert(`❌ Import failed: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error importing tech leads:', error);
+      alert('❌ Import failed. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -736,6 +1071,26 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Tech Lead Management</h3>
           <p className="text-gray-600">Monitor and manage Tech Leads from your college</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowImportTechLeads(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+            <span>Import Tech Leads</span>
+          </button>
+          <button
+            onClick={() => setShowAddTechLead(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add Tech Lead</span>
+          </button>
         </div>
       </div>
 
@@ -990,6 +1345,152 @@ const TechLeadManagementTab = ({ collegeData, teams, fetchAllData }) => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Tech Lead Modal */}
+      {showAddTechLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Add New Tech Lead</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={newTechLead.name}
+                  onChange={(e) => setNewTechLead({...newTechLead, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter full name..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={newTechLead.email}
+                  onChange={(e) => setNewTechLead({...newTechLead, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter email address..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">GitLab Username *</label>
+                <input
+                  type="text"
+                  value={newTechLead.gitlabUsername}
+                  onChange={(e) => setNewTechLead({...newTechLead, gitlabUsername: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter GitLab username..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={newTechLead.phone}
+                  onChange={(e) => setNewTechLead({...newTechLead, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter phone number..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Skills</label>
+                <input
+                  type="text"
+                  value={newTechLead.skills}
+                  onChange={(e) => setNewTechLead({...newTechLead, skills: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter skills (comma-separated)..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+                <textarea
+                  value={newTechLead.experience}
+                  onChange={(e) => setNewTechLead({...newTechLead, experience: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="3"
+                  placeholder="Enter experience details..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddTechLead(false);
+                  setNewTechLead({
+                    name: '',
+                    email: '',
+                    gitlabUsername: '',
+                    phone: '',
+                    skills: '',
+                    experience: ''
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddTechLead}
+                disabled={adding}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {adding ? 'Adding...' : 'Add Tech Lead'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Tech Leads Modal */}
+      {showImportTechLeads && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Import Tech Leads</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setImportFile(e.target.files[0])}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  CSV should contain: name, email, gitlabUsername, phone, skills, experience
+                </p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-md">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">CSV Format Example:</h4>
+                <code className="text-xs text-blue-800 block">
+                  name,email,gitlabUsername,phone,skills,experience<br/>
+                  John Doe,john@example.com,johndoe,+1234567890,"React,Node.js","5 years"
+                </code>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowImportTechLeads(false);
+                  setImportFile(null);
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImportTechLeads}
+                disabled={importing || !importFile}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {importing ? 'Importing...' : 'Import Tech Leads'}
+              </button>
             </div>
           </div>
         </div>
@@ -1737,7 +2238,7 @@ const AttendanceMonitoringTab = ({ collegeData, attendance }) => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900">{collegeData.interns.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{collegeData?.interns?.length || 0}</p>
             </div>
           </div>
         </div>
@@ -1905,7 +2406,7 @@ const PerformanceAnalyticsTab = ({ collegeData, performanceData }) => {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {collegeData.interns.slice(0, 5).map((intern, index) => (
+            {(collegeData?.interns || []).slice(0, 5).map((intern, index) => (
               <div key={intern._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
@@ -1956,8 +2457,8 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
   const [newChatRoom, setNewChatRoom] = useState({
     name: '',
     description: '',
-    isPrivate: false,
-    allowedRoles: ['AI Developer Intern', 'Tech Lead', 'POC']
+    type: 'general',
+    visibility: 'college-only'
   });
 
   // Fetch chatrooms
@@ -2003,8 +2504,8 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
         setNewChatRoom({
           name: '',
           description: '',
-          isPrivate: false,
-          allowedRoles: ['AI Developer Intern', 'Tech Lead', 'POC']
+          type: 'general',
+          visibility: 'college-only'
         });
         fetchChatRooms();
       } else {
@@ -2502,60 +3003,59 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Privacy Settings
+                  Room Type
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="privacy"
-                      checked={!newChatRoom.isPrivate}
-                      onChange={() => setNewChatRoom({...newChatRoom, isPrivate: false})}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Public - All college members can join</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="privacy"
-                      checked={newChatRoom.isPrivate}
-                      onChange={() => setNewChatRoom({...newChatRoom, isPrivate: true})}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Private - Invitation only</span>
-                  </label>
-                </div>
+                <select
+                  value={newChatRoom.type}
+                  onChange={(e) => setNewChatRoom({...newChatRoom, type: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="general">General Discussion</option>
+                  <option value="project">Project Collaboration</option>
+                  <option value="announcement">Announcements</option>
+                  <option value="support">Support & Help</option>
+                  <option value="social">Social & Casual</option>
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Allowed Roles
+                  Visibility
                 </label>
                 <div className="space-y-2">
-                  {['AI Developer Intern', 'Tech Lead', 'POC'].map(role => (
-                    <label key={role} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={newChatRoom.allowedRoles.includes(role)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewChatRoom({
-                              ...newChatRoom,
-                              allowedRoles: [...newChatRoom.allowedRoles, role]
-                            });
-                          } else {
-                            setNewChatRoom({
-                              ...newChatRoom,
-                              allowedRoles: newChatRoom.allowedRoles.filter(r => r !== role)
-                            });
-                          }
-                        }}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">{role}</span>
-                    </label>
-                  ))}
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="college-only"
+                      checked={newChatRoom.visibility === 'college-only'}
+                      onChange={(e) => setNewChatRoom({...newChatRoom, visibility: e.target.value})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">College Only - All members of your college can join</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="private"
+                      checked={newChatRoom.visibility === 'private'}
+                      onChange={(e) => setNewChatRoom({...newChatRoom, visibility: e.target.value})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Private - Invitation only</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="public"
+                      checked={newChatRoom.visibility === 'public'}
+                      onChange={(e) => setNewChatRoom({...newChatRoom, visibility: e.target.value})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Public - Anyone can join</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -2904,9 +3404,9 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
           <div className="flex items-center">
             <UserGroupIcon className="w-8 h-8 text-blue-600 mr-3" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Public Rooms</p>
+              <p className="text-sm font-medium text-gray-600">College Rooms</p>
               <p className="text-2xl font-bold text-gray-900">
-                {chatRooms.filter(room => !room.isPrivate).length}
+                {chatRooms.filter(room => room.visibility === 'college-only').length}
               </p>
             </div>
           </div>
@@ -2918,7 +3418,7 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Private Rooms</p>
               <p className="text-2xl font-bold text-gray-900">
-                {chatRooms.filter(room => room.isPrivate).length}
+                {chatRooms.filter(room => room.visibility === 'private').length}
               </p>
             </div>
           </div>
@@ -2953,17 +3453,25 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <h4 className="font-semibold text-gray-900">{room.name}</h4>
-                    {room.isPrivate && (
-                      <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                        Private
-                      </span>
-                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      room.visibility === 'private' 
+                        ? 'bg-red-100 text-red-800'
+                        : room.visibility === 'college-only'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {room.visibility === 'college-only' ? 'College Only' : 
+                       room.visibility === 'private' ? 'Private' : 'Public'}
+                    </span>
+                    <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                      {room.type}
+                    </span>
                   </div>
                   <p className="text-gray-600 mt-1">{room.description || 'No description'}</p>
                   <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                     <span>📅 Created {new Date(room.createdAt).toLocaleDateString()}</span>
-                    <span>👥 {room.memberCount || 0} members</span>
-                    <span>🎯 {room.allowedRoles?.join(', ') || 'All roles'}</span>
+                    <span>👥 {room.participantCount || 0} members</span>
+                    <span>🏢 {room.college?.name || 'No college'}</span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

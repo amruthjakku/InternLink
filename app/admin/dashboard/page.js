@@ -2,7 +2,9 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTabData, useDashboardData } from '../../../hooks/useTabData';
+import { cachedFetch, CacheKeys, CacheTTL } from '../../../utils/cache';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
@@ -28,6 +30,7 @@ import TaskWorkflow from '../../../components/admin/TaskWorkflow';
 import TeamManagement from '../../../components/admin/TeamManagement';
 import MonitoringAnalytics from '../../../components/admin/MonitoringAnalytics';
 import SystemTools from '../../../components/admin/SystemTools';
+import AnnouncementsManagement from '../../../components/admin/AnnouncementsManagement';
 
 // Enhanced Combined Tab Components
 const CombinedCollegeManagement = () => {
@@ -778,6 +781,14 @@ export default function AdminDashboard() {
       description: 'Tasks, assignments & progress'
     },
     { 
+      id: 'announcements', 
+      name: 'Announcements', 
+      icon: '📢', 
+      color: 'from-indigo-500 to-blue-500', 
+      category: 'communication',
+      description: 'System-wide & college announcements'
+    },
+    { 
       id: 'system-monitoring', 
       name: 'System Admin', 
       icon: '⚙️', 
@@ -1351,6 +1362,9 @@ export default function AdminDashboard() {
             <CohortCollegesTab />
           </div>
         )}
+        
+        {/* Announcements Tab */}
+        {activeTab === 'announcements' && <AnnouncementsManagement />}
         
         {/* System Monitoring Tab */}
         {activeTab === 'system-monitoring' && <SystemMonitoring />}
