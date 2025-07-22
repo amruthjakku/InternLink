@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthProvider';
 
-export function EnhancedChat({ userRole, selectedRoomId }) {
+function EnhancedChat({ userRole, selectedRoomId }) {
   const { user } = useAuth();
   const [chatRooms, setChatRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -305,3 +305,5 @@ export function EnhancedChat({ userRole, selectedRoomId }) {
     </div>
   );
 }
+
+export default EnhancedChat;

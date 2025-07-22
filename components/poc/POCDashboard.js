@@ -21,7 +21,7 @@ import {
   StarIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { EnhancedChat } from '../EnhancedChat';
+import EnhancedChat from '../EnhancedChat';
 
 const POCDashboard = () => {
   const { data: session } = useSession();

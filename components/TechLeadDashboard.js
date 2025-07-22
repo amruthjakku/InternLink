@@ -17,7 +17,7 @@ import { CohortManagementTab } from './tech-lead/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import { CollegeBadge } from './CollegeLogo';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
-import { EnhancedChat } from './EnhancedChat';
+import EnhancedChat from './EnhancedChat';
 
 export function TechLeadDashboard() {
   const { user, refreshUserData, logout } = useAuth();

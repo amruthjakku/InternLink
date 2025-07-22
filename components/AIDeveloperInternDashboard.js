@@ -9,7 +9,7 @@ import { PerformanceTab } from './ai-developer-intern/PerformanceTab';
 import { LeaderboardTab } from './ai-developer-intern/LeaderboardTab';
 import { UnifiedAttendanceTab } from './ai-developer-intern/UnifiedAttendanceTab';
 import { ChatTab } from './ai-developer-intern/ChatTab';
-import { EnhancedChat } from './EnhancedChat';
+import EnhancedChat from './EnhancedChat';
 import { AIAssistantTab } from './ai-developer-intern/AIAssistantTab';
 import { ProfileTab } from './ai-developer-intern/ProfileTab';
 import { GitLabTab } from './ai-developer-intern/GitLabTab';
