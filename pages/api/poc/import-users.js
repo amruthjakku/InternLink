@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../utils/database.js';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '../../../app/api/auth/[...nextauth]/route.js';
 import formidable from 'formidable';
 import fs from 'fs';
 import csv from 'csv-parser';

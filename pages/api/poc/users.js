@@ -1,6 +1,7 @@
-import { connectToDatabase } from '../../../utils/database.js';
+import { connectToDatabase } from '../../../lib/mongoose.js';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '../../../app/api/auth/[...nextauth]/route.js';
+import User from '../../../models/User.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -13,44 +14,26 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { db } = await connectToDatabase();
+    await connectToDatabase();
     
     // Get POC's college information
-    const pocUser = await db.collection('users').findOne({
+    const pocUser = await User.findOne({
       $or: [
         { gitlabUsername: session.user.gitlabUsername },
         { email: session.user.email }
       ]
-    });
+    }).populate('college');
 
     if (!pocUser || !pocUser.college) {
       return res.status(404).json({ message: 'POC college information not found' });
     }
 
-    // Get college identifier
-    const collegeId = typeof pocUser.college === 'string' ? pocUser.college : pocUser.college._id || pocUser.college.name;
+    // Get all users from the same college
+    const users = await User.find({
+      college: pocUser.college._id
+    });
 
-    // Get all users from the same college with comprehensive matching
-    const collegeQuery = {
-      $or: [
-        { college: collegeId },
-        { 'college.name': collegeId },
-        { 'college._id': collegeId }
-      ]
-    };
-
-    // Add additional matching patterns
-    if (typeof collegeId === 'string' && collegeId.includes(' ')) {
-      collegeQuery.$or.push(
-        { college: collegeId.replace(/\s+/g, '') },
-        { college: collegeId.toLowerCase() },
-        { college: collegeId.toUpperCase() }
-      );
-    }
-
-    console.log('Users query for college:', collegeId);
-    const users = await db.collection('users').find(collegeQuery).toArray();
-    console.log(`Found ${users.length} users for college:`, collegeId);
+    console.log(`Found ${users.length} users for college:`, pocUser.college.name);
 
     // Format users data
     const formattedUsers = users.map(user => ({

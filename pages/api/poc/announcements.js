@@ -1,7 +1,8 @@
-import { connectToDatabase } from '../../../utils/database.js';
+import { connectToDatabase } from '../../../lib/mongoose.js';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
-import { ObjectId } from 'mongodb';
+import { authOptions } from '../../../app/api/auth/[...nextauth]/route.js';
+import User from '../../../models/User.js';
+import Announcement from '../../../models/Announcement.js';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);

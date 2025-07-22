@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../lib/mongoose.js';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '../../../app/api/auth/[...nextauth]/route.js';
 import User from '../../../models/User.js';
 
 export default async function handler(req, res) {
