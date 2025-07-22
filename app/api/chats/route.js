@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../utils/database';
+import ChatRoom from '../../../models/ChatRoom';
 
 export async function GET() {
   try {
@@ -13,9 +14,32 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // For now, return empty chats array
-    // In a real implementation, you would fetch from a chats collection
-    const chats = [];
+    // Create default chat rooms if they don't exist
+    await createDefaultChatRooms(session.user.id);
+
+    // Fetch chat rooms that the user can access
+    const chatRooms = await ChatRoom.find({
+      $or: [
+        { visibility: 'public' },
+        { 'participants.user': session.user.id },
+        { visibility: 'college-only', college: session.user.college }
+      ],
+      isActive: true
+    })
+    .populate('createdBy', 'name')
+    .sort({ lastActivity: -1 })
+    .lean();
+
+    // Format for frontend
+    const chats = chatRooms.map(room => ({
+      id: room._id,
+      name: room.name,
+      type: room.type,
+      description: room.description,
+      participantCount: room.participants.length,
+      lastActivity: room.lastActivity,
+      isParticipant: room.participants.some(p => p.user.toString() === session.user.id)
+    }));
 
     return NextResponse.json({ chats });
 
@@ -24,6 +48,50 @@ export async function GET() {
     return NextResponse.json({ 
       error: 'Failed to fetch chats' 
     }, { status: 500 });
+  }
+}
+
+async function createDefaultChatRooms(userId) {
+  const defaultRooms = [
+    {
+      name: 'General',
+      description: 'General discussion for all users',
+      type: 'general',
+      visibility: 'public'
+    },
+    {
+      name: 'Technical Help',
+      description: 'Get help with technical issues',
+      type: 'support',
+      visibility: 'public'
+    },
+    {
+      name: 'Announcements',
+      description: 'Important announcements and updates',
+      type: 'announcement',
+      visibility: 'public'
+    }
+  ];
+
+  for (const roomData of defaultRooms) {
+    const existingRoom = await ChatRoom.findOne({ 
+      name: roomData.name, 
+      type: roomData.type 
+    });
+
+    if (!existingRoom) {
+      const newRoom = new ChatRoom({
+        ...roomData,
+        createdBy: userId,
+        participants: [{
+          user: userId,
+          role: 'admin',
+          joinedAt: new Date(),
+          lastSeen: new Date()
+        }]
+      });
+      await newRoom.save();
+    }
   }
 }
 
