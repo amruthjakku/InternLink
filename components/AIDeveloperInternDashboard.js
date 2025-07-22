@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthProvider';
 import { getCollegeName, getCohortName } from '../utils/helpers';
 import { TasksTab } from './ai-developer-intern/TasksTab';
@@ -14,23 +14,57 @@ import { AIAssistantTab } from './ai-developer-intern/AIAssistantTab';
 import { ProfileTab } from './ai-developer-intern/ProfileTab';
 import { GitLabTab } from './ai-developer-intern/GitLabTab';
 import { EnhancedGitLabTab } from './ai-developer-intern/EnhancedGitLabTab';
+import { AnnouncementsTab } from './ai-developer-intern/AnnouncementsTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { ProfileCard } from './ProfileCard';
 import { CollegeLogo } from './CollegeLogo';
+import { useTabData, useDashboardData } from '../hooks/useTabData';
+import { cachedFetch, CacheKeys, CacheTTL, invalidateTaskCache } from '../utils/cache';
 
 export function AIDeveloperInternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
   
-
-  const [activeTab, setActiveTab] = useState('progress');
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [tabOrder, setTabOrder] = useState(['progress', 'tasks', 'performance', 'gitlab', 'meetings', 'profile', 'leaderboard', 'attendance', 'chat', 'ai-assistant']);
+  const [tabOrder, setTabOrder] = useState(['progress', 'tasks', 'performance', 'gitlab', 'meetings', 'profile', 'leaderboard', 'attendance', 'chat', 'announcements', 'ai-assistant']);
   const [draggedTab, setDraggedTab] = useState(null);
   const [longPressTimer, setLongPressTimer] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Initialize dashboard data management with caching
+  const { globalData, globalLoading, dataFetchers } = useDashboardData(
+    user?.gitlabUsername || user?.email, 
+    'AI Developer Intern'
+  );
+
+  // Tab-specific data fetchers with caching
+  const tabDataFetchers = useMemo(() => ({
+    tasks: () => cachedFetch('/api/tasks', {}, CacheKeys.USER_TASKS(user?.gitlabUsername), CacheTTL.TASKS),
+    performance: () => cachedFetch('/api/user/performance', {}, CacheKeys.USER_PERFORMANCE(user?.gitlabUsername), CacheTTL.PERFORMANCE),
+    attendance: () => cachedFetch('/api/attendance/user', {}, CacheKeys.USER_ATTENDANCE(user?.gitlabUsername), CacheTTL.PERFORMANCE),
+    gitlab: () => cachedFetch('/api/gitlab/user-data', {}, CacheKeys.USER_GITLAB_DATA(user?.gitlabUsername), CacheTTL.PERFORMANCE),
+    announcements: () => cachedFetch('/api/announcements', {}, CacheKeys.USER_ANNOUNCEMENTS(user?.gitlabUsername), CacheTTL.ANNOUNCEMENTS),
+    chatRooms: () => cachedFetch('/api/chat-rooms', {}, CacheKeys.USER_CHAT_ROOMS(user?.gitlabUsername), CacheTTL.CHAT_ROOMS),
+    leaderboard: () => cachedFetch('/api/leaderboard', {}, CacheKeys.LEADERBOARD_DATA('college'), CacheTTL.LEADERBOARD),
+  }), [user?.gitlabUsername]);
+
+  // Use tab data management with smart loading
+  const {
+    activeTab,
+    switchTab,
+    tabData,
+    loading: tabLoading,
+    errors: tabErrors,
+    getData,
+    isLoading,
+    refresh: refreshCurrentTab,
+    refreshData,
+    preloadTab
+  } = useTabData('progress', tabDataFetchers, {
+    autoLoad: true,
+    refreshOnTabSwitch: false, // Don't refresh on tab switch
+    cacheTimeout: CacheTTL.MEDIUM
+  });
 
   // All available tabs with their configurations
   const allTabs = {
@@ -43,6 +77,7 @@ export function AIDeveloperInternDashboard() {
     leaderboard: { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' },
     attendance: { id: 'attendance', name: 'Attendance', icon: '📍' },
     chat: { id: 'chat', name: 'Chat', icon: '💬' },
+    announcements: { id: 'announcements', name: 'Announcements', icon: '📢' },
     'ai-assistant': { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖' }
   };
 
@@ -53,17 +88,13 @@ export function AIDeveloperInternDashboard() {
       .map(tabId => allTabs[tabId]);
   };
 
-  useEffect(() => {
-    fetchTasks();
-    loadUserPreferences();
-  }, []);
-
-  // Load user preferences on component mount
-  const loadUserPreferences = async () => {
+  // Load user preferences with caching
+  const loadUserPreferences = useCallback(async () => {
     try {
-      const response = await fetch('/api/user/preferences');
-      if (response.ok) {
-        const data = await response.json();
+      const cacheKey = CacheKeys.USER_PREFERENCES(user?.gitlabUsername);
+      const data = await cachedFetch('/api/user/preferences', {}, cacheKey, CacheTTL.USER_PROFILE);
+      
+      if (data?.preferences?.tabOrder) {
         setTabOrder(data.preferences.tabOrder);
         return;
       }
@@ -82,7 +113,13 @@ export function AIDeveloperInternDashboard() {
     } catch (storageError) {
       console.error('Failed to load from localStorage:', storageError);
     }
-  };
+  }, [user?.gitlabUsername]);
+
+  useEffect(() => {
+    if (user?.gitlabUsername) {
+      loadUserPreferences();
+    }
+  }, [user?.gitlabUsername, loadUserPreferences]);
 
   // Save user preferences
   const saveUserPreferences = async (newTabOrder) => {
@@ -146,8 +183,8 @@ export function AIDeveloperInternDashboard() {
     }
     
     if (!isDragging && !draggedTab) {
-      // Normal click/tap - switch tab
-      setActiveTab(tabId);
+      // Normal click/tap - switch tab with caching
+      switchTab(tabId);
     }
   };
 
@@ -199,30 +236,14 @@ export function AIDeveloperInternDashboard() {
     }
   };
 
-  const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      } else {
-        setTasks([]);
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      setTasks([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefreshSession = async () => {
+  const handleRefreshSession = useCallback(async () => {
+    if (refreshing) return; // Prevent multiple simultaneous refreshes
+    
     setRefreshing(true);
     try {
       await refreshUserData();
-      // Also refresh the tasks data since role might have changed
-      await fetchTasks();
+      // Refresh current tab data since role might have changed
+      await refreshCurrentTab();
       alert('✅ Session refreshed! Your dashboard has been updated with the latest permissions.');
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -230,7 +251,28 @@ export function AIDeveloperInternDashboard() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [refreshUserData, refreshCurrentTab, refreshing]);
+
+  // Preload next tabs for better UX
+  const preloadNextTabs = useCallback(() => {
+    const currentIndex = tabOrder.indexOf(activeTab);
+    const nextTabs = [
+      tabOrder[currentIndex + 1],
+      tabOrder[currentIndex - 1]
+    ].filter(Boolean);
+    
+    nextTabs.forEach(tab => {
+      if (tab && tabDataFetchers[tab]) {
+        preloadTab(tab);
+      }
+    });
+  }, [activeTab, tabOrder, tabDataFetchers, preloadTab]);
+
+  // Preload adjacent tabs when switching
+  useEffect(() => {
+    const timer = setTimeout(preloadNextTabs, 1000); // Preload after 1 second
+    return () => clearTimeout(timer);
+  }, [activeTab, preloadNextTabs]);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -243,22 +285,50 @@ export function AIDeveloperInternDashboard() {
     }
   };
 
-  const updateTask = (taskId, updates) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId 
-          ? { ...task, ...(updates || {}), updated_at: new Date().toISOString() }
-          : task
-      )
-    );
-  };
+  // Update task status with cache invalidation
+  const updateTask = useCallback(async (taskId, updates) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        const updatedTask = await response.json();
+        
+        // Invalidate task cache to force refresh
+        invalidateTaskCache(user?.gitlabUsername);
+        
+        // Refresh task data
+        await refreshData('tasks');
+        
+        return updatedTask;
+      } else {
+        throw new Error('Failed to update task');
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
+  }, [user?.gitlabUsername, refreshData]);
+
+  // Get cached data with fallbacks
+  const tasks = getData('tasks')?.tasks || [];
+  const performance = getData('performance') || {};
+  const announcements = getData('announcements')?.announcements || [];
 
   const renderTabContent = () => {
     const commonProps = { 
       user: user || null, 
-      tasks: tasks || [], 
+      tasks: getData('tasks')?.tasks || [], 
       updateTask: updateTask || (() => {}), 
-      loading: loading || false 
+      loading: isLoading('tasks') || false,
+      tabData: tabData,
+      refreshData: refreshData,
+      isLoading: isLoading
     };
 
     switch (activeTab) {
@@ -280,6 +350,8 @@ export function AIDeveloperInternDashboard() {
         return <UnifiedAttendanceTab {...commonProps} />;
       case 'chat':
         return <EnhancedChat userRole="AI Developer Intern" />;
+      case 'announcements':
+        return <AnnouncementsTab {...commonProps} />;
       case 'ai-assistant':
         return <AIAssistantTab {...commonProps} />;
       default:
@@ -458,28 +530,28 @@ export function AIDeveloperInternDashboard() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
               <div className="space-y-2">
                 <button
-                  onClick={() => setActiveTab('tasks')}
+                  onClick={() => switchTab('tasks')}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
                 >
                   <span>📝</span>
                   <span>View Tasks</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('gitlab')}
+                  onClick={() => switchTab('gitlab')}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
                 >
                   <span>🦊</span>
                   <span>GitLab Activity</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('attendance')}
+                  onClick={() => switchTab('attendance')}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
                 >
                   <span>📍</span>
                   <span>Mark Attendance</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('meetings')}
+                  onClick={() => switchTab('meetings')}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
                 >
                   <span>📹</span>
