@@ -16,21 +16,21 @@ export async function GET() {
     await connectToDatabase();
 
     const colleges = await College.find({ isActive: true })
-      .select('name description location website superTech LeadUsername createdAt')
+      .select('name description location website superTechLeadUsername createdAt')
       .sort({ name: 1 });
 
     // Get super-mentor names and intern counts for each college
     const collegesWithPOCs = await Promise.all(
       colleges.map(async (college) => {
-        let superTech LeadName = 'N/A';
-        if (college.superTech LeadUsername) {
-          const superTech Lead = await User.findOne({ 
-            gitlabUsername: college.superTech LeadUsername,
+        let superTechLeadName = 'N/A';
+        if (college.superTechLeadUsername) {
+          const superTechLead = await User.findOne({ 
+            gitlabUsername: college.superTechLeadUsername,
             role: 'POC',
             isActive: true 
           });
-          if (superTech Lead) {
-            superTech LeadName = superTech Lead.name;
+          if (superTechLead) {
+            superTechLeadName = superTechLead.name;
           }
         }
         
@@ -58,8 +58,8 @@ export async function GET() {
           description: college.description,
           location: college.location,
           website: college.website,
-          superTech LeadUsername: college.superTech LeadUsername,
-          superTech LeadName,
+          superTechLeadUsername: college.superTechLeadUsername,
+          superTechLeadName,
           totalAIDeveloperInterns,
           activeAIDeveloperInterns,
           internsWithCohorts,
@@ -86,7 +86,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, description, location, website, superTech LeadUsername } = await request.json();
+    const { name, description, location, website, superTechLeadUsername } = await request.json();
 
     if (!name || !description || !location) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -104,14 +104,14 @@ export async function POST(request) {
     }
 
     // Validate super-mentor if provided
-    if (superTech LeadUsername) {
-      const superTech Lead = await User.findOne({ 
-        gitlabUsername: superTech LeadUsername.toLowerCase(),
+    if (superTechLeadUsername) {
+      const superTechLead = await User.findOne({ 
+        gitlabUsername: superTechLeadUsername.toLowerCase(),
         role: 'POC',
         isActive: true 
       });
       
-      if (!superTech Lead) {
+      if (!superTechLead) {
         return NextResponse.json({ error: 'Super-mentor not found' }, { status: 400 });
       }
     }
@@ -122,7 +122,7 @@ export async function POST(request) {
       description,
       location,
       website: website || '',
-      superTech LeadUsername: superTech LeadUsername ? superTech LeadUsername.toLowerCase() : '',
+      superTechLeadUsername: superTechLeadUsername ? superTechLeadUsername.toLowerCase() : '',
       isActive: true,
       createdBy: session.user.gitlabUsername || session.user.email || 'admin'
     });

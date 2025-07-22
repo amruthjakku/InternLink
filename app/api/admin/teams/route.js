@@ -16,14 +16,14 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Fetch teams by finding mentors with assigned interns
-    const mentorsWithAI Developer Interns = await User.find({
+    const mentorsWithAIDeveloperInterns = await User.find({
       role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     }).populate('college', 'name location');
 
     const teams = [];
     
-    for (const mentor of mentorsWithAI Developer Interns) {
+    for (const mentor of mentorsWithAIDeveloperInterns) {
       const interns = await User.find({
         mentorId: mentor._id,
         role: 'AI Developer Intern',

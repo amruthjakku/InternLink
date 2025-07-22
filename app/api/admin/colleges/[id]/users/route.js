@@ -51,11 +51,11 @@ export async function GET(request, { params }) {
     // Calculate statistics
     const stats = {
       total: users.length,
-      superTech Leads: groupedUsers['POC'].length,
+      superTechLeads: groupedUsers['POC'].length,
       mentors: groupedUsers['Tech Lead'].length,
       interns: groupedUsers['AI Developer Intern'].length,
-      assignedAI Developer Interns: groupedUsers['AI Developer Intern'].filter(u => u.mentorId).length,
-      unassignedAI Developer Interns: groupedUsers['AI Developer Intern'].filter(u => !u.mentorId).length
+      assignedAIDeveloperInterns: groupedUsers['AI Developer Intern'].filter(u => u.mentorId).length,
+      unassignedAIDeveloperInterns: groupedUsers['AI Developer Intern'].filter(u => !u.mentorId).length
     };
 
     return NextResponse.json({

@@ -23,7 +23,7 @@ export async function PUT(request, { params }) {
     await connectToDatabase();
 
     const { id } = params;
-    const { name, description, location, website, superTech LeadUsername } = await request.json();
+    const { name, description, location, website, superTechLeadUsername } = await request.json();
 
     // Validate required fields
     if (!name) {
@@ -51,18 +51,18 @@ export async function PUT(request, { params }) {
       }, { status: 400 });
     }
 
-    let superTech Lead = null;
+    let superTechLead = null;
     
     // If super-mentor username is provided and different from current, validate it
-    if (superTech LeadUsername && superTech LeadUsername.trim() && superTech LeadUsername !== college.superTech LeadUsername) {
+    if (superTechLeadUsername && superTechLeadUsername.trim() && superTechLeadUsername !== college.superTechLeadUsername) {
       // Check if super-mentor exists and is available
-      superTech Lead = await User.findOne({ 
-        gitlabUsername: superTech LeadUsername.toLowerCase(),
+      superTechLead = await User.findOne({ 
+        gitlabUsername: superTechLeadUsername.toLowerCase(),
         role: 'POC',
         isActive: true 
       });
 
-      if (!superTech Lead) {
+      if (!superTechLead) {
         return NextResponse.json({ 
           error: 'Super-mentor not found or not available' 
         }, { status: 400 });
@@ -70,7 +70,7 @@ export async function PUT(request, { params }) {
 
       // Check if super-mentor is already assigned to another college
       const existingAssignment = await College.findOne({ 
-        superTech LeadUsername: superTech LeadUsername.toLowerCase(),
+        superTechLeadUsername: superTechLeadUsername.toLowerCase(),
         isActive: true,
         _id: { $ne: id }
       });
@@ -82,13 +82,13 @@ export async function PUT(request, { params }) {
       }
 
       // Update super-mentor's college assignment
-      superTech Lead.college = id;
-      await superTech Lead.save();
+      superTechLead.college = id;
+      await superTechLead.save();
 
       // If there was a previous super-mentor, remove their college assignment
-      if (college.superTech LeadUsername && college.superTech LeadUsername !== 'unassigned') {
+      if (college.superTechLeadUsername && college.superTechLeadUsername !== 'unassigned') {
         const previousPOC = await User.findOne({
-          gitlabUsername: college.superTech LeadUsername,
+          gitlabUsername: college.superTechLeadUsername,
           role: 'POC',
           isActive: true
         });
@@ -107,7 +107,7 @@ export async function PUT(request, { params }) {
         description: description?.trim() || '',
         location: location?.trim() || '',
         website: website?.trim() || '',
-        superTech LeadUsername: superTech LeadUsername ? superTech LeadUsername.toLowerCase() : 'unassigned',
+        superTechLeadUsername: superTechLeadUsername ? superTechLeadUsername.toLowerCase() : 'unassigned',
         updatedAt: new Date()
       },
       { new: true }

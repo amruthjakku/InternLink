@@ -90,7 +90,7 @@ export async function GET(request) {
 
     if (action === 'cohort-progress' && cohortId) {
       // Get progress for a specific cohort
-      const cohortAI Developer Interns = await User.find({ 
+      const cohortAIDeveloperInterns = await User.find({ 
         cohortId: cohortId, 
         role: 'AI Developer Intern', 
         isActive: true 
@@ -104,7 +104,7 @@ export async function GET(request) {
         isActive: true
       });
 
-      const progressData = await Promise.all(cohortAI Developer Interns.map(async (intern) => {
+      const progressData = await Promise.all(cohortAIDeveloperInterns.map(async (intern) => {
         const internProgress = await TaskProgress.find({ internId: intern._id })
           .populate('taskId', 'title points category');
         
@@ -165,25 +165,25 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Task not found' }, { status: 404 });
       }
 
-      let targetAI Developer Interns = [];
+      let targetAIDeveloperInterns = [];
       
       if (internIds && internIds.length > 0) {
         // Specific interns
-        targetAI Developer Interns = await User.find({ 
+        targetAIDeveloperInterns = await User.find({ 
           _id: { $in: internIds }, 
           role: 'AI Developer Intern', 
           isActive: true 
         });
       } else if (cohortId) {
         // All interns in cohort
-        targetAI Developer Interns = await User.find({ 
+        targetAIDeveloperInterns = await User.find({ 
           cohortId: cohortId, 
           role: 'AI Developer Intern', 
           isActive: true 
         });
       } else if (task.assignmentType === 'cohort' && task.cohortId) {
         // Use task's cohort
-        targetAI Developer Interns = await User.find({ 
+        targetAIDeveloperInterns = await User.find({ 
           cohortId: task.cohortId, 
           role: 'AI Developer Intern', 
           isActive: true 
@@ -195,7 +195,7 @@ export async function POST(request) {
       let created = 0;
       let existing = 0;
 
-      for (const intern of targetAI Developer Interns) {
+      for (const intern of targetAIDeveloperInterns) {
         const existingProgress = await TaskProgress.findOne({
           taskId: taskId,
           internId: intern._id
@@ -221,7 +221,7 @@ export async function POST(request) {
         stats: {
           created,
           existing,
-          totalAIDeveloperInterns: targetAI Developer Interns.length
+          totalAIDeveloperInterns: targetAIDeveloperInterns.length
         }
       });
     }
@@ -240,7 +240,7 @@ export async function POST(request) {
         isActive: true
       });
 
-      const cohortAI Developer Interns = await User.find({ 
+      const cohortAIDeveloperInterns = await User.find({ 
         cohortId: cohortId, 
         role: 'AI Developer Intern', 
         isActive: true 
@@ -250,7 +250,7 @@ export async function POST(request) {
       let existing = 0;
 
       for (const task of cohortTasks) {
-        for (const intern of cohortAI Developer Interns) {
+        for (const intern of cohortAIDeveloperInterns) {
           const existingProgress = await TaskProgress.findOne({
             taskId: task._id,
             internId: intern._id
@@ -278,8 +278,8 @@ export async function POST(request) {
           created,
           existing,
           totalTasks: cohortTasks.length,
-          totalAIDeveloperInterns: cohortAI Developer Interns.length,
-          expectedRecords: cohortTasks.length * cohortAI Developer Interns.length
+          totalAIDeveloperInterns: cohortAIDeveloperInterns.length,
+          expectedRecords: cohortTasks.length * cohortAIDeveloperInterns.length
         }
       });
     }

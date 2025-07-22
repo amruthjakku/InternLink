@@ -45,7 +45,7 @@ export async function GET() {
           totalUsers: collegeUsers.length,
           interns: collegeUsers.filter(u => u.role === 'AI Developer Intern').length,
           mentors: collegeUsers.filter(u => u.role === 'Tech Lead').length,
-          superTech Leads: collegeUsers.filter(u => u.role === 'POC').length,
+          superTechLeads: collegeUsers.filter(u => u.role === 'POC').length,
           userDetails: collegeUsers.map(u => ({
             name: u.name,
             role: u.role,
@@ -63,7 +63,7 @@ export async function GET() {
       })),
       
       // All intern data for analysis
-      allAI Developer Interns: users.filter(u => u.role === 'AI Developer Intern').map(u => ({
+      allAIDeveloperInterns: users.filter(u => u.role === 'AI Developer Intern').map(u => ({
         id: u._id.toString(),
         name: u.name,
         gitlabUsername: u.gitlabUsername,
@@ -74,7 +74,7 @@ export async function GET() {
       })),
       
       // All mentors data for analysis
-      allTech Leads: users.filter(u => u.role === 'Tech Lead').map(u => ({
+      allTechLeads: users.filter(u => u.role === 'Tech Lead').map(u => ({
         id: u._id.toString(),
         name: u.name,
         gitlabUsername: u.gitlabUsername,

@@ -150,7 +150,7 @@ export async function GET(request) {
                 users: 0,
                 interns: 0,
                 mentors: 0,
-                superTech Leads: 0
+                superTechLeads: 0
               };
             }
 
@@ -161,7 +161,7 @@ export async function GET(request) {
               users: collegeUsers.length,
               interns: collegeUsers.filter(u => u.role === 'AI Developer Intern').length,
               mentors: collegeUsers.filter(u => u.role === 'Tech Lead').length,
-              superTech Leads: collegeUsers.filter(u => u.role === 'POC').length
+              superTechLeads: collegeUsers.filter(u => u.role === 'POC').length
             };
           } catch (err) {
             console.warn('Error processing college distribution:', err);
@@ -170,7 +170,7 @@ export async function GET(request) {
               users: 0,
               interns: 0,
               mentors: 0,
-              superTech Leads: 0
+              superTechLeads: 0
             };
           }
         })
@@ -186,7 +186,7 @@ export async function GET(request) {
           users: 0,
           interns: 0,
           mentors: 0,
-          superTech Leads: 0
+          superTechLeads: 0
         }))
       };
     }

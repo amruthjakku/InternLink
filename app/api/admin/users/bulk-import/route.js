@@ -58,7 +58,7 @@ export async function POST(req) {
       const gitlabUsername = row.gitlabUsername?.trim().toLowerCase();
       const role = row.role?.trim();
       const collegeName = row.college?.trim();
-      const assignedTech Lead = row.assignedTech Lead?.trim();
+      const assignedTechLead = row.assignedTechLead?.trim();
 
       // Basic validation
       if (!name || !role || !gitlabUsername) {
@@ -89,19 +89,19 @@ export async function POST(req) {
         }
         collegeId = collegeDoc._id;
       }
-      // assignedTech Lead handling for interns
-      let assignedTech LeadId = null;
+      // assignedTechLead handling for interns
+      let assignedTechLeadId = null;
       if (role === 'AI Developer Intern') {
-        if (!assignedTech Lead) {
-          results.push({ row: rowNum, success: false, message: 'assignedTech Lead is required for interns' });
+        if (!assignedTechLead) {
+          results.push({ row: rowNum, success: false, message: 'assignedTechLead is required for interns' });
           continue;
         }
-        const mentorDoc = await User.findOne({ gitlabUsername: assignedTech Lead.toLowerCase(), role: 'Tech Lead', college: collegeId });
+        const mentorDoc = await User.findOne({ gitlabUsername: assignedTechLead.toLowerCase(), role: 'Tech Lead', college: collegeId });
         if (!mentorDoc) {
-          results.push({ row: rowNum, success: false, message: `Tech Lead '${assignedTech Lead}' not found in college` });
+          results.push({ row: rowNum, success: false, message: `Tech Lead '${assignedTechLead}' not found in college` });
           continue;
         }
-        assignedTech LeadId = mentorDoc._id;
+        assignedTechLeadId = mentorDoc._id;
       }
       // Create user
       const userData = {
@@ -113,7 +113,7 @@ export async function POST(req) {
         isActive: true
       };
       if (collegeId) userData.college = collegeId;
-      if (assignedTech LeadId) userData.assignedTech Lead = assignedTech LeadId;
+      if (assignedTechLeadId) userData.assignedTechLead = assignedTechLeadId;
       try {
         await new User(userData).save();
         createdCount++;

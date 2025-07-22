@@ -41,7 +41,7 @@ export async function GET() {
                 users: [],
                 interns: 0,
                 mentors: 0,
-                superTech Leads: 0
+                superTechLeads: 0
               };
             }
             acc[collegeId].users.push({
@@ -55,7 +55,7 @@ export async function GET() {
             // Count by role
             if (user.role === 'AI Developer Intern') acc[collegeId].interns++;
             else if (user.role === 'Tech Lead') acc[collegeId].mentors++;
-            else if (user.role === 'POC') acc[collegeId].superTech Leads++;
+            else if (user.role === 'POC') acc[collegeId].superTechLeads++;
           }
           return acc;
         }, {});
@@ -66,8 +66,8 @@ export async function GET() {
           description: cohort.description,
           startDate: cohort.startDate,
           endDate: cohort.endDate,
-          maxAI Developer Interns: cohort.maxAI Developer Interns,
-          currentAI Developer Interns: cohort.currentAI Developer Interns,
+          maxAIDeveloperInterns: cohort.maxAIDeveloperInterns,
+          currentAIDeveloperInterns: cohort.currentAIDeveloperInterns,
           memberCount: cohort.memberCount,
           isActive: cohort.isActive,
           createdAt: cohort.createdAt,
@@ -76,7 +76,7 @@ export async function GET() {
           colleges: Object.values(collegeGroups),
           totalUsers: users.length,
           totalAIDeveloperInterns: users.filter(u => u.role === 'AI Developer Intern').length,
-          totalTech Leads: users.filter(u => u.role === 'Tech Lead').length,
+          totalTechLeads: users.filter(u => u.role === 'Tech Lead').length,
           totalPOCs: users.filter(u => u.role === 'POC').length
         };
       })

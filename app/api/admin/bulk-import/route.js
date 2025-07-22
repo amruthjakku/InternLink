@@ -489,13 +489,13 @@ async function processLegacyUserImport(data, preview, currentUser) {
 
         // Check if college already has a mentor for mentor role
         if (role === 'Tech Lead') {
-          const existingTech Lead = await User.findOne({ 
+          const existingTechLead = await User.findOne({ 
             role: 'Tech Lead', 
             college: collegeId, 
             isActive: true 
           });
 
-          if (existingTech Lead) {
+          if (existingTechLead) {
             errors.push(`Row ${i + 1}: College '${collegeName}' already has a mentor assigned`);
             failed++;
             continue;

@@ -126,14 +126,14 @@ export async function PUT(request, { params }) {
 
     // If changing to mentor role and college is provided, check if college already has a mentor
     if (role === 'Tech Lead' && collegeId && user.role !== 'Tech Lead') {
-      const existingTech Lead = await User.findOne({ 
+      const existingTechLead = await User.findOne({ 
         role: 'Tech Lead', 
         college: collegeId, 
         isActive: true,
         _id: { $ne: id } // Exclude current user
       });
 
-      if (existingTech Lead) {
+      if (existingTechLead) {
         return NextResponse.json({ 
           error: 'This college already has a mentor assigned' 
         }, { status: 400 });

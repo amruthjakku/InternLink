@@ -84,15 +84,15 @@ export async function POST(request) {
       console.log(`AI Developer Intern not found with ObjectId, trying string ID: ${internIdStr}`);
       
       // List all interns to debug
-      const allAI Developer Interns = await db.collection('users').find({ role: 'AI Developer Intern' }).toArray();
-      console.log(`Found ${allAI Developer Interns.length} interns in database`);
-      allAI Developer Interns.forEach(i => console.log(`AI Developer Intern: ${i.name}, ID: ${i._id}`));
+      const allAIDeveloperInterns = await db.collection('users').find({ role: 'AI Developer Intern' }).toArray();
+      console.log(`Found ${allAIDeveloperInterns.length} interns in database`);
+      allAIDeveloperInterns.forEach(i => console.log(`AI Developer Intern: ${i.name}, ID: ${i._id}`));
       
       // Try again with the exact ID from the database
-      const matchingAI Developer Intern = allAI Developer Interns.find(i => i._id.toString() === internIdStr);
-      if (matchingAI Developer Intern) {
-        console.log(`Found matching intern by string comparison: ${matchingAI Developer Intern.name}`);
-        intern = matchingAI Developer Intern;
+      const matchingAIDeveloperIntern = allAIDeveloperInterns.find(i => i._id.toString() === internIdStr);
+      if (matchingAIDeveloperIntern) {
+        console.log(`Found matching intern by string comparison: ${matchingAIDeveloperIntern.name}`);
+        intern = matchingAIDeveloperIntern;
       }
     }
     
@@ -120,7 +120,7 @@ export async function POST(request) {
     }
 
     // 8. Check cohort capacity
-    if (cohort.maxAI Developer Interns && cohort.currentAI Developer Interns >= cohort.maxAI Developer Interns) {
+    if (cohort.maxAIDeveloperInterns && cohort.currentAIDeveloperInterns >= cohort.maxAIDeveloperInterns) {
       return NextResponse.json({ 
         error: 'Cohort is at maximum capacity' 
       }, { status: 400 });
@@ -154,14 +154,14 @@ export async function POST(request) {
 
       // 10. Update cohort intern counts
       // Increment the new cohort's intern count
-      const currentAI Developer Interns = (cohort.currentAI Developer Interns || 0) + 1;
-      console.log(`Updating cohort ${cohort.name} intern count to ${currentAI Developer Interns}`);
+      const currentAIDeveloperInterns = (cohort.currentAIDeveloperInterns || 0) + 1;
+      console.log(`Updating cohort ${cohort.name} intern count to ${currentAIDeveloperInterns}`);
       
       await db.collection('cohorts').updateOne(
         { _id: cohortObjectId },
         { 
           $set: { 
-            currentAI Developer Interns: currentAI Developer Interns,
+            currentAIDeveloperInterns: currentAIDeveloperInterns,
             updatedAt: new Date()
           }
         }
@@ -175,12 +175,12 @@ export async function POST(request) {
           });
           
           if (previousCohort) {
-            const prevCount = Math.max(0, (previousCohort.currentAI Developer Interns || 1) - 1);
+            const prevCount = Math.max(0, (previousCohort.currentAIDeveloperInterns || 1) - 1);
             await db.collection('cohorts').updateOne(
               { _id: new ObjectId(previousCohortId) },
               { 
                 $set: { 
-                  currentAI Developer Interns: prevCount,
+                  currentAIDeveloperInterns: prevCount,
                   updatedAt: new Date()
                 }
               }

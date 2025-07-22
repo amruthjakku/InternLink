@@ -19,7 +19,7 @@ export async function GET() {
 
     // Get user statistics
     const totalUsers = await User.countDocuments({ isActive: true });
-    const totalTech Leads = await User.countDocuments({ role: 'Tech Lead', isActive: true });
+    const totalTechLeads = await User.countDocuments({ role: 'Tech Lead', isActive: true });
     const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern', isActive: true });
     const totalAdmins = await User.countDocuments({ role: 'admin', isActive: true });
     
@@ -53,7 +53,7 @@ export async function GET() {
     const stats = {
       totalUsers,
       totalColleges,
-      totalTech Leads,
+      totalTechLeads,
       totalAIDeveloperInterns,
       totalAdmins,
       activeUsers,

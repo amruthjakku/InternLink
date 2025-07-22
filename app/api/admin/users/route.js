@@ -112,7 +112,7 @@ export async function POST(request) {
     const requestBody = await request.json();
     console.log('POST /api/admin/users - Request body:', requestBody);
     
-    const { gitlabUsername, name, email, role, college, assignedBy, assignedTech Lead, cohort, autoDetected } = requestBody;
+    const { gitlabUsername, name, email, role, college, assignedBy, assignedTechLead, cohort, autoDetected } = requestBody;
 
     if (!gitlabUsername) {
       return NextResponse.json({ error: 'GitLab username is required' }, { status: 400 });
@@ -189,9 +189,9 @@ export async function POST(request) {
       userData.college = collegeId;
     }
 
-    // Add assignedTech Lead for interns (optional)
-    if (role === 'AI Developer Intern' && assignedTech Lead) {
-      userData.assignedTech Lead = assignedTech Lead;
+    // Add assignedTechLead for interns (optional)
+    if (role === 'AI Developer Intern' && assignedTechLead) {
+      userData.assignedTechLead = assignedTechLead;
     }
 
     // Add cohort assignment for interns (optional)

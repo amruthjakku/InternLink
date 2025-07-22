@@ -69,9 +69,9 @@ export async function POST(request) {
     }
 
     const data = await request.json();
-    const { name, description, startDate, endDate, mentorId, maxAI Developer Interns, createdBy } = data;
+    const { name, description, startDate, endDate, mentorId, maxAIDeveloperInterns, createdBy } = data;
 
-    if (!name || !startDate || !endDate || !maxAI Developer Interns) {
+    if (!name || !startDate || !endDate || !maxAIDeveloperInterns) {
       return NextResponse.json({ 
         error: 'Name, start date, end date, and max interns are required' 
       }, { status: 400 });
@@ -85,8 +85,8 @@ export async function POST(request) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       mentorId: mentorId || null,
-      maxAI Developer Interns: parseInt(maxAI Developer Interns),
-      currentAI Developer Interns: 0,
+      maxAIDeveloperInterns: parseInt(maxAIDeveloperInterns),
+      currentAIDeveloperInterns: 0,
       createdBy: createdBy || session.user.gitlabUsername,
       createdAt: new Date(),
       updatedAt: new Date(),
