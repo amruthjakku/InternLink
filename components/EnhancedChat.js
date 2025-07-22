@@ -25,6 +25,7 @@ function EnhancedChat({ userRole, selectedRoomId }) {
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -405,11 +406,11 @@ function EnhancedChat({ userRole, selectedRoomId }) {
     <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="flex h-[600px] bg-white relative">
         {/* Sidebar - Chat Rooms */}
-        <div className="w-1/3 md:w-1/3 lg:w-1/4 xl:w-1/3 border-r border-gray-200 flex flex-col bg-gray-50 min-w-0">
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-1/3 md:w-1/3 lg:w-1/4 xl:w-1/3'} border-r border-gray-200 flex flex-col bg-gray-50 min-w-0 transition-all duration-300`}>
           {/* Profile Header */}
           <div className="p-4 border-b border-gray-200 bg-white">
             {/* User Profile Section */}
-            <div className="flex items-center space-x-3 mb-4 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer">
+            <div className={`flex items-center mb-4 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
               <div className="relative">
                 {typeof getProfilePicture(user) === 'string' ? (
                   <img src={getProfilePicture(user)} alt={user.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
@@ -420,40 +421,66 @@ function EnhancedChat({ userRole, selectedRoomId }) {
                 )}
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" title="Online"></div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-900 truncate">{user.name}</h4>
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm text-gray-500 capitalize">{user.role}</p>
-                  <span className="text-xs text-green-600">• Online</span>
+              {!sidebarCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-900 truncate">{user.name}</h4>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm text-gray-500 capitalize">{user.role}</p>
+                    <span className="text-xs text-green-600">• Online</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Quick Actions */}
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Chats</h3>
-              <div className="flex items-center space-x-1">
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Settings">
-                  ⚙️
+            {!sidebarCollapsed ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Chats</h3>
+                  <div className="flex items-center space-x-1">
+                    <button 
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors" 
+                      title="Collapse sidebar"
+                    >
+                      ←
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Settings">
+                      ⚙️
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="New chat">
+                      ✏️
+                    </button>
+                  </div>
+                </div>
+                {/* Search Bar */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search chats..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="absolute left-3 top-2.5 text-gray-400">
+                    🔍
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center space-y-2">
+                <button 
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors" 
+                  title="Expand sidebar"
+                >
+                  →
                 </button>
                 <button className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="New chat">
                   ✏️
                 </button>
               </div>
-            </div>
-            {/* Search Bar */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search chats..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                🔍
-              </div>
-            </div>
+            )}
           </div>
           
           <div className="flex-1 overflow-y-auto">
@@ -479,43 +506,62 @@ function EnhancedChat({ userRole, selectedRoomId }) {
                   <div
                     key={room._id}
                     onClick={() => setSelectedRoom(room)}
-                    className={`p-4 cursor-pointer transition-all duration-200 border-b border-gray-100 hover:bg-gray-50 ${
+                    className={`${sidebarCollapsed ? 'p-2 flex justify-center' : 'p-4'} cursor-pointer transition-all duration-200 border-b border-gray-100 hover:bg-gray-50 ${
                       selectedRoom?._id === room._id
                         ? 'bg-blue-50 border-l-4 border-l-blue-500'
                         : ''
                     }`}
+                    title={sidebarCollapsed ? room.name : ''}
                   >
-                    <div className="flex items-center space-x-3">
-                      {/* Room Avatar */}
+                    {sidebarCollapsed ? (
+                      /* Collapsed view - only avatar */
                       <div className="relative">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRoomColor(room.type)} shadow-sm`}>
-                          <span className="text-lg">{getRoomIcon(room.type)}</span>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getRoomColor(room.type)} shadow-sm`}>
+                          <span className="text-sm">{getRoomIcon(room.type)}</span>
                         </div>
                         {room.isActive && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        )}
+                        {room.unreadCount > 0 && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs text-white font-medium">{room.unreadCount > 9 ? '9+' : room.unreadCount}</span>
+                          </div>
                         )}
                       </div>
-                      
-                      {/* Room Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{room.name}</p>
-                          <span className="text-xs text-gray-500">
-                            {room.lastActivity ? formatMessageTime(room.lastActivity) : 'New'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-gray-500 truncate">
-                            {room.lastMessage?.content || room.description || `${room.participantCount || 0} participants`}
-                          </p>
-                          {room.unreadCount > 0 && (
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-2">
-                              <span className="text-xs text-white font-medium">{room.unreadCount}</span>
-                            </div>
+                    ) : (
+                      /* Expanded view - full info */
+                      <div className="flex items-center space-x-3">
+                        {/* Room Avatar */}
+                        <div className="relative">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRoomColor(room.type)} shadow-sm`}>
+                            <span className="text-lg">{getRoomIcon(room.type)}</span>
+                          </div>
+                          {room.isActive && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                           )}
                         </div>
+                        
+                        {/* Room Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{room.name}</p>
+                            <span className="text-xs text-gray-500">
+                              {room.lastActivity ? formatMessageTime(room.lastActivity) : 'New'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-gray-500 truncate">
+                              {room.lastMessage?.content || room.description || `${room.participantCount || 0} participants`}
+                            </p>
+                            {room.unreadCount > 0 && (
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-2">
+                                <span className="text-xs text-white font-medium">{room.unreadCount}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
