@@ -3405,21 +3405,6 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info */}
-      <div className="bg-yellow-50 p-2 rounded text-xs">
-        Debug: showChatInterface={showChatInterface.toString()}, selectedChatRoom={selectedChatRoom?.name || 'none'}
-        <button 
-          onClick={() => {
-            console.log('🧪 Test modal button clicked');
-            setSelectedChatRoom(chatRooms[0] || { _id: 'test', name: 'Test Room', type: 'general' });
-            setShowChatInterface(true);
-          }}
-          className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs"
-        >
-          Test Modal
-        </button>
-      </div>
-      
       {/* Chat Room Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-green-50 p-4 rounded-lg">

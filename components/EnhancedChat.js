@@ -10,7 +10,14 @@ function EnhancedChat({ userRole, selectedRoomId }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showRoomInfo, setShowRoomInfo] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchChatRooms();
@@ -38,6 +45,61 @@ function EnhancedChat({ userRole, selectedRoomId }) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Generate profile picture from name
+  const getProfilePicture = (user) => {
+    if (user?.profilePicture) {
+      return user.profilePicture;
+    }
+    // Generate a colorful avatar based on name
+    const name = user?.name || user?.email || 'User';
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const colors = [
+      'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500',
+      'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'
+    ];
+    const colorIndex = name.charCodeAt(0) % colors.length;
+    return { initials, color: colors[colorIndex] };
+  };
+
+  // Format message time
+  const formatMessageTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
+  // Handle typing indicator
+  const handleTyping = () => {
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), 1000);
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // For now, just show file name in message
+    setNewMessage(prev => prev + `📎 ${file.name}`);
+  };
+
+  // Common emojis for quick access
+  const commonEmojis = ['😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🎉', '🔥', '💯', '😢', '😮', '😡', '🙏', '👏'];
+
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
   };
 
   const fetchChatRooms = async () => {
@@ -92,8 +154,9 @@ function EnhancedChat({ userRole, selectedRoomId }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: newMessage,
-          type: 'text'
+          content: newMessage.trim(),
+          type: 'text',
+          replyTo: replyingTo?._id || null
         }),
       });
 
@@ -104,6 +167,8 @@ function EnhancedChat({ userRole, selectedRoomId }) {
         console.log('✅ Message sent successfully:', data);
         setMessages([...messages, data.data]);
         setNewMessage('');
+        setReplyingTo(null);
+        setShowEmojiPicker(false);
         
         // Refresh messages to get any new messages from other users
         setTimeout(() => {
@@ -151,15 +216,35 @@ function EnhancedChat({ userRole, selectedRoomId }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex h-[600px]">
+    <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="flex h-[600px] bg-white">
         {/* Sidebar - Chat Rooms */}
-        <div className="w-1/3 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Chat Rooms</h3>
-            <p className="text-sm text-gray-500">
-              {chatRooms.length} room{chatRooms.length !== 1 ? 's' : ''} available
-            </p>
+        <div className="w-1/3 border-r border-gray-200 flex flex-col bg-gray-50">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">Chats</h3>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">
+                    {getProfilePicture(user).initials}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {/* Search Bar */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search chats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="absolute left-3 top-2.5 text-gray-400">
+                🔍
+              </div>
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto">
@@ -174,32 +259,50 @@ function EnhancedChat({ userRole, selectedRoomId }) {
                 )}
               </div>
             ) : (
-              <div className="space-y-1 p-2">
-                {chatRooms.map(room => (
+              <div className="space-y-0">
+                {chatRooms
+                  .filter(room => 
+                    !searchQuery || 
+                    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    room.description?.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map(room => (
                   <div
                     key={room._id}
                     onClick={() => setSelectedRoom(room)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`p-4 cursor-pointer transition-all duration-200 border-b border-gray-100 hover:bg-gray-50 ${
                       selectedRoom?._id === room._id
-                        ? 'bg-blue-50 border border-blue-200'
-                        : 'hover:bg-gray-50'
+                        ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                        : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getRoomColor(room.type)}`}>
-                        <span className="text-sm">{getRoomIcon(room.type)}</span>
+                      {/* Room Avatar */}
+                      <div className="relative">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRoomColor(room.type)} shadow-sm`}>
+                          <span className="text-lg">{getRoomIcon(room.type)}</span>
+                        </div>
+                        {room.isActive && (
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                        )}
                       </div>
+                      
+                      {/* Room Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{room.name}</p>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span className="capitalize">{room.type}</span>
-                          <span>•</span>
-                          <span>{room.participantCount} members</span>
-                          {room.visibility === 'college-only' && (
-                            <>
-                              <span>•</span>
-                              <span className="text-blue-600">🏢</span>
-                            </>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{room.name}</p>
+                          <span className="text-xs text-gray-500">
+                            {room.lastActivity ? formatMessageTime(room.lastActivity) : 'New'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500 truncate">
+                            {room.lastMessage?.content || room.description || `${room.participantCount || 0} participants`}
+                          </p>
+                          {room.unreadCount > 0 && (
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-2">
+                              <span className="text-xs text-white font-medium">{room.unreadCount}</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -216,79 +319,269 @@ function EnhancedChat({ userRole, selectedRoomId }) {
           {selectedRoom ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b border-gray-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getRoomColor(selectedRoom.type)}`}>
-                      <span className="text-lg">{getRoomIcon(selectedRoom.type)}</span>
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRoomColor(selectedRoom.type)} shadow-sm`}>
+                        <span className="text-xl">{getRoomIcon(selectedRoom.type)}</span>
+                      </div>
+                      {selectedRoom.isActive && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{selectedRoom.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {selectedRoom.description || `${selectedRoom.participantCount} participants`}
-                      </p>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-lg">{selectedRoom.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <span>{selectedRoom.participantCount || 0} participants</span>
+                        {selectedRoom.isActive && (
+                          <>
+                            <span>•</span>
+                            <span className="text-green-600">Active now</span>
+                          </>
+                        )}
+                      </div>
                     </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowRoomInfo(!showRoomInfo)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      title="Room info"
+                    >
+                      ℹ️
+                    </button>
+                    <button
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      title="Video call"
+                    >
+                      📹
+                    </button>
+                    <button
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      title="Voice call"
+                    >
+                      📞
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {messages.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 text-3xl mb-2">💬</div>
-                    <p className="text-gray-500">No messages yet</p>
-                    <p className="text-sm text-gray-400">Be the first to start the conversation!</p>
-                  </div>
-                ) : (
-                  messages.map(message => (
-                    <div
-                      key={message._id}
-                      className={`flex ${message.sender._id === user._id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.sender._id === user._id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        {message.sender._id !== user._id && (
-                          <p className="text-xs font-medium mb-1 opacity-75">
-                            {message.sender.name}
-                            <span className="ml-1 text-xs opacity-60">
-                              ({message.sender.role})
-                            </span>
-                          </p>
-                        )}
-                        <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 opacity-75`}>
-                          {new Date(message.createdAt).toLocaleTimeString()}
-                        </p>
+              <div className="flex-1 overflow-y-auto bg-gray-50" style={{backgroundImage: "url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"chat-bg\" x=\"0\" y=\"0\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><circle cx=\"10\" cy=\"10\" r=\"1\" fill=\"%23e5e7eb\" opacity=\"0.3\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23chat-bg)\"/></svg>')"}}>
+                <div className="p-4 space-y-3">
+                  {messages.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-3xl">💬</span>
                       </div>
+                      <p className="text-gray-600 text-lg font-medium">No messages yet</p>
+                      <p className="text-sm text-gray-500 mt-1">Start the conversation with your team!</p>
                     </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
+                  ) : (
+                    messages.map((message, index) => {
+                      const isOwnMessage = message.sender._id === user._id;
+                      const showAvatar = !isOwnMessage && (index === 0 || messages[index - 1].sender._id !== message.sender._id);
+                      const profilePic = getProfilePicture(message.sender);
+                      
+                      return (
+                        <div key={message._id} className={`flex items-end space-x-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                          {/* Avatar for other users */}
+                          {!isOwnMessage && (
+                            <div className="w-8 h-8 rounded-full flex-shrink-0">
+                              {showAvatar && (
+                                typeof profilePic === 'string' ? (
+                                  <img src={profilePic} alt={message.sender.name} className="w-8 h-8 rounded-full object-cover" />
+                                ) : (
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profilePic.color} text-white text-xs font-medium`}>
+                                    {profilePic.initials}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Message Bubble */}
+                          <div className={`group relative max-w-xs lg:max-w-md ${isOwnMessage ? 'ml-12' : 'mr-12'}`}>
+                            {/* Reply indicator */}
+                            {message.replyTo && (
+                              <div className={`text-xs p-2 mb-1 rounded-lg border-l-4 ${
+                                isOwnMessage 
+                                  ? 'bg-blue-100 border-blue-300 text-blue-800' 
+                                  : 'bg-gray-200 border-gray-400 text-gray-700'
+                              }`}>
+                                <p className="font-medium">Replying to {message.replyTo.sender?.name}</p>
+                                <p className="truncate">{message.replyTo.content}</p>
+                              </div>
+                            )}
+                            
+                            <div className={`px-4 py-2 rounded-2xl shadow-sm ${
+                              isOwnMessage
+                                ? 'bg-blue-500 text-white rounded-br-md'
+                                : 'bg-white text-gray-900 rounded-bl-md border border-gray-200'
+                            }`}>
+                              {/* Sender name for group messages */}
+                              {!isOwnMessage && showAvatar && (
+                                <p className="text-xs font-semibold mb-1 text-blue-600">
+                                  {message.sender.name}
+                                </p>
+                              )}
+                              
+                              {/* Message content */}
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                              
+                              {/* Message time and status */}
+                              <div className={`flex items-center justify-end mt-1 space-x-1 ${
+                                isOwnMessage ? 'text-blue-100' : 'text-gray-500'
+                              }`}>
+                                <span className="text-xs">{formatMessageTime(message.createdAt)}</span>
+                                {isOwnMessage && (
+                                  <span className="text-xs">✓✓</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Message actions (appear on hover) */}
+                            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center space-x-1 bg-white rounded-full shadow-lg p-1">
+                                <button
+                                  onClick={() => setReplyingTo(message)}
+                                  className="p-1 hover:bg-gray-100 rounded-full text-xs"
+                                  title="Reply"
+                                >
+                                  ↩️
+                                </button>
+                                <button
+                                  className="p-1 hover:bg-gray-100 rounded-full text-xs"
+                                  title="React"
+                                >
+                                  😊
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
 
+              {/* Reply Banner */}
+              {replyingTo && (
+                <div className="px-4 py-2 bg-blue-50 border-t border-blue-200 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-600">↩️</span>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Replying to {replyingTo.sender.name}</p>
+                      <p className="text-xs text-blue-600 truncate max-w-xs">{replyingTo.content}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder={`Message ${selectedRoom.name}...`}
-                    className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
+              <div className="p-4 border-t border-gray-200 bg-white">
+                <div className="flex items-end space-x-3">
+                  {/* Attachment Button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Attach file"
+                  >
+                    📎
+                  </button>
+                  
+                  {/* Message Input Container */}
+                  <div className="flex-1 relative">
+                    <div className="flex items-end bg-gray-100 rounded-2xl">
+                      <textarea
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          handleTyping();
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        placeholder={`Message ${selectedRoom.name}...`}
+                        rows={1}
+                        className="flex-1 bg-transparent border-0 resize-none px-4 py-3 text-sm focus:outline-none max-h-32"
+                        style={{ minHeight: '44px' }}
+                      />
+                      
+                      {/* Emoji Button */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                          title="Add emoji"
+                        >
+                          😊
+                        </button>
+                        
+                        {/* Emoji Picker */}
+                        {showEmojiPicker && (
+                          <div className="absolute bottom-12 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+                            <div className="grid grid-cols-5 gap-2">
+                              {commonEmojis.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleEmojiSelect(emoji)}
+                                  className="p-2 hover:bg-gray-100 rounded text-lg"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Send Button */}
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim()}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`p-3 rounded-full transition-all ${
+                      newMessage.trim()
+                        ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                    title="Send message"
                   >
-                    Send
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                    </svg>
                   </button>
                 </div>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                />
+                
+                {/* Typing indicator */}
+                {isTyping && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Someone is typing...
+                  </div>
+                )}
               </div>
             </>
           ) : (
