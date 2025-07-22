@@ -17,7 +17,10 @@ export async function GET(request) {
 
     // Find the user's college
     const user = await User.findOne({
-      gitlabUsername: session.user.gitlabUsername,
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ],
       role: { $in: ['POC', 'Super Tech Lead', 'Tech Lead'] },
       isActive: true
     }).populate('college');

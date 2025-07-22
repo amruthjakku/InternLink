@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../utils/database';
+import { connectToDatabase } from '../../../lib/mongoose';
 import ChatRoom from '../../../models/ChatRoom';
 import User from '../../../models/User';
 import College from '../../../models/College';
@@ -31,6 +31,18 @@ export async function GET(request) {
     if (visibility) query.visibility = visibility;
     if (college) query.college = college;
 
+    // Get user details to access college information
+    const sessionUser = await User.findOne({
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ]
+    }).populate('college');
+
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Role-based access control
     if (session.user.role === 'AI Developer Intern') {
       // AI Developer Interns can see public rooms and college-only rooms from their college
@@ -38,10 +50,10 @@ export async function GET(request) {
         { visibility: 'public' },
         { 
           visibility: 'college-only', 
-          college: session.user.college 
+          college: sessionUser.college?._id 
         },
         {
-          'participants.user': session.user._id
+          'participants.user': sessionUser._id
         }
       ];
     } else if (session.user.role === 'Tech Lead') {
@@ -50,25 +62,25 @@ export async function GET(request) {
         { visibility: 'public' },
         { 
           visibility: 'college-only', 
-          college: session.user.college 
+          college: sessionUser.college?._id 
         },
         {
-          'participants.user': session.user._id
+          'participants.user': sessionUser._id
         }
       ];
     } else if (session.user.role === 'POC') {
-      // Super-mentors can see all rooms from their college and public rooms
+      // POCs can see all rooms from their college and public rooms
       query.$or = [
         { visibility: 'public' },
         { 
           visibility: 'college-only', 
-          college: session.user.college 
+          college: sessionUser.college?._id 
         },
         {
-          createdBy: session.user._id
+          createdBy: sessionUser._id
         },
         {
-          'participants.user': session.user._id
+          'participants.user': sessionUser._id
         }
       ];
     } else if (session.user.role === 'admin') {
@@ -137,14 +149,28 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // For super-mentors, ensure they can only create rooms for their college
+    // Get user details to access college information
+    const user = await User.findOne({
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ]
+    }).populate('college');
+
+    if (!user) {
+      return NextResponse.json({ 
+        error: 'User not found' 
+      }, { status: 404 });
+    }
+
+    // For POCs, ensure they can only create rooms for their college
     let roomCollege = null;
     if (visibility === 'college-only') {
       if (session.user.role === 'POC') {
-        roomCollege = session.user.college;
+        roomCollege = user.college?._id;
         if (!roomCollege) {
           return NextResponse.json({ 
-            error: 'Super-mentor must have a college assigned' 
+            error: 'POC must have a college assigned' 
           }, { status: 400 });
         }
       } else {
@@ -163,7 +189,7 @@ export async function POST(request) {
       description: description?.trim() || '',
       type: type,
       visibility: visibility || 'public',
-      createdBy: session.user._id,
+      createdBy: user._id,
       college: roomCollege,
       settings: {
         allowFileSharing: settings?.allowFileSharing ?? true,
@@ -173,7 +199,7 @@ export async function POST(request) {
       },
       tags: tags || [],
       participants: [{
-        user: session.user._id,
+        user: user._id,
         role: 'admin',
         joinedAt: new Date(),
         lastSeen: new Date()
@@ -183,7 +209,7 @@ export async function POST(request) {
     // Add initial participants if provided
     if (participants && Array.isArray(participants)) {
       for (const participantId of participants) {
-        if (participantId !== session.user._id) {
+        if (participantId !== user._id.toString()) {
           chatRoom.participants.push({
             user: participantId,
             role: 'member',

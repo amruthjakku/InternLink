@@ -3,21 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../lib/mongoose';
 import User from '../../../../models/User';
-import mongoose from 'mongoose';
-
-// Announcement Schema
-const announcementSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  message: { type: String, required: true },
-  priority: { type: String, enum: ['low', 'normal', 'high'], default: 'normal' },
-  targetAudience: { type: String, enum: ['all', 'interns', 'mentors'], default: 'all' },
-  college: { type: mongoose.Schema.Types.ObjectId, ref: 'College', required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now },
-  isActive: { type: Boolean, default: true }
-});
-
-const Announcement = mongoose.models.Announcement || mongoose.model('Announcement', announcementSchema);
+import Announcement from '../../../../models/Announcement';
 
 export async function GET() {
   try {
@@ -30,18 +16,32 @@ export async function GET() {
     await connectToDatabase();
 
     // Get POC's college
-    const poc = await User.findById(session.user.id).populate('college');
+    const poc = await User.findOne({
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ]
+    }).populate('college');
+    
     if (!poc || !poc.college) {
       return NextResponse.json({ error: 'POC college not found' }, { status: 404 });
     }
 
     // Get announcements for this college
     const announcements = await Announcement.find({
-      college: poc.college._id,
-      isActive: true
+      $or: [
+        { scope: 'global' },
+        { scope: 'college', college: poc.college._id }
+      ],
+      isActive: true,
+      $or: [
+        { expiresAt: null },
+        { expiresAt: { $gt: new Date() } }
+      ]
     })
-    .populate('createdBy', 'name email')
-    .sort({ createdAt: -1 })
+    .populate('createdBy', 'name email role')
+    .populate('college', 'name')
+    .sort({ priority: -1, createdAt: -1 })
     .limit(20);
 
     return NextResponse.json({ announcements });
@@ -74,19 +74,26 @@ export async function POST(request) {
     await connectToDatabase();
 
     // Get POC's college
-    const poc = await User.findById(session.user.id).populate('college');
+    const poc = await User.findOne({
+      $or: [
+        { gitlabUsername: session.user.gitlabUsername },
+        { email: session.user.email }
+      ]
+    }).populate('college');
+    
     if (!poc || !poc.college) {
       return NextResponse.json({ error: 'POC college not found' }, { status: 404 });
     }
 
     // Create new announcement
     const announcement = new Announcement({
-      title,
-      message,
+      title: title.trim(),
+      message: message.trim(),
       priority: priority || 'normal',
       targetAudience: targetAudience || 'all',
+      scope: 'college',
       college: poc.college._id,
-      createdBy: session.user.id
+      createdBy: poc._id
     });
 
     await announcement.save();
