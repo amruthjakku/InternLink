@@ -45,8 +45,8 @@ export async function GET(request) {
 
     // Calculate statistics
     const stats = {
-      totalMentors: mentors.filter(m => m.role === 'mentor').length,
-      totalSuperMentors: mentors.filter(m => m.role === 'super-mentor').length,
+      totalMentors: mentors.filter(m => m.role === 'Tech Lead').length,
+      totalPOCs: mentors.filter(m => m.role === 'POC').length,
       totalInterns: interns.length,
       assignedInterns: interns.filter(intern => intern.mentorId).length,
       unassignedInterns: interns.filter(intern => !intern.mentorId).length,

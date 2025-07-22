@@ -97,7 +97,7 @@ const TeamManagement = () => {
 
         <div className="p-6">
           {activeSubTab === 'super-mentors' && (
-            <SuperMentorsTab colleges={colleges} users={users} />
+            <POCsTab colleges={colleges} users={users} />
           )}
           {activeSubTab === 'mentor-teams' && (
             <MentorTeamsTab colleges={colleges} users={users} teams={teams} fetchTeams={fetchTeams} />
@@ -111,7 +111,7 @@ const TeamManagement = () => {
   );
 };
 
-const SuperMentorsTab = ({ colleges, users }) => {
+const POCsTab = ({ colleges, users }) => {
   const [selectedCollege, setSelectedCollege] = useState(null);
   const [collegeUsers, setCollegeUsers] = useState({ mentors: [], interns: [] });
 

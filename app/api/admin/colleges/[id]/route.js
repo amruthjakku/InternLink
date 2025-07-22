@@ -87,14 +87,14 @@ export async function PUT(request, { params }) {
 
       // If there was a previous super-mentor, remove their college assignment
       if (college.superMentorUsername && college.superMentorUsername !== 'unassigned') {
-        const previousSuperMentor = await User.findOne({
+        const previousPOC = await User.findOne({
           gitlabUsername: college.superMentorUsername,
-          role: 'super-mentor',
+          role: 'POC',
           isActive: true
         });
-        if (previousSuperMentor) {
-          previousSuperMentor.college = undefined;
-          await previousSuperMentor.save();
+        if (previousPOC) {
+          previousPOC.college = undefined;
+          await previousPOC.save();
         }
       }
     }

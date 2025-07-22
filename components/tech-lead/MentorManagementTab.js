@@ -377,3 +377,6 @@ export function MentorManagementTab() {
     </div>
   );
 }
+
+// Export alias for backwards compatibility
+export const TechLeadManagementTab = MentorManagementTab;

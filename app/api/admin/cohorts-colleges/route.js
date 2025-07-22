@@ -75,9 +75,9 @@ export async function GET() {
           mentor: cohort.mentorId,
           colleges: Object.values(collegeGroups),
           totalUsers: users.length,
-          totalInterns: users.filter(u => u.role === 'intern').length,
-          totalMentors: users.filter(u => u.role === 'mentor').length,
-          totalSuperMentors: users.filter(u => u.role === 'super-mentor').length
+          totalInterns: users.filter(u => u.role === 'AI developer Intern').length,
+          totalMentors: users.filter(u => u.role === 'Tech Lead').length,
+          totalPOCs: users.filter(u => u.role === 'POC').length
         };
       })
     );

@@ -85,7 +85,7 @@ export async function GET() {
       })),
       
       // All super-mentors data for analysis
-      allSuperMentors: users.filter(u => u.role === 'super-mentor').map(u => ({
+      allPOCs: users.filter(u => u.role === 'POC').map(u => ({
         id: u._id.toString(),
         name: u.name,
         gitlabUsername: u.gitlabUsername,

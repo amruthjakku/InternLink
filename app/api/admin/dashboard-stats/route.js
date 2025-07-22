@@ -20,9 +20,9 @@ export async function GET() {
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ isActive: true });
     const inactiveUsers = await User.countDocuments({ isActive: false });
-    const totalInterns = await User.countDocuments({ role: 'intern' });
-    const totalMentors = await User.countDocuments({ role: 'mentor' });
-    const totalSuperMentors = await User.countDocuments({ role: 'super-mentor' });
+    const totalInterns = await User.countDocuments({ role: 'AI developer Intern' });
+    const totalMentors = await User.countDocuments({ role: 'Tech Lead' });
+    const totalPOCs = await User.countDocuments({ role: 'POC' });
     const totalAdmins = await User.countDocuments({ role: 'admin' });
     
     // Get college statistics
@@ -63,7 +63,7 @@ export async function GET() {
       inactiveUsers,
       totalInterns,
       totalMentors,
-      totalSuperMentors,
+      totalPOCs,
       totalAdmins,
       totalColleges,
       activeColleges,

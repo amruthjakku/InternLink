@@ -11,7 +11,7 @@ import { DataIntegrityChecker } from '../../../components/admin/DataIntegrityChe
 import { AdvancedAnalytics } from '../../../components/admin/AdvancedAnalytics';
 import { CombinedAttendanceSystem } from '../../../components/admin/CombinedAttendanceSystem';
 import { CollegeManagement } from '../../../components/CollegeManagement';
-import { SuperMentorManagement } from '../../../components/admin/SuperMentorManagement';
+import { POCManagement } from '../../../components/admin/POCManagement';
 import { UserActivationManagement } from '../../../components/admin/UserActivationManagement';
 import { AttendanceDebugger } from '../../../components/admin/AttendanceDebugger';
 import { CohortManagementTab } from '../../../components/admin/CohortManagementTab';
@@ -1117,11 +1117,11 @@ export default function AdminDashboard() {
                   />
                   <MetricCard
                     title="Total Mentors"
-                    value={`${stats.totalMentors || 0} + ${stats.totalSuperMentors || 0}`}
-                    change={stats.totalSuperMentors || 0}
+                    value={`${stats.totalMentors || 0} + ${stats.totalPOCs || 0}`}
+                    change={stats.totalPOCs || 0}
                     icon="👨‍🏫"
                     color="orange"
-                    subtitle={`${stats.totalSuperMentors || 0} super mentors`}
+                    subtitle={`${stats.totalPOCs || 0} POCs`}
                   />
                   <MetricCard
                     title="Total Interns"

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../AuthProvider';
 
-export function SuperMentorCommunicationTab() {
+export function POCCommunicationTab() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState('rooms');
   const [chatRooms, setChatRooms] = useState([]);

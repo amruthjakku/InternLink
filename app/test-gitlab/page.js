@@ -1,6 +1,6 @@
 'use client';
 
-import { SimpleGitLabTab } from '../../components/intern/SimpleGitLabTab';
+import { SimpleGitLabTab } from '../../components/ai-developer-intern/SimpleGitLabTab';
 import { AuthProvider } from '../../components/AuthProvider';
 
 export default function TestGitLabPage() {

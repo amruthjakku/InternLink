@@ -82,9 +82,9 @@ collegeSchema.pre('save', function(next) {
 });
 
 // Static methods
-collegeSchema.statics.findBySuperMentor = function(superMentorUsername) {
+collegeSchema.statics.findByPOC = function(pocUsername) {
   return this.findOne({ 
-    superMentorUsername: superMentorUsername.toLowerCase(), 
+    superMentorUsername: pocUsername.toLowerCase(), 
     isActive: true 
   }).populate('superMentor');
 };

@@ -20,7 +20,7 @@ export async function GET() {
       .sort({ name: 1 });
 
     // Get super-mentor names and intern counts for each college
-    const collegesWithSuperMentors = await Promise.all(
+    const collegesWithPOCs = await Promise.all(
       colleges.map(async (college) => {
         let superMentorName = 'N/A';
         if (college.superMentorUsername) {
@@ -68,7 +68,7 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({ colleges: collegesWithSuperMentors });
+    return NextResponse.json({ colleges: collegesWithPOCs });
 
   } catch (error) {
     console.error('Error fetching colleges:', error);
