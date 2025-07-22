@@ -364,14 +364,14 @@ export function AIDeveloperInternDashboard() {
   };
 
   return (
-    <div className="bg-gray-50">
-      {/* Header Section */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-transparent backdrop-blur-lg">
+      {/* Modern Header Section */}
+      <div className="bg-white/50 backdrop-blur-xl shadow-lg border-b border-white/30 transition-all duration-300 hover:shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="mb-4 sm:mb-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Welcome back, {user?.name}!
                 </h1>
                 {user?.college && (
@@ -457,11 +457,11 @@ export function AIDeveloperInternDashboard() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Modern Tab Navigation */}
+      <div className="bg-white/50 backdrop-blur-xl border-b border-white/30 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <nav className="flex space-x-6 overflow-x-auto scrollbar-hide">
+            <nav className="flex space-x-1 overflow-x-auto scrollbar-hide">
               {getOrderedTabs().map((tab) => (
                 <button
                   key={tab.id}
@@ -485,15 +485,15 @@ export function AIDeveloperInternDashboard() {
                       }
                     }
                   }}
-                  className={`whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-200 select-none ${
+                  className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-300 select-none ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'border-blue-500 text-white bg-gradient-to-r from-blue-500/90 to-purple-500/90 shadow-lg backdrop-blur-sm'
+                      : 'border-transparent text-gray-700 hover:text-gray-900 hover:bg-white/30'
                   } ${
-                    draggedTab === tab.id ? 'opacity-50 scale-105 shadow-lg' : ''
+                    draggedTab === tab.id ? 'opacity-70 scale-105 shadow-xl backdrop-blur-sm' : ''
                   } ${
                     isDragging ? 'cursor-grabbing' : 'cursor-pointer hover:cursor-grab'
-                  } rounded-t-lg`}
+                  } rounded-xl hover:scale-[1.02]`}
                   style={{
                    userSelect: 'none',
                     WebkitUserSelect: 'none',
@@ -524,36 +524,36 @@ export function AIDeveloperInternDashboard() {
           <div className="lg:col-span-1 space-y-6">
             <ProfileCard user={user} showMilestones={false} compact={true} />
             
-            {/* Essential Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            {/* Modern Quick Actions */}
+            <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-gray-200/50 p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => switchTab('tasks')}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50/50 rounded-md flex items-center space-x-2 transition-colors"
                 >
-                  <span>📝</span>
+                  <span className="text-blue-600">📝</span>
                   <span>View Tasks</span>
                 </button>
                 <button
                   onClick={() => switchTab('gitlab')}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50/50 rounded-md flex items-center space-x-2 transition-colors"
                 >
-                  <span>🦊</span>
+                  <span className="text-purple-600">🦊</span>
                   <span>GitLab Activity</span>
                 </button>
                 <button
                   onClick={() => switchTab('attendance')}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50/50 rounded-md flex items-center space-x-2 transition-colors"
                 >
-                  <span>📍</span>
+                  <span className="text-green-600">📍</span>
                   <span>Mark Attendance</span>
                 </button>
                 <button
                   onClick={() => switchTab('communication')}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center space-x-2"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-red-50/50 rounded-md flex items-center space-x-2 transition-colors"
                 >
-                  <span>📹</span>
+                  <span className="text-red-600">📹</span>
                   <span>Join Meeting</span>
                 </button>
               </div>
