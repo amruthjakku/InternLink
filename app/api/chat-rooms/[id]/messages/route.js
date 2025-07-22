@@ -79,16 +79,22 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
+    console.log('🔐 Checking session for chat room message POST...');
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
+      console.log('❌ No session found for chat room message');
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+
+    console.log('✅ Session found for chat room message:', { userId: session.user.id, name: session.user.name });
 
     await connectToDatabase();
 
     const { id } = params;
     const { content, type, replyTo, mentions } = await request.json();
+    
+    console.log('📝 Chat room message data received:', { roomId: id, content: content?.substring(0, 50), type });
     
     if (!content || !content.trim()) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 });

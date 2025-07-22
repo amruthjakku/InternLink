@@ -43,6 +43,12 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Create default chat rooms if they don't exist
+    await createDefaultChatRooms(sessionUser);
+
+    // Auto-join user to public chat rooms if not already a participant
+    await autoJoinPublicRooms(sessionUser);
+
     // Role-based access control
     if (session.user.role === 'AI Developer Intern') {
       // AI Developer Interns can see public rooms and college-only rooms from their college
@@ -241,5 +247,78 @@ export async function POST(request) {
     return NextResponse.json({ 
       error: 'Failed to create chat room' 
     }, { status: 500 });
+  }
+}
+
+async function createDefaultChatRooms(user) {
+  if (!user) return;
+
+  const defaultRooms = [
+    {
+      name: 'General Discussion',
+      description: 'General discussion for all users',
+      type: 'general',
+      visibility: 'public'
+    },
+    {
+      name: 'Technical Support',
+      description: 'Get help with technical issues',
+      type: 'support',
+      visibility: 'public'
+    },
+    {
+      name: 'Announcements',
+      description: 'Important announcements and updates',
+      type: 'announcement',
+      visibility: 'public'
+    }
+  ];
+
+  for (const roomData of defaultRooms) {
+    const existingRoom = await ChatRoom.findOne({ 
+      name: roomData.name, 
+      type: roomData.type,
+      visibility: 'public'
+    });
+
+    if (!existingRoom) {
+      const newRoom = new ChatRoom({
+        ...roomData,
+        createdBy: user._id,
+        participants: [{
+          user: user._id,
+          role: 'admin',
+          joinedAt: new Date(),
+          lastSeen: new Date()
+        }]
+      });
+      await newRoom.save();
+      console.log(`✅ Created default chat room: ${roomData.name}`);
+    }
+  }
+}
+
+async function autoJoinPublicRooms(user) {
+  if (!user) return;
+
+  // Find public rooms where user is not already a participant
+  const publicRooms = await ChatRoom.find({
+    visibility: 'public',
+    isActive: true,
+    'participants.user': { $ne: user._id }
+  });
+
+  for (const room of publicRooms) {
+    await ChatRoom.findByIdAndUpdate(room._id, {
+      $push: {
+        participants: {
+          user: user._id,
+          role: 'member',
+          joinedAt: new Date(),
+          lastSeen: new Date()
+        }
+      }
+    });
+    console.log(`✅ Auto-joined user ${user.name} to room: ${room.name}`);
   }
 }

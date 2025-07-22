@@ -32,19 +32,27 @@ export function EnhancedChat({ userRole }) {
 
   const fetchChatRooms = async () => {
     try {
+      console.log('🔄 Fetching chat rooms from /api/chat-rooms...');
       const response = await fetch('/api/chat-rooms');
+      console.log('📥 Chat rooms response status:', response.status, response.statusText);
+      
       if (response.ok) {
         const data = await response.json();
         const rooms = data.chatRooms || [];
+        console.log('💬 Loaded chat rooms:', rooms);
         setChatRooms(rooms);
         
         // Auto-select first room if available
         if (rooms.length > 0 && !selectedRoom) {
+          console.log('🎯 Setting selected room to:', rooms[0]);
           setSelectedRoom(rooms[0]);
         }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to fetch chat rooms:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching chat rooms:', error);
+      console.error('❌ Error fetching chat rooms:', error);
     } finally {
       setLoading(false);
     }
@@ -65,6 +73,8 @@ export function EnhancedChat({ userRole }) {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedRoom) return;
 
+    console.log('🚀 Sending message to room:', selectedRoom._id, 'Message:', newMessage);
+
     try {
       const response = await fetch(`/api/chat-rooms/${selectedRoom._id}/messages`, {
         method: 'POST',
@@ -77,13 +87,26 @@ export function EnhancedChat({ userRole }) {
         }),
       });
 
+      console.log('📥 Send message response status:', response.status, response.statusText);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Message sent successfully:', data);
         setMessages([...messages, data.data]);
         setNewMessage('');
+        
+        // Refresh messages to get any new messages from other users
+        setTimeout(() => {
+          fetchMessages(selectedRoom._id);
+        }, 1000);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Failed to send message:', errorData);
+        alert(`Failed to send message: ${errorData.error || 'Please try again.'}`);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
+      alert('Error sending message. Please check your connection.');
     }
   };
 
