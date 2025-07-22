@@ -5,6 +5,11 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { MetricCard } from '../Charts';
 import { format, addDays, subDays } from 'date-fns';
 import { GitLabTaskSubmission } from './GitLabTaskSubmission';
+import { CompletionBadge } from './enhancements/CompletionBadge';
+import { CommandCenter } from './enhancements/CommandCenter';
+import { ActivityFeed } from './enhancements/ActivityFeed';
+import { QuestBoard } from './enhancements/QuestBoard';
+import { ConfettiCelebration } from './enhancements/ConfettiCelebration';
 
 // Helper function to safely format status
 const formatStatus = (status) => {
@@ -235,7 +240,7 @@ export function TasksTab({ user, loading }) {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'calendar', 'weekly'
+  const [viewMode, setViewMode] = useState('contribution'); // 'contribution', 'list', 'feed', 'quest'
   const [newComment, setNewComment] = useState('');
   const [addingComment, setAddingComment] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -1743,7 +1748,9 @@ export function TasksTab({ user, loading }) {
               { id: 'kanban', label: 'Kanban', icon: '📋' },
               { id: 'list', label: 'List', icon: '📝' },
               { id: 'weekly', label: 'Weekly', icon: '🗓️' },
-              { id: 'calendar', label: 'Calendar', icon: '📅' }
+              { id: 'calendar', label: 'Calendar', icon: '📅' },
+              { id: 'contribution', label: 'Contribution', icon: '🛠' },
+              { id: 'quest', label: 'Quest', icon: '🗺️' }
             ].map(mode => (
               <button
                 key={mode.id}
@@ -2242,6 +2249,22 @@ export function TasksTab({ user, loading }) {
             </div>
           )}
           </div>
+        </div>
+      )}
+
+      {/* Contribution View */}
+      {viewMode === 'contribution' && (
+        <div>
+          {/* Replace with actual components like <CompletionBadge /> etc. */}
+          <p>Contribution View is under development...</p>
+        </div>
+      )}
+
+      {/* Quest View */}
+      {viewMode === 'quest' && (
+        <div>
+          {/* Replace with actual components like <QuestBoard /> etc. */}
+          <p>Quest View is under development...</p>
         </div>
       )}
 

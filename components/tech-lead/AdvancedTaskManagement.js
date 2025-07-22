@@ -21,7 +21,7 @@ export function AdvancedTaskManagement() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showDependencyModal, setShowDependencyModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban', 'list', 'dependencies', 'timeline', 'analytics'
+  const [viewMode, setViewMode] = useState('contribution'); // 'contribution', 'list', 'timeline', 'quest', 'analytics'
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
