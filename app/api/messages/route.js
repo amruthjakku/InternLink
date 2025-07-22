@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../utils/database';
 import Message from '../../../models/Message';
+import ChatRoom from '../../../models/ChatRoom';
 
 export async function GET(request) {
   try {
@@ -79,6 +80,11 @@ export async function POST(request) {
     });
 
     const savedMessage = await newMessage.save();
+
+    // Update chat room's last activity
+    await ChatRoom.findByIdAndUpdate(chatId, {
+      lastActivity: new Date()
+    });
 
     // Populate sender info for response
     await savedMessage.populate('sender', 'name email gitlabUsername');

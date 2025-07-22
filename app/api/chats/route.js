@@ -17,6 +17,26 @@ export async function GET() {
     // Create default chat rooms if they don't exist
     await createDefaultChatRooms(session.user.id);
 
+    // Auto-join user to public chat rooms if not already a participant
+    const publicRooms = await ChatRoom.find({
+      visibility: 'public',
+      isActive: true,
+      'participants.user': { $ne: session.user.id }
+    });
+
+    for (const room of publicRooms) {
+      await ChatRoom.findByIdAndUpdate(room._id, {
+        $push: {
+          participants: {
+            user: session.user.id,
+            role: 'member',
+            joinedAt: new Date(),
+            lastSeen: new Date()
+          }
+        }
+      });
+    }
+
     // Fetch chat rooms that the user can access
     const chatRooms = await ChatRoom.find({
       $or: [
