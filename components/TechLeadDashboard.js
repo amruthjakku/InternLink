@@ -2,18 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-import { InternManagementTab } from './mentor/InternManagementTab';
-import { AdvancedTaskManagement } from './mentor/AdvancedTaskManagement';
-import { AttendanceTab } from './mentor/AttendanceTab';
-import { LeaderboardTab } from './mentor/LeaderboardTab';
-import { CommunicationTab } from './mentor/CommunicationTab';
-import { SuperMentorCommunicationTab } from './mentor/SuperMentorCommunicationTab';
-import { MeetingsTab } from './mentor/MeetingsTab';
-import { AIAssistantTab } from './mentor/AIAssistantTab';
-import { PerformanceOverview } from './mentor/PerformanceOverview';
-import { TeamActivity } from './mentor/TeamActivity';
-import { MentorManagementTab } from './mentor/MentorManagementTab';
-import { CohortManagementTab } from './mentor/CohortManagementTab';
+import { InternManagementTab } from './tech-lead/InternManagementTab';
+import { AdvancedTaskManagement } from './tech-lead/AdvancedTaskManagement';
+import { AttendanceTab } from './tech-lead/AttendanceTab';
+import { LeaderboardTab } from './tech-lead/LeaderboardTab';
+import { CommunicationTab } from './tech-lead/CommunicationTab';
+import { POCCommunicationTab } from './tech-lead/POCCommunicationTab';
+import { MeetingsTab } from './tech-lead/MeetingsTab';
+import { AIAssistantTab } from './tech-lead/AIAssistantTab';
+import { PerformanceOverview } from './tech-lead/PerformanceOverview';
+import { TeamActivity } from './tech-lead/TeamActivity';
+import { TechLeadManagementTab } from './tech-lead/TechLeadManagementTab';
+import { CohortManagementTab } from './tech-lead/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import { CollegeBadge } from './CollegeLogo';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
@@ -118,7 +118,7 @@ export function MentorDashboard() {
       console.log('Fetching interns for user role:', user?.role);
       
       if (user?.role === 'mentor') {
-        endpoint = '/api/mentor/assigned-interns';
+        endpoint = '/ap./tech-lead/assigned-interns';
       } else if (user?.role === 'super-mentor') {
         endpoint = '/api/super-mentor/college-interns';
         console.log('Using super-mentor endpoint for college interns');

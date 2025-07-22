@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { getCollegeName, getCohortName } from '../utils/helpers';
-import { TasksTab } from './intern/TasksTab';
-import { ProgressTab } from './intern/ProgressTab';
-import { PerformanceTab } from './intern/PerformanceTab';
-import { LeaderboardTab } from './intern/LeaderboardTab';
-import { UnifiedAttendanceTab } from './intern/UnifiedAttendanceTab';
-import { ChatTab } from './intern/ChatTab';
+import { TasksTab } from './ai-developer-intern/TasksTab';
+import { ProgressTab } from './ai-developer-intern/ProgressTab';
+import { PerformanceTab } from './ai-developer-intern/PerformanceTab';
+import { LeaderboardTab } from './ai-developer-intern/LeaderboardTab';
+import { UnifiedAttendanceTab } from './ai-developer-intern/UnifiedAttendanceTab';
+import { ChatTab } from './ai-developer-intern/ChatTab';
 import { EnhancedChat } from './EnhancedChat';
-import { AIAssistantTab } from './intern/AIAssistantTab';
-import { ProfileTab } from './intern/ProfileTab';
-import { GitLabTab } from './intern/GitLabTab';
-import { EnhancedGitLabTab } from './intern/EnhancedGitLabTab';
+import { AIAssistantTab } from './ai-developer-intern/AIAssistantTab';
+import { ProfileTab } from './ai-developer-intern/ProfileTab';
+import { GitLabTab } from './ai-developer-intern/GitLabTab';
+import { EnhancedGitLabTab } from './ai-developer-intern/EnhancedGitLabTab';
 import { Meetings } from './Meetings';
 import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { ProfileCard } from './ProfileCard';
@@ -253,7 +253,7 @@ export function InternDashboard() {
       case 'attendance':
         return <UnifiedAttendanceTab {...commonProps} />;
       case 'chat':
-        return <EnhancedChat userRole="intern" />;
+        return <EnhancedChat userRole="AI developer Intern" />;
       case 'ai-assistant':
         return <AIAssistantTab {...commonProps} />;
       default:

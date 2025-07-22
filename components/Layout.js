@@ -9,10 +9,10 @@ export function Layout({ children }) {
 
   if (!user) return children;
 
-  const navigation = user.role === 'mentor' 
+  const navigation = user.role === 'Tech Lead' 
     ? [
         { name: 'Overview', icon: '📊', id: 'overview' },
-        { name: 'Interns', icon: '👥', id: 'interns' },
+        { name: 'AI Developer Interns', icon: '👥', id: 'interns' },
         { name: 'Tasks', icon: '📝', id: 'tasks' },
         { name: 'Categories', icon: '🎯', id: 'categories' },
         { name: 'Colleges', icon: '🏫', id: 'colleges' },
@@ -46,7 +46,7 @@ export function Layout({ children }) {
             <div className="flex items-center">
               <h1 className="text-lg font-semibold text-gray-900">Progress Tracker</h1>
               <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {user.role === 'mentor' ? '👨‍🏫 Mentor' : '👨‍🎓 Intern'}
+                {user.role === 'Tech Lead' ? '👨‍🏫 Tech Lead' : '👨‍🎓 AI Developer Intern'}
               </span>
             </div>
             

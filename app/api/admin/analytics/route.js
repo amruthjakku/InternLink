@@ -30,13 +30,13 @@ export async function GET(request) {
     console.log('=== USER-COLLEGE DEBUG ===');
     console.log('Total users:', users.length);
     console.log('Users by role:', {
-      intern: users.filter(u => u.role === 'intern').length,
-      mentor: users.filter(u => u.role === 'mentor').length,
-      'super-mentor': users.filter(u => u.role === 'super-mentor').length,
+      intern: users.filter(u => u.role === 'AI developer Intern').length,
+      mentor: users.filter(u => u.role === 'Tech Lead').length,
+      'POC': users.filter(u => u.role === 'POC').length,
       admin: users.filter(u => u.role === 'admin').length
     });
-    console.log('Interns with colleges:', users.filter(u => u.role === 'intern' && u.college).length);
-    console.log('Sample intern data:', users.filter(u => u.role === 'intern').slice(0, 3).map(u => ({
+    console.log('Interns with colleges:', users.filter(u => u.role === 'AI developer Intern' && u.college).length);
+    console.log('Sample intern data:', users.filter(u => u.role === 'AI developer Intern').slice(0, 3).map(u => ({
       name: u.name,
       college: u.college ? { id: u.college._id ? u.college._id.toString() : 'no-id', name: u.college.name } : null
     })));
@@ -71,9 +71,9 @@ export async function GET(request) {
       active: users.filter(u => u.isActive).length,
       byRole: {
         admin: users.filter(u => u.role === 'admin').length,
-        'super-mentor': users.filter(u => u.role === 'super-mentor').length,
-        mentor: users.filter(u => u.role === 'mentor').length,
-        intern: users.filter(u => u.role === 'intern').length
+        'POC': users.filter(u => u.role === 'POC').length,
+        mentor: users.filter(u => u.role === 'Tech Lead').length,
+        intern: users.filter(u => u.role === 'AI developer Intern').length
       },
       recentSignups: users.filter(u => u.createdAt && new Date(u.createdAt) >= startDate).length,
       activeInPeriod: users.filter(u => u.lastLoginAt && new Date(u.lastLoginAt) >= startDate).length
@@ -93,8 +93,8 @@ export async function GET(request) {
       },
       byCreator: {
         admin: tasks.filter(t => t.createdByRole === 'admin').length,
-        'super-mentor': tasks.filter(t => t.createdByRole === 'super-mentor').length,
-        mentor: tasks.filter(t => t.createdByRole === 'mentor').length
+        'POC': tasks.filter(t => t.createdByRole === 'POC').length,
+        mentor: tasks.filter(t => t.createdByRole === 'Tech Lead').length
       },
       avgProgress: tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / tasks.length) : 0,
       recentTasks: tasks.filter(t => t.createdAt && new Date(t.createdAt) >= startDate).length
@@ -113,7 +113,7 @@ export async function GET(request) {
                  user.college._id.toString() === collegeId.toString();
           
           // Debug the first few comparisons
-          if (user && user.role === 'intern') {
+          if (user && user.role === 'AI developer Intern') {
             console.log(`Checking user "${user.name}":`, {
               hasCollege: !!user.college,
               userCollegeId: user.college?._id?.toString(),
@@ -159,9 +159,9 @@ export async function GET(request) {
             return {
               name: collegeName,
               users: collegeUsers.length,
-              interns: collegeUsers.filter(u => u.role === 'intern').length,
-              mentors: collegeUsers.filter(u => u.role === 'mentor').length,
-              superMentors: collegeUsers.filter(u => u.role === 'super-mentor').length
+              interns: collegeUsers.filter(u => u.role === 'AI developer Intern').length,
+              mentors: collegeUsers.filter(u => u.role === 'Tech Lead').length,
+              superMentors: collegeUsers.filter(u => u.role === 'POC').length
             };
           } catch (err) {
             console.warn('Error processing college distribution:', err);

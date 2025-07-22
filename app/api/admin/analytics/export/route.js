@@ -53,9 +53,9 @@ export async function GET(request) {
         totalUsers: users.length,
         usersByRole: {
           admin: users.filter(u => u.role === 'admin').length,
-          'super-mentor': users.filter(u => u.role === 'super-mentor').length,
-          mentor: users.filter(u => u.role === 'mentor').length,
-          intern: users.filter(u => u.role === 'intern').length
+          'POC': users.filter(u => u.role === 'POC').length,
+          mentor: users.filter(u => u.role === 'Tech Lead').length,
+          intern: users.filter(u => u.role === 'AI developer Intern').length
         },
         totalTasks: tasks.length,
         tasksByStatus: {
@@ -120,7 +120,7 @@ function convertToCSV(data, type) {
     csv += 'Metric,Value\n';
     csv += `"Total Users","${data.summary.totalUsers}"\n`;
     csv += `"Admin Users","${data.summary.usersByRole.admin}"\n`;
-    csv += `"Super-Mentor Users","${data.summary.usersByRole['super-mentor']}"\n`;
+    csv += `"Super-Mentor Users","${data.summary.usersByRole['POC']}"\n`;
     csv += `"Mentor Users","${data.summary.usersByRole.mentor}"\n`;
     csv += `"Intern Users","${data.summary.usersByRole.intern}"\n`;
     csv += `"Total Tasks","${data.summary.totalTasks}"\n`;

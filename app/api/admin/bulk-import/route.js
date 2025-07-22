@@ -148,7 +148,7 @@ async function processUserImport(data, preview, currentUser) {
     }
 
     // Validate role
-    if (row.role && !['admin', 'super-mentor', 'mentor', 'intern'].includes(row.role)) {
+    if (row.role && !['admin', 'POC', 'Tech Lead', 'AI developer Intern'].includes(row.role)) {
       rowErrors.push(`Row ${i + 1}: Invalid role '${row.role}'`);
     }
 
@@ -467,7 +467,7 @@ async function processLegacyUserImport(data, preview, currentUser) {
       let collegeId = null;
 
       // Handle college assignment
-      if (role === 'intern' && !collegeName) {
+      if (role === 'AI developer Intern' && !collegeName) {
         errors.push(`Row ${i + 1}: College is required for intern role`);
         failed++;
         continue;
@@ -488,9 +488,9 @@ async function processLegacyUserImport(data, preview, currentUser) {
         collegeId = college._id;
 
         // Check if college already has a mentor for mentor role
-        if (role === 'mentor') {
+        if (role === 'Tech Lead') {
           const existingMentor = await User.findOne({ 
-            role: 'mentor', 
+            role: 'Tech Lead', 
             college: collegeId, 
             isActive: true 
           });
@@ -510,7 +510,7 @@ async function processLegacyUserImport(data, preview, currentUser) {
         name,
         email: email.toLowerCase(),
         role,
-        college: (role === 'intern' || (role === 'mentor' && collegeId)) ? collegeId : undefined,
+        college: (role === 'AI developer Intern' || (role === 'Tech Lead' && collegeId)) ? collegeId : undefined,
         assignedBy: currentUser.gitlabUsername,
         isActive: true
       });
@@ -518,7 +518,7 @@ async function processLegacyUserImport(data, preview, currentUser) {
       await newUser.save();
 
       // Update college with mentor username if mentor
-      if (role === 'mentor' && collegeId) {
+      if (role === 'Tech Lead' && collegeId) {
         await College.findByIdAndUpdate(collegeId, {
           mentorUsername: gitlabUsername.toLowerCase()
         });

@@ -24,7 +24,7 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Allow mentors and admins
-    if (session.user.role !== 'mentor' && session.user.role !== 'admin') {
+    if (session.user.role !== 'Tech Lead' && session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Access denied - Mentor role required' }, { status: 403 });
     }
 
@@ -39,7 +39,7 @@ export async function GET(request) {
     const startDate = subDays(new Date(), daysBack);
 
     // Get all interns
-    const interns = await User.find({ role: 'intern', isActive: true });
+    const interns = await User.find({ role: 'AI developer Intern', isActive: true });
     const internIds = interns.map(intern => intern._id);
 
     // Get tasks data

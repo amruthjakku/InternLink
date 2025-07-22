@@ -4,9 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AuthProvider } from '../../../components/AuthProvider';
-import { MentorDashboard } from '../../../components/MentorDashboard';
+import { TechLeadDashboard } from '../../../components/TechLeadDashboard';
 
-export default function MentorDashboardPage() {
+export default function TechLeadDashboardPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -111,7 +111,7 @@ export default function MentorDashboardPage() {
   
   return (
     <AuthProvider>
-      <MentorDashboard />
+      <TechLeadDashboard />
     </AuthProvider>
   );
 }

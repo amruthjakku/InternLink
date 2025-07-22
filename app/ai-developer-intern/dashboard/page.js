@@ -4,9 +4,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AuthProvider } from '../../../components/AuthProvider';
-import { InternDashboard } from '../../../components/InternDashboard';
+import { AIDeveloperInternDashboard } from '../../../components/AIDeveloperInternDashboard';
 
-export default function InternDashboardPage() {
+export default function AIDeveloperInternDashboardPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ export default function InternDashboardPage() {
 
   return (
     <AuthProvider>
-      <InternDashboard />
+      <AIDeveloperInternDashboard />
     </AuthProvider>
   );
 }

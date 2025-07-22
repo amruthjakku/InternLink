@@ -42,20 +42,20 @@ export async function GET(request, { params }) {
 
     // Group users by role
     const groupedUsers = {
-      'super-mentor': users.filter(u => u.role === 'super-mentor'),
-      'mentor': users.filter(u => u.role === 'mentor'),
-      'intern': users.filter(u => u.role === 'intern'),
-      'other': users.filter(u => !['super-mentor', 'mentor', 'intern'].includes(u.role))
+      'POC': users.filter(u => u.role === 'POC'),
+      'Tech Lead': users.filter(u => u.role === 'Tech Lead'),
+      'AI developer Intern': users.filter(u => u.role === 'AI developer Intern'),
+      'other': users.filter(u => !['POC', 'Tech Lead', 'AI developer Intern'].includes(u.role))
     };
 
     // Calculate statistics
     const stats = {
       total: users.length,
-      superMentors: groupedUsers['super-mentor'].length,
-      mentors: groupedUsers['mentor'].length,
-      interns: groupedUsers['intern'].length,
-      assignedInterns: groupedUsers['intern'].filter(u => u.mentorId).length,
-      unassignedInterns: groupedUsers['intern'].filter(u => !u.mentorId).length
+      superMentors: groupedUsers['POC'].length,
+      mentors: groupedUsers['Tech Lead'].length,
+      interns: groupedUsers['AI developer Intern'].length,
+      assignedInterns: groupedUsers['AI developer Intern'].filter(u => u.mentorId).length,
+      unassignedInterns: groupedUsers['AI developer Intern'].filter(u => !u.mentorId).length
     };
 
     return NextResponse.json({

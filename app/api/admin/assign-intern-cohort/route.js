@@ -103,7 +103,7 @@ export async function POST(request) {
       }, { status: 404 });
     }
 
-    if (intern.role !== 'intern') {
+    if (intern.role !== 'AI developer Intern') {
       return NextResponse.json({ 
         error: 'User is not an intern' 
       }, { status: 400 });

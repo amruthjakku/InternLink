@@ -165,7 +165,7 @@ async function generateUserStats(user, db) {
     stats.bonusPoints = activityBonusPoints;
 
     // Additional role-specific stats
-    if (user.role === 'mentor' || user.role === 'super-mentor') {
+    if (user.role === 'Tech Lead' || user.role === 'POC') {
       // Count mentees or managed interns
       const mentees = await User.countDocuments({
         assignedMentor: user._id
