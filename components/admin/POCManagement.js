@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import UserModal from './UserModal';
 
-export function SuperMentorManagement() {
-  const [superMentors, setSuperMentors] = useState([]);
+export function POCManagement() {
+  const [pocs, setPOCs] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -15,7 +15,7 @@ export function SuperMentorManagement() {
     email: '',
     college: '',
     specialization: '',
-    role: 'super-mentor',
+    role: 'POC',
     status: 'active',
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,13 +29,13 @@ export function SuperMentorManagement() {
     setLoading(true);
     try {
       const [usersResponse, collegesResponse] = await Promise.all([
-        fetch('/api/admin/users?role=super-mentor'),
+        fetch('/api/admin/users?role=POC'),
         fetch('/api/admin/colleges')
       ]);
 
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
-        setSuperMentors(usersData.users || []);
+        setPOCs(usersData.users || []);
       }
 
       if (collegesResponse.ok) {
@@ -56,7 +56,7 @@ export function SuperMentorManagement() {
       email: '',
       college: '',
       specialization: '',
-      role: 'super-mentor',
+      role: 'POC',
       status: 'active',
     });
     setIsEditMode(false);
