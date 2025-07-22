@@ -18,7 +18,7 @@ export async function GET() {
     const mentor = await User.findById(session.user.id);
     const interns = await User.find({ 
       role: 'AI Developer Intern', 
-      assignedTech Lead: mentor._id,
+      assignedTechLead: mentor._id,
       isActive: true 
     })
     .populate('college', 'name')
@@ -26,7 +26,7 @@ export async function GET() {
     .sort({ createdAt: -1 });
 
     // Format interns for frontend
-    const formattedAI Developer Interns = interns.map(intern => ({
+    const formattedAIDeveloperInterns = interns.map(intern => ({
       _id: intern._id,
       id: intern._id,
       gitlabUsername: intern.gitlabUsername,
@@ -43,7 +43,7 @@ export async function GET() {
       performance_score: Math.floor(Math.random() * 30) + 70
     }));
 
-    return NextResponse.json({ users: formattedAI Developer Interns });
+    return NextResponse.json({ users: formattedAIDeveloperInterns });
 
   } catch (error) {
     console.error('Error fetching assigned interns:', error);

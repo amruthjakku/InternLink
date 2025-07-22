@@ -9,7 +9,7 @@ export async function GET() {
     // Get all users with detailed info
     const allUsers = await User.find({})
       .populate('college')
-      .populate('assignedTech Lead')
+      .populate('assignedTechLead')
       .sort({ createdAt: -1 });
     
     const analysis = {
@@ -37,17 +37,17 @@ export async function GET() {
         college: user.college?.name || 'No college',
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt,
-        assignedTech Lead: user.assignedTech Lead?.gitlabUsername || 'None',
+        assignedTechLead: user.assignedTechLead?.gitlabUsername || 'None',
         hasRequiredFields: {
           hasCollege: !!user.college,
-          hasTech Lead: user.role !== 'AI Developer Intern' || !!user.assignedTech Lead,
+          hasTechLead: user.role !== 'AI Developer Intern' || !!user.assignedTechLead,
           hasAssignedBy: !!user.assignedBy
         }
       })),
       
       // Common patterns
       patterns: {
-        missingTech Leads: allUsers.filter(u => u.role === 'AI Developer Intern' && !u.assignedTech Lead).length,
+        missingTechLeads: allUsers.filter(u => u.role === 'AI Developer Intern' && !u.assignedTechLead).length,
         missingColleges: allUsers.filter(u => !u.college && u.role !== 'admin').length,
         neverLoggedIn: allUsers.filter(u => !u.lastLoginAt).length,
         oldAccounts: allUsers.filter(u => {

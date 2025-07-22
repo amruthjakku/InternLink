@@ -43,7 +43,7 @@ export async function GET(request) {
     const query = { role: 'AI Developer Intern' };
     
     if (collegeId) query.college = collegeId;
-    if (mentorId) query.assignedTech Lead = mentorId;
+    if (mentorId) query.assignedTechLead = mentorId;
     if (status === 'active') query.isActive = true;
     if (status === 'inactive') query.isActive = false;
     
@@ -51,7 +51,7 @@ export async function GET(request) {
     const totalAIDeveloperInterns = await User.countDocuments(query);
     const interns = await User.find(query)
       .populate('college', 'name')
-      .populate('assignedTech Lead', 'name email')
+      .populate('assignedTechLead', 'name email')
       .populate('cohortId', 'name startDate endDate')
       .select('-password')
       .sort({ createdAt: -1 })
@@ -69,10 +69,10 @@ export async function GET(request) {
           id: intern.college._id,
           name: intern.college.name
         } : null,
-        mentor: intern.assignedTech Lead ? {
-          id: intern.assignedTech Lead._id,
-          name: intern.assignedTech Lead.name,
-          email: intern.assignedTech Lead.email
+        mentor: intern.assignedTechLead ? {
+          id: intern.assignedTechLead._id,
+          name: intern.assignedTechLead.name,
+          email: intern.assignedTechLead.email
         } : null,
         cohort: intern.cohortId ? {
           id: intern.cohortId._id,

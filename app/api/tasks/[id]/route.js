@@ -206,15 +206,15 @@ export async function PATCH(request, { params }) {
 
     // Check if the user is authorized to update this task
     // AI Developer Interns can only update tasks assigned to them
-    const isAssignedAI Developer Intern = 
+    const isAssignedAIDeveloperIntern = 
       session.user.role === 'AI Developer Intern' && 
       task.assignedTo && 
       task.assignedTo.toString() === session.user.id;
     
     // Tech Leads and admins can update any task
-    const isTech LeadOrAdmin = ['Tech Lead', 'admin'].includes(session.user.role);
+    const isTechLeadOrAdmin = ['Tech Lead', 'admin'].includes(session.user.role);
     
-    if (!isAssignedAI Developer Intern && !isTech LeadOrAdmin) {
+    if (!isAssignedAIDeveloperIntern && !isTechLeadOrAdmin) {
       return NextResponse.json({ 
         error: 'You do not have permission to update this task' 
       }, { status: 403 });

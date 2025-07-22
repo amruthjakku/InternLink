@@ -40,21 +40,21 @@ export async function GET(request, { params }) {
       .sort({ updatedAt: -1 });
 
     // Get all interns who should have this task (but might not have progress records yet)
-    let expectedAI Developer Interns = [];
+    let expectedAIDeveloperInterns = [];
     
     if (task.assignmentType === 'individual' && task.assignedTo) {
       const intern = await User.findById(task.assignedTo);
       if (intern && intern.role === 'AI Developer Intern') {
-        expectedAI Developer Interns = [intern];
+        expectedAIDeveloperInterns = [intern];
       }
     } else if (task.assignmentType === 'cohort' && task.cohortId) {
-      expectedAI Developer Interns = await User.find({ 
+      expectedAIDeveloperInterns = await User.find({ 
         cohortId: task.cohortId, 
         role: 'AI Developer Intern',
         isActive: true 
       });
     } else if (task.assignmentType === 'hierarchical' && task.assignedTo?.colleges) {
-      expectedAI Developer Interns = await User.find({
+      expectedAIDeveloperInterns = await User.find({
         college: { $in: task.assignedTo.colleges },
         role: 'AI Developer Intern',
         isActive: true
@@ -68,7 +68,7 @@ export async function GET(request, { params }) {
     });
 
     // Build comprehensive progress overview
-    const progressOverview = expectedAI Developer Interns.map(intern => {
+    const progressOverview = expectedAIDeveloperInterns.map(intern => {
       const progress = progressMap.get(intern._id.toString());
       
       return {

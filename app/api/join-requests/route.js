@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 import { 
   createJoinRequest, 
-  getJoinRequestsByTech Lead,
-  getJoinRequestsByAI Developer Intern,
+  getJoinRequestsByTechLead,
+  getJoinRequestsByAIDeveloperIntern,
   updateJoinRequest,
   getUserByGitLabId,
   getCollegeById,
@@ -90,9 +90,9 @@ export async function GET(request) {
     let joinRequests;
     
     if (user.role === 'Tech Lead') {
-      joinRequests = await getJoinRequestsByTech Lead(user._id.toString());
+      joinRequests = await getJoinRequestsByTechLead(user._id.toString());
     } else if (user.role === 'AI Developer Intern') {
-      joinRequests = await getJoinRequestsByAI Developer Intern(user._id.toString());
+      joinRequests = await getJoinRequestsByAIDeveloperIntern(user._id.toString());
     } else {
       return NextResponse.json({ error: "Invalid user role" }, { status: 400 });
     }
@@ -148,14 +148,14 @@ export async function PATCH(request) {
     // If approved, increment cohort intern count
     if (status === 'approved') {
       // Get the join request to find the cohort
-      const joinRequests = await getJoinRequestsByTech Lead(user._id.toString());
+      const joinRequests = await getJoinRequestsByTechLead(user._id.toString());
       const joinRequest = joinRequests.find(req => req._id.toString() === requestId);
       
       if (joinRequest) {
         const cohort = await getCohortById(joinRequest.cohortId);
         if (cohort) {
           await updateCohort(joinRequest.cohortId, {
-            currentAI Developer Interns: (cohort.currentAI Developer Interns || 0) + 1
+            currentAIDeveloperInterns: (cohort.currentAIDeveloperInterns || 0) + 1
           });
         }
       }

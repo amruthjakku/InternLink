@@ -11,7 +11,7 @@ export async function POST(request) {
     // Find user and populate all required fields
     const user = await User.findOne({ gitlabUsername: username })
       .populate('college')
-      .populate('assignedTech Lead');
+      .populate('assignedTechLead');
     
     if (!user) {
       return NextResponse.json({ 
@@ -27,7 +27,7 @@ export async function POST(request) {
       isActive: user.isActive,
       hasRole: !!user.role,
       hasCollege: !!user.college,
-      hasTech LeadIfNeeded: user.role !== 'AI Developer Intern' || !!user.assignedTech Lead,
+      hasTechLeadIfNeeded: user.role !== 'AI Developer Intern' || !!user.assignedTechLead,
       hasAssignedBy: !!user.assignedBy
     };
     
@@ -47,7 +47,7 @@ export async function POST(request) {
         role: user.role,
         isActive: user.isActive,
         college: user.college?.name,
-        assignedTech Lead: user.assignedTech Lead?.gitlabUsername,
+        assignedTechLead: user.assignedTechLead?.gitlabUsername,
         assignedBy: user.assignedBy
       }
     });

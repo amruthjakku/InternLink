@@ -26,7 +26,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, collegeId, startDate, endDate, maxAI Developer Interns } = body;
+    const { name, description, collegeId, startDate, endDate, maxAIDeveloperInterns } = body;
 
     if (!name || !collegeId) {
       return NextResponse.json({ error: "Cohort name and college are required" }, { status: 400 });
@@ -45,7 +45,7 @@ export async function POST(request) {
       createdBy: user._id.toString(),
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
-      maxAI Developer Interns: maxAI Developer Interns || 20
+      maxAIDeveloperInterns: maxAIDeveloperInterns || 20
     };
 
     const cohortId = await createCohort(cohortData);

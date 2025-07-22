@@ -39,7 +39,7 @@ export async function GET(request) {
         c._id.toString() === (task.cohortId?.toString() || task.cohortId)
       );
       
-      const assignedAI Developer Interns = usersWithCohorts.filter(u => 
+      const assignedAIDeveloperInterns = usersWithCohorts.filter(u => 
         u.cohortId.toString() === (task.cohortId?.toString() || task.cohortId)
       );
       
@@ -48,8 +48,8 @@ export async function GET(request) {
         title: task.title,
         cohortId: task.cohortId,
         cohortName: cohort?.name || 'Unknown',
-        assignedAI Developer InternsCount: assignedAI Developer Interns.length,
-        assignedAI Developer Interns: assignedAI Developer Interns.map(u => ({
+        assignedAIDeveloperInternsCount: assignedAIDeveloperInterns.length,
+        assignedAIDeveloperInterns: assignedAIDeveloperInterns.map(u => ({
           id: u._id,
           name: u.name,
           gitlabUsername: u.gitlabUsername

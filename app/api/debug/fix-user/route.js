@@ -139,13 +139,13 @@ export async function POST(request) {
       
       // If no mentor found, create a default one or make the user not require mentor
       if (!mentor) {
-        // Option 1: Temporarily make assignedTech Lead not required for this user
+        // Option 1: Temporarily make assignedTechLead not required for this user
         // by making them a 'pending' role first, then back to intern
         await User.findByIdAndUpdate(user._id, {
-          assignedTech Lead: undefined,
+          assignedTechLead: undefined,
           assignedBy: 'system-auto',
           role: 'AI Developer Intern',
-          $unset: { assignedTech Lead: 1 }  // Remove the field entirely
+          $unset: { assignedTechLead: 1 }  // Remove the field entirely
         });
         
         return NextResponse.json({
@@ -155,7 +155,7 @@ export async function POST(request) {
             gitlabUsername: user.gitlabUsername,
             email: user.email,
             role: user.role,
-            needsTech LeadAssignment: true
+            needsTechLeadAssignment: true
           }
         });
       } else {
@@ -163,7 +163,7 @@ export async function POST(request) {
         const updatedUser = await User.findByIdAndUpdate(
           user._id,
           {
-            assignedTech Lead: mentor._id,
+            assignedTechLead: mentor._id,
             assignedBy: 'system-auto'
           },
           { new: true }
@@ -176,7 +176,7 @@ export async function POST(request) {
             gitlabUsername: updatedUser.gitlabUsername,
             email: updatedUser.email,
             role: updatedUser.role,
-            assignedTech Lead: mentor.gitlabUsername
+            assignedTechLead: mentor.gitlabUsername
           }
         });
       }
@@ -197,7 +197,7 @@ export async function POST(request) {
         { 
           role: 'pending',
           assignedBy: 'system-temp',
-          $unset: { assignedTech Lead: 1 }
+          $unset: { assignedTechLead: 1 }
         },
         { new: true }
       );
