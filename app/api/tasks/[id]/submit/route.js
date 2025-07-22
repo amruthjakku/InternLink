@@ -101,10 +101,10 @@ export async function POST(request, { params }) {
       
       // Allow all interns to submit their tasks for now
       // This is a temporary fix to ensure functionality
-      if (session.user.role === 'intern') {
+      if (session.user.role === 'AI Developer Intern') {
         console.log('User is an intern, allowing task submission');
         // We'll implement proper permission checks later
-      } else if (session.user.role === 'mentor' || session.user.role === 'super-mentor' || session.user.role === 'admin') {
+      } else if (session.user.role === 'Tech Lead' || session.user.role === 'POC' || session.user.role === 'admin') {
         console.log('User is a mentor/admin, allowing task submission');
       } else {
         console.log('User role not recognized:', session.user.role);

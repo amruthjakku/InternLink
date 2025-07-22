@@ -32,8 +32,8 @@ export async function GET(request) {
     if (college) query.college = college;
 
     // Role-based access control
-    if (session.user.role === 'intern') {
-      // Interns can see public rooms and college-only rooms from their college
+    if (session.user.role === 'AI Developer Intern') {
+      // AI Developer Interns can see public rooms and college-only rooms from their college
       query.$or = [
         { visibility: 'public' },
         { 
@@ -44,8 +44,8 @@ export async function GET(request) {
           'participants.user': session.user._id
         }
       ];
-    } else if (session.user.role === 'mentor') {
-      // Mentors can see public rooms and college-only rooms from their college
+    } else if (session.user.role === 'Tech Lead') {
+      // Tech Leads can see public rooms and college-only rooms from their college
       query.$or = [
         { visibility: 'public' },
         { 
@@ -56,7 +56,7 @@ export async function GET(request) {
           'participants.user': session.user._id
         }
       ];
-    } else if (session.user.role === 'super-mentor') {
+    } else if (session.user.role === 'POC') {
       // Super-mentors can see all rooms from their college and public rooms
       query.$or = [
         { visibility: 'public' },
@@ -140,7 +140,7 @@ export async function POST(request) {
     // For super-mentors, ensure they can only create rooms for their college
     let roomCollege = null;
     if (visibility === 'college-only') {
-      if (session.user.role === 'super-mentor') {
+      if (session.user.role === 'POC') {
         roomCollege = session.user.college;
         if (!roomCollege) {
           return NextResponse.json({ 

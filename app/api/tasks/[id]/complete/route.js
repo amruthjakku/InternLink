@@ -78,10 +78,10 @@ export async function PATCH(request, { params }) {
       
       // Allow all interns to complete their tasks for now
       // This is a temporary fix to ensure functionality
-      if (session.user.role === 'intern') {
+      if (session.user.role === 'AI Developer Intern') {
         console.log('User is an intern, allowing task completion');
         // We'll implement proper permission checks later
-      } else if (session.user.role === 'mentor' || session.user.role === 'super-mentor' || session.user.role === 'admin') {
+      } else if (session.user.role === 'Tech Lead' || session.user.role === 'POC' || session.user.role === 'admin') {
         console.log('User is a mentor/admin, allowing task completion');
       } else {
         console.log('User role not recognized:', session.user.role);

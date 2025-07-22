@@ -16,39 +16,39 @@ export async function GET() {
     await connectToDatabase();
 
     const colleges = await College.find({ isActive: true })
-      .select('name description location website superMentorUsername createdAt')
+      .select('name description location website superTech LeadUsername createdAt')
       .sort({ name: 1 });
 
     // Get super-mentor names and intern counts for each college
     const collegesWithPOCs = await Promise.all(
       colleges.map(async (college) => {
-        let superMentorName = 'N/A';
-        if (college.superMentorUsername) {
-          const superMentor = await User.findOne({ 
-            gitlabUsername: college.superMentorUsername,
-            role: 'super-mentor',
+        let superTech LeadName = 'N/A';
+        if (college.superTech LeadUsername) {
+          const superTech Lead = await User.findOne({ 
+            gitlabUsername: college.superTech LeadUsername,
+            role: 'POC',
             isActive: true 
           });
-          if (superMentor) {
-            superMentorName = superMentor.name;
+          if (superTech Lead) {
+            superTech LeadName = superTech Lead.name;
           }
         }
         
         // Get intern counts for this college
-        const totalInterns = await User.countDocuments({
+        const totalAIDeveloperInterns = await User.countDocuments({
           college: college._id,
-          role: 'intern'
+          role: 'AI Developer Intern'
         });
         
-        const activeInterns = await User.countDocuments({
+        const activeAIDeveloperInterns = await User.countDocuments({
           college: college._id,
-          role: 'intern',
+          role: 'AI Developer Intern',
           isActive: true
         });
         
         const internsWithCohorts = await User.countDocuments({
           college: college._id,
-          role: 'intern',
+          role: 'AI Developer Intern',
           cohortId: { $ne: null }
         });
         
@@ -58,10 +58,10 @@ export async function GET() {
           description: college.description,
           location: college.location,
           website: college.website,
-          superMentorUsername: college.superMentorUsername,
-          superMentorName,
-          totalInterns,
-          activeInterns,
+          superTech LeadUsername: college.superTech LeadUsername,
+          superTech LeadName,
+          totalAIDeveloperInterns,
+          activeAIDeveloperInterns,
           internsWithCohorts,
           createdAt: college.createdAt
         };
@@ -86,7 +86,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, description, location, website, superMentorUsername } = await request.json();
+    const { name, description, location, website, superTech LeadUsername } = await request.json();
 
     if (!name || !description || !location) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -104,14 +104,14 @@ export async function POST(request) {
     }
 
     // Validate super-mentor if provided
-    if (superMentorUsername) {
-      const superMentor = await User.findOne({ 
-        gitlabUsername: superMentorUsername.toLowerCase(),
-        role: 'super-mentor',
+    if (superTech LeadUsername) {
+      const superTech Lead = await User.findOne({ 
+        gitlabUsername: superTech LeadUsername.toLowerCase(),
+        role: 'POC',
         isActive: true 
       });
       
-      if (!superMentor) {
+      if (!superTech Lead) {
         return NextResponse.json({ error: 'Super-mentor not found' }, { status: 400 });
       }
     }
@@ -122,7 +122,7 @@ export async function POST(request) {
       description,
       location,
       website: website || '',
-      superMentorUsername: superMentorUsername ? superMentorUsername.toLowerCase() : '',
+      superTech LeadUsername: superTech LeadUsername ? superTech LeadUsername.toLowerCase() : '',
       isActive: true,
       createdBy: session.user.gitlabUsername || session.user.email || 'admin'
     });

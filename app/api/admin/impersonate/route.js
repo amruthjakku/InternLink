@@ -20,7 +20,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    if (!['super-mentor', 'mentor', 'intern'].includes(targetRole)) {
+    if (!['POC', 'Tech Lead', 'AI Developer Intern'].includes(targetRole)) {
       return NextResponse.json({ 
         error: 'Invalid target role' 
       }, { status: 400 });
@@ -99,11 +99,11 @@ export async function DELETE(request) {
 
 function getRedirectUrl(role) {
   switch (role) {
-    case 'super-mentor':
-    case 'mentor':
-      return '/mentor/dashboard';
-    case 'intern':
-      return '/intern/dashboard';
+    case 'POC':
+    case 'Tech Lead':
+      return '/tech-lead/dashboard';
+    case 'AI Developer Intern':
+      return '/ai-developer-intern/dashboard';
     default:
       return '/';
   }

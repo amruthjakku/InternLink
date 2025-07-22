@@ -139,7 +139,7 @@ export function UserActivationManagement() {
       setActivating(true);
       
       // Fix mentor assignment if needed
-      if (issues.includes('hasMentorIfNeeded')) {
+      if (issues.includes('hasTech LeadIfNeeded')) {
         const response = await fetch('/api/debug/fix-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -301,7 +301,7 @@ export function UserActivationManagement() {
             <div className="text-sm text-orange-800 space-y-2">
               <p><strong>📋 Current Issues Found:</strong></p>
               <ul className="list-disc list-inside ml-4 space-y-1">
-                <li><strong>Missing Mentors:</strong> {users.filter(u => u.role === 'intern' && !u.assignedMentor && !u.isActive).length} inactive interns need mentor assignment</li>
+                <li><strong>Missing Tech Leads:</strong> {users.filter(u => u.role === 'AI Developer Intern' && !u.assignedTech Lead && !u.isActive).length} inactive interns need mentor assignment</li>
                 <li><strong>Never Logged In:</strong> {users.filter(u => !u.lastLoginAt && !u.isActive).length} users created but never accessed the system</li>
                 <li><strong>Login Validation Failures:</strong> Users who failed required field checks during authentication</li>
                 <li><strong>Admin Actions:</strong> Some users were manually deactivated for security/management reasons</li>
@@ -352,9 +352,9 @@ export function UserActivationManagement() {
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
-              <option value="super-mentor">Super Mentor</option>
-              <option value="mentor">Mentor</option>
-              <option value="intern">Intern</option>
+              <option value="POC">POC</option>
+              <option value="Tech Lead">Tech Lead</option>
+              <option value="AI Developer Intern">AI Developer Intern</option>
               <option value="pending">Pending</option>
             </select>
           </div>
@@ -390,10 +390,10 @@ export function UserActivationManagement() {
               Select All Pending ({filteredUsers.filter(u => u.role === 'pending').length})
             </button>
             <button
-              onClick={() => setSelectedUsers(new Set(filteredUsers.filter(u => u.role === 'intern').map(u => u.username)))}
+              onClick={() => setSelectedUsers(new Set(filteredUsers.filter(u => u.role === 'AI Developer Intern').map(u => u.username)))}
               className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
             >
-              Select All Interns ({filteredUsers.filter(u => u.role === 'intern').length})
+              Select All AI Developer Interns ({filteredUsers.filter(u => u.role === 'AI Developer Intern').length})
             </button>
             {selectedUsers.size > 0 && (
               <button
@@ -537,9 +537,9 @@ export function UserActivationManagement() {
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      user.role === 'super-mentor' ? 'bg-blue-100 text-blue-800' :
-                      user.role === 'mentor' ? 'bg-green-100 text-green-800' :
-                      user.role === 'intern' ? 'bg-gray-100 text-gray-800' :
+                      user.role === 'POC' ? 'bg-blue-100 text-blue-800' :
+                      user.role === 'Tech Lead' ? 'bg-green-100 text-green-800' :
+                      user.role === 'AI Developer Intern' ? 'bg-gray-100 text-gray-800' :
                       'bg-yellow-100 text-yellow-800'
                     }`}>
                       {user.role}

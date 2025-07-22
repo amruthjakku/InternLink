@@ -53,7 +53,7 @@ function AuthErrorContent() {
         return {
           title: 'Access Not Authorized',
           message: 'Your GitLab account is not yet registered in our system.',
-          description: 'To gain access to the Internship Tracker platform, you need to be pre-registered by an admin or mentor.',
+          description: 'To gain access to the AI Developer Internship Tracker platform, you need to be pre-registered by an admin or mentor.',
           icon: '🚫',
           color: 'red'
         };
@@ -159,8 +159,8 @@ function AuthErrorContent() {
               <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
                 <h4 className="font-medium text-gray-900 mb-2">How to get access:</h4>
                 <ul className="text-sm text-gray-600 text-left space-y-1">
-                  <li>• <strong>For Interns:</strong> Ask your mentor to add your GitLab username to the system</li>
-                  <li>• <strong>For Mentors:</strong> Contact an admin to register your GitLab username</li>
+                  <li>• <strong>For AI Developer Interns:</strong> Ask your mentor to add your GitLab username to the system</li>
+                  <li>• <strong>For Tech Leads:</strong> Contact an admin to register your GitLab username</li>
                   <li>• <strong>For Admins:</strong> Contact the system administrator</li>
                 </ul>
               </div>

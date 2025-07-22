@@ -103,18 +103,18 @@ export default function AdminDebugPage() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
-                onClick={() => testRoleUpdate('test1', 'intern', true)}
+                onClick={() => testRoleUpdate('test1', 'AI Developer Intern', true)}
                 disabled={testing}
                 className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
               >
-                {testing ? '⏳' : '✅'} Make test1 Intern
+                {testing ? '⏳' : '✅'} Make test1 AI Developer Intern
               </button>
               <button
-                onClick={() => testRoleUpdate('test1', 'mentor', true)}
+                onClick={() => testRoleUpdate('test1', 'Tech Lead', true)}
                 disabled={testing}
                 className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {testing ? '⏳' : '👨‍💼'} Make test1 Mentor
+                {testing ? '⏳' : '👨‍💼'} Make test1 Tech Lead
               </button>
               <button
                 onClick={() => testRoleUpdate('test1', 'pending', true)}
@@ -216,7 +216,7 @@ export default function AdminDebugPage() {
                             user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                             user.role === 'POC' ? 'bg-blue-100 text-blue-800' :
                             user.role === 'Tech Lead' ? 'bg-green-100 text-green-800' :
-                            user.role === 'AI developer Intern' ? 'bg-gray-100 text-gray-800' :
+                            user.role === 'AI Developer Intern' ? 'bg-gray-100 text-gray-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
                             {user.role}
@@ -241,16 +241,16 @@ export default function AdminDebugPage() {
                         <td className="px-4 py-2 border-b">
                           <div className="flex space-x-1">
                             <button
-                              onClick={() => testRoleUpdate(user.username, 'intern', true)}
+                              onClick={() => testRoleUpdate(user.username, 'AI Developer Intern', true)}
                               className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                             >
-                              👨‍🎓 Intern
+                              👨‍🎓 AI Developer Intern
                             </button>
                             <button
-                              onClick={() => testRoleUpdate(user.username, 'mentor', true)}
+                              onClick={() => testRoleUpdate(user.username, 'Tech Lead', true)}
                               className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
                             >
-                              👨‍💼 Mentor
+                              👨‍💼 Tech Lead
                             </button>
                             <button
                               onClick={() => forceRefreshSession(user.username)}

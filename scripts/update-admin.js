@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Admin Update Script for Internship Tracker
+ * Admin Update Script for AI Developer Internship Tracker
  * 
  * Usage:
  *   node scripts/update-admin.js --gitlab-username=amruthjakku --email="amruthjakku@gmail.com"
@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'] },
+  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI Developer Intern'] },
   assignedBy: { type: String, required: true },
   isActive: { type: Boolean, default: true },
   profileImage: { type: String, default: null },
@@ -142,7 +142,7 @@ async function main() {
     process.exit(1);
   }
   
-  console.log('🔄 Updating admin user for Internship Tracker...');
+  console.log('🔄 Updating admin user for AI Developer Internship Tracker...');
   console.log(`   GitLab Username: ${args.gitlab_username}`);
   if (args.email) console.log(`   New Email: ${args.email}`);
   if (args.name) console.log(`   New Name: ${args.name}`);

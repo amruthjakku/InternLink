@@ -189,7 +189,7 @@ export function GitLabTemplateSelector({ value, onChange, disabled }) {
       
       {/* Help Text */}
       <p className="text-xs text-gray-500">
-        Select a GitLab repository to use as a template for this task. Interns will be able to fork this repository to start working on the task.
+        Select a GitLab repository to use as a template for this task. AI Developer Interns will be able to fork this repository to start working on the task.
       </p>
     </div>
   );

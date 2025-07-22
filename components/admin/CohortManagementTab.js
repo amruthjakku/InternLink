@@ -6,8 +6,8 @@ import { useAuth } from '../AuthProvider';
 export function CohortManagementTab() {
   const { user } = useAuth();
   const [cohorts, setCohorts] = useState([]);
-  const [mentors, setMentors] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [mentors, setTechLeads] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -18,7 +18,7 @@ export function CohortManagementTab() {
     startDate: '',
     endDate: '',
     mentorId: '',
-    maxInterns: 10
+    maxAI Developer Interns: 10
   });
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export function CohortManagementTab() {
 
       if (mentorsRes.ok) {
         const mentorsData = await mentorsRes.json();
-        setMentors(mentorsData.mentors || []);
+        setTechLeads(mentorsData.mentors || []);
       }
 
       if (internsRes.ok) {
         const internsData = await internsRes.json();
-        setInterns(internsData.interns || []);
+        setAIDeveloperInterns(internsData.interns || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -75,7 +75,7 @@ export function CohortManagementTab() {
           startDate: '',
           endDate: '',
           mentorId: '',
-          maxInterns: 10
+          maxAI Developer Interns: 10
         });
         fetchData();
         alert('Cohort created successfully!');
@@ -134,7 +134,7 @@ export function CohortManagementTab() {
     }
   };
 
-  const assignInternToCohort = async (internId, cohortId) => {
+  const assignAI Developer InternToCohort = async (internId, cohortId) => {
     try {
       const response = await fetch('/api/admin/assign-intern-cohort', {
         method: 'POST',
@@ -144,7 +144,7 @@ export function CohortManagementTab() {
 
       if (response.ok) {
         fetchData();
-        alert('Intern assigned to cohort successfully!');
+        alert('AI Developer Intern assigned to cohort successfully!');
       } else {
         const error = await response.json();
         alert(`Error: ${error.message}`);
@@ -155,11 +155,11 @@ export function CohortManagementTab() {
     }
   };
 
-  const getUnassignedInterns = () => {
+  const getUnassignedAI Developer Interns = () => {
     return interns.filter(intern => !intern.cohortId);
   };
 
-  const getCohortInterns = (cohortId) => {
+  const getCohortAI Developer Interns = (cohortId) => {
     return interns.filter(intern => intern.cohortId === cohortId);
   };
 
@@ -222,13 +222,13 @@ export function CohortManagementTab() {
             <div className="text-2xl font-bold text-purple-600">
               {interns.filter(i => i.cohortId).length}
             </div>
-            <div className="text-sm text-gray-600">Assigned Interns</div>
+            <div className="text-sm text-gray-600">Assigned AI Developer Interns</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg">
             <div className="text-2xl font-bold text-orange-600">
-              {getUnassignedInterns().length}
+              {getUnassignedAI Developer Interns().length}
             </div>
-            <div className="text-sm text-gray-600">Unassigned Interns</div>
+            <div className="text-sm text-gray-600">Unassigned AI Developer Interns</div>
           </div>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function CohortManagementTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cohorts.map((cohort) => {
           const cohortStatus = getCohortStatus(cohort);
-          const cohortInterns = getCohortInterns(cohort._id);
+          const cohortAI Developer Interns = getCohortAI Developer Interns(cohort._id);
           const mentor = mentors.find(m => m._id === cohort.mentorId);
 
           return (
@@ -257,7 +257,7 @@ export function CohortManagementTab() {
               <div className="space-y-3 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="mr-2">👨‍🏫</span>
-                  <span>Mentor: {mentor?.name || 'Unassigned'}</span>
+                  <span>Tech Lead: {mentor?.name || 'Unassigned'}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="mr-2">📅</span>
@@ -267,7 +267,7 @@ export function CohortManagementTab() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="mr-2">👥</span>
-                  <span>{cohortInterns.length}/{cohort.maxInterns} interns</span>
+                  <span>{cohortAI Developer Interns.length}/{cohort.maxAI Developer Interns} interns</span>
                 </div>
               </div>
 
@@ -275,22 +275,22 @@ export function CohortManagementTab() {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Capacity</span>
-                  <span>{Math.round((cohortInterns.length / cohort.maxInterns) * 100)}%</span>
+                  <span>{Math.round((cohortAI Developer Interns.length / cohort.maxAI Developer Interns) * 100)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${Math.min((cohortInterns.length / cohort.maxInterns) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((cohortAI Developer Interns.length / cohort.maxAI Developer Interns) * 100, 100)}%` }}
                   ></div>
                 </div>
               </div>
 
-              {/* Interns List */}
-              {cohortInterns.length > 0 && (
+              {/* AI Developer Interns List */}
+              {cohortAI Developer Interns.length > 0 && (
                 <div className="mb-4">
-                  <h5 className="text-sm font-medium text-gray-900 mb-2">Assigned Interns</h5>
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Assigned AI Developer Interns</h5>
                   <div className="space-y-1">
-                    {cohortInterns.slice(0, 3).map(intern => (
+                    {cohortAI Developer Interns.slice(0, 3).map(intern => (
                       <div key={intern._id} className="flex items-center text-sm text-gray-600">
                         <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
                           <span className="text-white text-xs">{intern.name?.charAt(0) || 'I'}</span>
@@ -298,9 +298,9 @@ export function CohortManagementTab() {
                         <span>{intern.name} ({intern.gitlabUsername})</span>
                       </div>
                     ))}
-                    {cohortInterns.length > 3 && (
+                    {cohortAI Developer Interns.length > 3 && (
                       <div className="text-sm text-gray-500">
-                        +{cohortInterns.length - 3} more interns
+                        +{cohortAI Developer Interns.length - 3} more interns
                       </div>
                     )}
                   </div>
@@ -330,12 +330,12 @@ export function CohortManagementTab() {
         })}
       </div>
 
-      {/* Unassigned Interns */}
-      {getUnassignedInterns().length > 0 && (
+      {/* Unassigned AI Developer Interns */}
+      {getUnassignedAI Developer Interns().length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Unassigned Interns</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Unassigned AI Developer Interns</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getUnassignedInterns().map(intern => (
+            {getUnassignedAI Developer Interns().map(intern => (
               <div key={intern._id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center mb-3">
                   <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center mr-3">
@@ -350,7 +350,7 @@ export function CohortManagementTab() {
                 <select
                   onChange={(e) => {
                     if (e.target.value) {
-                      assignInternToCohort(intern._id, e.target.value);
+                      assignAI Developer InternToCohort(intern._id, e.target.value);
                     }
                   }}
                   className="w-full text-sm border-gray-300 rounded-md"
@@ -359,7 +359,7 @@ export function CohortManagementTab() {
                   <option value="">Assign to Cohort</option>
                   {cohorts.map(cohort => (
                     <option key={cohort._id} value={cohort._id}>
-                      {cohort.name} ({getCohortInterns(cohort._id).length}/{cohort.maxInterns})
+                      {cohort.name} ({getCohortAI Developer Interns(cohort._id).length}/{cohort.maxAI Developer Interns})
                     </option>
                   ))}
                 </select>
@@ -414,13 +414,13 @@ export function CohortManagementTab() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mentor</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tech Lead</label>
                 <select
                   value={newCohort.mentorId}
                   onChange={(e) => setNewCohort({...newCohort, mentorId: e.target.value})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
-                  <option value="">Select Mentor (Optional)</option>
+                  <option value="">Select Tech Lead (Optional)</option>
                   {mentors.map(mentor => (
                     <option key={mentor._id} value={mentor._id}>
                       {mentor.name} ({mentor.gitlabUsername})
@@ -429,11 +429,11 @@ export function CohortManagementTab() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Interns</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max AI Developer Interns</label>
                 <input
                   type="number"
-                  value={newCohort.maxInterns}
-                  onChange={(e) => setNewCohort({...newCohort, maxInterns: parseInt(e.target.value)})}
+                  value={newCohort.maxAI Developer Interns}
+                  onChange={(e) => setNewCohort({...newCohort, maxAI Developer Interns: parseInt(e.target.value)})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   min="1"
                   required
@@ -504,13 +504,13 @@ export function CohortManagementTab() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mentor</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tech Lead</label>
                 <select
                   value={editingCohort.mentorId || ''}
                   onChange={(e) => setEditingCohort({...editingCohort, mentorId: e.target.value})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
-                  <option value="">Select Mentor (Optional)</option>
+                  <option value="">Select Tech Lead (Optional)</option>
                   {mentors.map(mentor => (
                     <option key={mentor._id} value={mentor._id}>
                       {mentor.name} ({mentor.gitlabUsername})
@@ -519,11 +519,11 @@ export function CohortManagementTab() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Interns</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max AI Developer Interns</label>
                 <input
                   type="number"
-                  value={editingCohort.maxInterns}
-                  onChange={(e) => setEditingCohort({...editingCohort, maxInterns: parseInt(e.target.value)})}
+                  value={editingCohort.maxAI Developer Interns}
+                  onChange={(e) => setEditingCohort({...editingCohort, maxAI Developer Interns: parseInt(e.target.value)})}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   min="1"
                   required

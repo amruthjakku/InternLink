@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user.role !== 'admin' && session.user.role !== 'super-mentor')) {
+    if (!session || (session.user.role !== 'admin' && session.user.role !== 'POC')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -148,7 +148,7 @@ async function processUserImport(data, preview, currentUser) {
     }
 
     // Validate role
-    if (row.role && !['admin', 'POC', 'Tech Lead', 'AI developer Intern'].includes(row.role)) {
+    if (row.role && !['admin', 'POC', 'Tech Lead', 'AI Developer Intern'].includes(row.role)) {
       rowErrors.push(`Row ${i + 1}: Invalid role '${row.role}'`);
     }
 
@@ -166,7 +166,7 @@ async function processUserImport(data, preview, currentUser) {
         gitlabUsername: row.gitlabUsername.toLowerCase().trim(),
         name: row.name || row.gitlabUsername,
         email: row.email ? row.email.toLowerCase().trim() : null,
-        role: row.role || 'intern',
+        role: row.role || 'AI Developer Intern',
         college: row.college || null,
         cohort: row.cohort || null,
         assignedBy: currentUser.gitlabUsername || currentUser.name,
@@ -467,7 +467,7 @@ async function processLegacyUserImport(data, preview, currentUser) {
       let collegeId = null;
 
       // Handle college assignment
-      if (role === 'AI developer Intern' && !collegeName) {
+      if (role === 'AI Developer Intern' && !collegeName) {
         errors.push(`Row ${i + 1}: College is required for intern role`);
         failed++;
         continue;
@@ -489,13 +489,13 @@ async function processLegacyUserImport(data, preview, currentUser) {
 
         // Check if college already has a mentor for mentor role
         if (role === 'Tech Lead') {
-          const existingMentor = await User.findOne({ 
+          const existingTech Lead = await User.findOne({ 
             role: 'Tech Lead', 
             college: collegeId, 
             isActive: true 
           });
 
-          if (existingMentor) {
+          if (existingTech Lead) {
             errors.push(`Row ${i + 1}: College '${collegeName}' already has a mentor assigned`);
             failed++;
             continue;
@@ -510,7 +510,7 @@ async function processLegacyUserImport(data, preview, currentUser) {
         name,
         email: email.toLowerCase(),
         role,
-        college: (role === 'AI developer Intern' || (role === 'Tech Lead' && collegeId)) ? collegeId : undefined,
+        college: (role === 'AI Developer Intern' || (role === 'Tech Lead' && collegeId)) ? collegeId : undefined,
         assignedBy: currentUser.gitlabUsername,
         isActive: true
       });

@@ -16,21 +16,21 @@ export async function GET() {
         id: 1,
         name: 'View Dashboard',
         description: 'Access to main dashboard',
-        roles: ['intern', 'mentor', 'admin', 'super-admin'],
+        roles: ['AI Developer Intern', 'Tech Lead', 'admin', 'super-admin'],
         category: 'general'
       },
       {
         id: 2,
         name: 'Manage Tasks',
         description: 'Create, edit, and assign tasks',
-        roles: ['mentor', 'admin', 'super-admin'],
+        roles: ['Tech Lead', 'admin', 'super-admin'],
         category: 'tasks'
       },
       {
         id: 3,
         name: 'View Reports',
         description: 'Access to analytics and reports',
-        roles: ['mentor', 'admin', 'super-admin'],
+        roles: ['Tech Lead', 'admin', 'super-admin'],
         category: 'analytics'
       },
       {
@@ -58,7 +58,7 @@ export async function GET() {
         id: 7,
         name: 'Attendance Management',
         description: 'View and manage attendance records',
-        roles: ['mentor', 'admin', 'super-admin'],
+        roles: ['Tech Lead', 'admin', 'super-admin'],
         category: 'attendance'
       },
       {
@@ -72,14 +72,14 @@ export async function GET() {
         id: 9,
         name: 'GitLab Integration',
         description: 'Access GitLab integration features',
-        roles: ['intern', 'mentor', 'admin', 'super-admin'],
+        roles: ['AI Developer Intern', 'Tech Lead', 'admin', 'super-admin'],
         category: 'integrations'
       },
       {
         id: 10,
         name: 'Chat and Communication',
         description: 'Access chat and messaging features',
-        roles: ['intern', 'mentor', 'admin', 'super-admin'],
+        roles: ['AI Developer Intern', 'Tech Lead', 'admin', 'super-admin'],
         category: 'communication'
       },
       {

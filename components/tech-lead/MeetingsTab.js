@@ -14,14 +14,14 @@ const formatStatus = (status) => {
 
 export function MeetingsTab() {
   const [meetings, setMeetings] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
 
   useEffect(() => {
     fetchMeetings();
-    fetchInterns();
+    fetchAIDeveloperInterns();
   }, []);
 
   const fetchMeetings = async () => {
@@ -39,18 +39,18 @@ export function MeetingsTab() {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=AI%20developer%20Intern');
+      const response = await fetch('/api/admin/users?role=AI%20Developer%20Intern');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setAIDeveloperInterns(data.users || []);
       } else {
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     }
   };
 

@@ -21,12 +21,12 @@ export async function POST(request) {
 
     const user = await getUserByGitLabId(session.user.gitlabId);
     
-    if (!user || user.role !== 'mentor') {
+    if (!user || user.role !== 'Tech Lead') {
       return NextResponse.json({ error: "Only mentors can create cohorts" }, { status: 403 });
     }
 
     const body = await request.json();
-    const { name, description, collegeId, startDate, endDate, maxInterns } = body;
+    const { name, description, collegeId, startDate, endDate, maxAI Developer Interns } = body;
 
     if (!name || !collegeId) {
       return NextResponse.json({ error: "Cohort name and college are required" }, { status: 400 });
@@ -45,7 +45,7 @@ export async function POST(request) {
       createdBy: user._id.toString(),
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
-      maxInterns: maxInterns || 20
+      maxAI Developer Interns: maxAI Developer Interns || 20
     };
 
     const cohortId = await createCohort(cohortData);
@@ -59,7 +59,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Create cohort error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }
@@ -87,7 +87,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Get cohorts error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }

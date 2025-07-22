@@ -26,9 +26,9 @@ export default function UserModal({
   const handleFormFieldChange = (field, value) => {
     setEditFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      // If college or role changes, clear assignedMentor
-      if ((field === 'college' || field === 'role') && updated.role === 'intern') {
-        updated.assignedMentor = '';
+      // If college or role changes, clear assignedTech Lead
+      if ((field === 'college' || field === 'role') && updated.role === 'AI Developer Intern') {
+        updated.assignedTech Lead = '';
       }
       return updated;
     });
@@ -105,14 +105,14 @@ export default function UserModal({
                     Role *
                   </label>
                   <select
-                    value={editFormData?.role || 'intern'}
+                    value={editFormData?.role || 'AI Developer Intern'}
                     onChange={e => handleFormFieldChange('role', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="intern">Intern</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="super-mentor">Super Mentor</option>
+                    <option value="AI Developer Intern">AI Developer Intern</option>
+                    <option value="Tech Lead">Tech Lead</option>
+                    <option value="POC">POC</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
@@ -148,19 +148,19 @@ export default function UserModal({
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                {editFormData?.role === 'intern' && (
+                {editFormData?.role === 'AI Developer Intern' && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assigned Mentor *
+                        Assigned Tech Lead *
                       </label>
                       <select
-                        value={editFormData?.assignedMentor || ''}
-                        onChange={e => handleFormFieldChange('assignedMentor', e.target.value)}
+                        value={editFormData?.assignedTech Lead || ''}
+                        onChange={e => handleFormFieldChange('assignedTech Lead', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       >
-                        <option value="">Select Mentor</option>
+                        <option value="">Select Tech Lead</option>
                         {mentors.map(mentor => (
                           <option key={mentor.id || mentor._id} value={mentor.id || mentor._id}>
                             {mentor.name} ({mentor.email})
@@ -180,8 +180,8 @@ export default function UserModal({
                         <option value="">Select Cohort</option>
                         {cohorts && cohorts.length > 0 ? (
                           cohorts.map(cohort => {
-                            const currentCount = cohort.currentInterns || cohort.memberCount || 0;
-                            const maxCount = cohort.maxInterns || cohort.maxMembers || 'unlimited';
+                            const currentCount = cohort.currentAI Developer Interns || cohort.memberCount || 0;
+                            const maxCount = cohort.maxAI Developer Interns || cohort.maxMembers || 'unlimited';
                             return (
                               <option key={cohort.id || cohort._id} value={cohort.id || cohort._id}>
                                 {cohort.name} ({currentCount}/{maxCount})

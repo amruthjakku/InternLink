@@ -18,7 +18,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if ((role === 'intern' || role === 'mentor') && !college) {
+    if ((role === 'AI Developer Intern' || role === 'Tech Lead') && !college) {
       return NextResponse.json({ error: 'College is required for interns and mentors' }, { status: 400 });
     }
 
@@ -43,7 +43,7 @@ export async function POST(request) {
     };
 
     // Add college if required
-    if (college && (role === 'intern' || role === 'mentor')) {
+    if (college && (role === 'AI Developer Intern' || role === 'Tech Lead')) {
       userData.college = college;
     }
 

@@ -8,7 +8,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,15 +16,15 @@ export async function POST(request) {
 
     if (!internId || !mentorId) {
       return NextResponse.json({ 
-        error: 'Intern ID and Mentor ID are required' 
+        error: 'AI Developer Intern ID and Tech Lead ID are required' 
       }, { status: 400 });
     }
 
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superMentor = await User.findById(session.user.id).populate('college');
-    if (!superMentor || !superMentor.college) {
+    const superTech Lead = await User.findById(session.user.id).populate('college');
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
         error: 'Super-mentor college not found' 
       }, { status: 404 });
@@ -32,28 +32,28 @@ export async function POST(request) {
 
     // Verify intern belongs to the same college
     const intern = await User.findById(internId);
-    if (!intern || intern.role !== 'intern' || 
-        intern.college.toString() !== superMentor.college._id.toString()) {
+    if (!intern || intern.role !== 'AI Developer Intern' || 
+        intern.college.toString() !== superTech Lead.college._id.toString()) {
       return NextResponse.json({ 
-        error: 'Intern not found or not in your college' 
+        error: 'AI Developer Intern not found or not in your college' 
       }, { status: 404 });
     }
 
     // Verify mentor belongs to the same college
     const mentor = await User.findById(mentorId);
-    if (!mentor || mentor.role !== 'mentor' || 
-        mentor.college.toString() !== superMentor.college._id.toString()) {
+    if (!mentor || mentor.role !== 'Tech Lead' || 
+        mentor.college.toString() !== superTech Lead.college._id.toString()) {
       return NextResponse.json({ 
-        error: 'Mentor not found or not in your college' 
+        error: 'Tech Lead not found or not in your college' 
       }, { status: 404 });
     }
 
     // Update intern's assigned mentor (we'll add this field to the User model)
-    intern.assignedMentor = mentorId;
+    intern.assignedTech Lead = mentorId;
     await intern.save();
 
     return NextResponse.json({ 
-      message: 'Intern assigned to mentor successfully',
+      message: 'AI Developer Intern assigned to mentor successfully',
       assignment: {
         intern: {
           id: intern._id,
@@ -80,7 +80,7 @@ export async function DELETE(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -88,15 +88,15 @@ export async function DELETE(request) {
 
     if (!internId) {
       return NextResponse.json({ 
-        error: 'Intern ID is required' 
+        error: 'AI Developer Intern ID is required' 
       }, { status: 400 });
     }
 
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superMentor = await User.findById(session.user.id).populate('college');
-    if (!superMentor || !superMentor.college) {
+    const superTech Lead = await User.findById(session.user.id).populate('college');
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
         error: 'Super-mentor college not found' 
       }, { status: 404 });
@@ -104,19 +104,19 @@ export async function DELETE(request) {
 
     // Verify intern belongs to the same college
     const intern = await User.findById(internId);
-    if (!intern || intern.role !== 'intern' || 
-        intern.college.toString() !== superMentor.college._id.toString()) {
+    if (!intern || intern.role !== 'AI Developer Intern' || 
+        intern.college.toString() !== superTech Lead.college._id.toString()) {
       return NextResponse.json({ 
-        error: 'Intern not found or not in your college' 
+        error: 'AI Developer Intern not found or not in your college' 
       }, { status: 404 });
     }
 
     // Remove mentor assignment
-    intern.assignedMentor = null;
+    intern.assignedTech Lead = null;
     await intern.save();
 
     return NextResponse.json({ 
-      message: 'Intern unassigned from mentor successfully'
+      message: 'AI Developer Intern unassigned from mentor successfully'
     });
 
   } catch (error) {

@@ -51,7 +51,7 @@ async function migrateTaskProgress() {
         if (task.assignmentType === 'individual' && task.assignedTo) {
           // Individual task - find the assigned intern
           const intern = await User.findById(task.assignedTo);
-          if (intern && intern.role === 'AI developer Intern') {
+          if (intern && intern.role === 'AI Developer Intern') {
             interns = [intern];
             console.log(`  Found assigned intern: ${intern.name} (${intern.gitlabUsername})`);
           } else {
@@ -59,21 +59,21 @@ async function migrateTaskProgress() {
           }
         } else if (task.assignmentType === 'cohort' && task.cohortId) {
           // Cohort task - find all interns in the cohort
-          const cohortInterns = await User.find({ 
+          const cohortAI Developer Interns = await User.find({ 
             cohortId: task.cohortId, 
-            role: 'AI developer Intern',
+            role: 'AI Developer Intern',
             isActive: true 
           });
-          interns = cohortInterns;
+          interns = cohortAI Developer Interns;
           console.log(`  Found ${interns.length} interns in cohort ${task.cohortId}`);
         } else if (task.assignmentType === 'hierarchical' && task.assignedTo?.colleges) {
           // Hierarchical task - find interns in specified colleges
-          const collegeInterns = await User.find({
+          const collegeAI Developer Interns = await User.find({
             college: { $in: task.assignedTo.colleges },
-            role: 'AI developer Intern',
+            role: 'AI Developer Intern',
             isActive: true
           });
-          interns = collegeInterns;
+          interns = collegeAI Developer Interns;
           console.log(`  Found ${interns.length} interns in specified colleges`);
         } else {
           console.log(`  Skipping task - no valid assignment found`);
@@ -182,11 +182,11 @@ async function verifyMigration() {
   
   try {
     // Get some statistics
-    const totalInterns = await User.countDocuments({ role: 'AI developer Intern', isActive: true });
+    const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern', isActive: true });
     const totalTasks = await Task.countDocuments({ isActive: true });
     const totalProgress = await TaskProgress.countDocuments();
     
-    console.log(`Active interns: ${totalInterns}`);
+    console.log(`Active interns: ${totalAIDeveloperInterns}`);
     console.log(`Active tasks: ${totalTasks}`);
     console.log(`TaskProgress records: ${totalProgress}`);
     

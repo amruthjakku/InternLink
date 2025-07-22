@@ -1,7 +1,7 @@
 {
   "name": "internlink-scripts",
   "version": "1.0.0",
-  "description": "Scripts for InternLink",
+  "description": "Scripts for AI developer InternLink",
   "type": "module",
   "scripts": {
     "update-task-points": "node update-task-points.js"

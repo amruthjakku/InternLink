@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
 /**
- * GitLab Integration Component for Intern Dashboard
+ * GitLab Integration Component for AI Developer Intern Dashboard
  * Shows development activity, commits, and progress metrics
  */
 export default function GitLabIntegration() {

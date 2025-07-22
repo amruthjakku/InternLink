@@ -82,7 +82,7 @@ export function POCManagement() {
         if (response.ok) {
           setShowUserModal(false);
           fetchData();
-          alert('Super-Mentor updated successfully!');
+          alert('Super-Tech Lead updated successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.message}`);
@@ -103,7 +103,7 @@ export function POCManagement() {
         if (response.ok) {
           setShowUserModal(false);
           fetchData();
-          alert('Super-Mentor added successfully!');
+          alert('Super-Tech Lead added successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.message}`);
@@ -125,7 +125,7 @@ export function POCManagement() {
 
       if (response.ok) {
         fetchData();
-        alert('Super-Mentor deleted successfully!');
+        alert('Super-Tech Lead deleted successfully!');
       } else {
         const error = await response.json();
         alert(`Error: ${error.message}`);
@@ -201,7 +201,7 @@ export function POCManagement() {
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
         >
           <span className="mr-2">➕</span>
-          Add Super-Mentor
+          Add Super-Tech Lead
         </button>
       </div>
 
@@ -272,7 +272,7 @@ export function POCManagement() {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search Super-Mentors</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search Super-Tech Leads</label>
             <input
               type="text"
               placeholder="Search by name, email, or username..."
@@ -310,7 +310,7 @@ export function POCManagement() {
         </div>
       </div>
 
-      {/* Super-Mentors Table */}
+      {/* Super-Tech Leads Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -322,7 +322,7 @@ export function POCManagement() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Super-Mentor
+                  Super-Tech Lead
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   College
@@ -381,7 +381,7 @@ export function POCManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => handleEditClick(superMentor)}
+                      onClick={() => handleEditClick(superTech Lead)}
                       className="text-blue-600 hover:text-blue-900"
                     >
                       Edit

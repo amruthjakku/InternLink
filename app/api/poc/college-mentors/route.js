@@ -8,22 +8,22 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();
 
     // Get super-mentor's college
-    const superMentor = await User.findById(session.user.id).populate('college');
-    if (!superMentor || !superMentor.college) {
+    const superTech Lead = await User.findById(session.user.id).populate('college');
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ error: 'Super-mentor college not found' }, { status: 404 });
     }
 
     // Get all mentors in the same college
     const mentors = await User.find({ 
-      role: 'mentor', 
-      college: superMentor.college._id,
+      role: 'Tech Lead', 
+      college: superTech Lead.college._id,
       isActive: true 
     })
     .populate('college', 'name')
@@ -32,8 +32,8 @@ export async function GET() {
 
     // Get assigned interns count for each mentor
     const mentorsWithStats = await Promise.all(mentors.map(async (mentor) => {
-      const assignedInterns = await User.countDocuments({
-        role: 'AI developer Intern',
+      const assignedAI Developer Interns = await User.countDocuments({
+        role: 'AI Developer Intern',
         college: mentor.college._id,
         assignedBy: mentor.gitlabUsername,
         isActive: true
@@ -48,7 +48,7 @@ export async function GET() {
         status: mentor.isActive ? 'active' : 'inactive',
         createdAt: mentor.createdAt,
         lastLoginAt: mentor.lastLoginAt,
-        assignedInterns: assignedInterns,
+        assignedAI Developer Interns: assignedAI Developer Interns,
         specialization: 'General' // This would come from a profile field
       };
     }));

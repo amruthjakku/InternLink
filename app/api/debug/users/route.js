@@ -36,7 +36,7 @@ export async function GET(request) {
         admin: allUsers.filter(u => u.role === 'admin').length,
         'POC': allUsers.filter(u => u.role === 'POC').length,
         'Tech Lead': allUsers.filter(u => u.role === 'Tech Lead').length,
-        'AI developer Intern': allUsers.filter(u => u.role === 'AI developer Intern').length,
+        'AI Developer Intern': allUsers.filter(u => u.role === 'AI Developer Intern').length,
         pending: allUsers.filter(u => u.role === 'pending').length
       }
     };

@@ -44,18 +44,18 @@ export async function GET(request, { params }) {
     const groupedUsers = {
       'POC': users.filter(u => u.role === 'POC'),
       'Tech Lead': users.filter(u => u.role === 'Tech Lead'),
-      'AI developer Intern': users.filter(u => u.role === 'AI developer Intern'),
-      'other': users.filter(u => !['POC', 'Tech Lead', 'AI developer Intern'].includes(u.role))
+      'AI Developer Intern': users.filter(u => u.role === 'AI Developer Intern'),
+      'other': users.filter(u => !['POC', 'Tech Lead', 'AI Developer Intern'].includes(u.role))
     };
 
     // Calculate statistics
     const stats = {
       total: users.length,
-      superMentors: groupedUsers['POC'].length,
+      superTech Leads: groupedUsers['POC'].length,
       mentors: groupedUsers['Tech Lead'].length,
-      interns: groupedUsers['AI developer Intern'].length,
-      assignedInterns: groupedUsers['AI developer Intern'].filter(u => u.mentorId).length,
-      unassignedInterns: groupedUsers['AI developer Intern'].filter(u => !u.mentorId).length
+      interns: groupedUsers['AI Developer Intern'].length,
+      assignedAI Developer Interns: groupedUsers['AI Developer Intern'].filter(u => u.mentorId).length,
+      unassignedAI Developer Interns: groupedUsers['AI Developer Intern'].filter(u => !u.mentorId).length
     };
 
     return NextResponse.json({

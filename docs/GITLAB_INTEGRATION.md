@@ -1,7 +1,7 @@
-# InternLink GitLab Integration Guide
+# AI developer InternLink GitLab Integration Guide
 
 ## Overview
-InternLink features comprehensive GitLab integration that allows interns to connect their GitLab accounts for tracking development progress through commit activity, repository contributions, and coding metrics. The system supports both Personal Access Token (PAT) authentication and OAuth 2.0 flow.
+AI developer InternLink features comprehensive GitLab integration that allows interns to connect their GitLab accounts for tracking development progress through commit activity, repository contributions, and coding metrics. The system supports both Personal Access Token (PAT) authentication and OAuth 2.0 flow.
 
 ## 🚀 Features
 
@@ -27,7 +27,7 @@ InternLink features comprehensive GitLab integration that allows interns to conn
 - **Complete OAuth Flow**: Authorization code flow implementation
 - **Token Refresh**: Automatic token refresh handling
 - **Secure Storage**: Encrypted token storage
-- **Session Management**: Integrated with InternLink sessions
+- **Session Management**: Integrated with AI developer InternLink sessions
 
 ## 🔧 Setup & Configuration
 
@@ -51,7 +51,7 @@ GITLAB_RATE_LIMIT=100
 ### GitLab Application Setup
 1. **Create GitLab Application**:
    - Go to GitLab → User Settings → Applications
-   - Name: "InternLink Integration"
+   - Name: "AI developer InternLink Integration"
    - Redirect URI: `http://your-domain.com/auth/gitlab/callback`
    - Scopes: `read_api`, `read_user`, `read_repository`
 

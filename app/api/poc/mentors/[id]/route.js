@@ -8,7 +8,7 @@ export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,18 +19,18 @@ export async function PUT(request, { params }) {
 
     // Get the mentor to update
     const mentor = await User.findById(id);
-    if (!mentor || mentor.role !== 'mentor') {
-      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    if (!mentor || mentor.role !== 'Tech Lead') {
+      return NextResponse.json({ error: 'Tech Lead not found' }, { status: 404 });
     }
 
     // Verify super-mentor can manage this mentor
-    const superMentor = await User.findById(session.user.id);
-    if (!superMentor || superMentor.college.toString() !== mentor.college.toString()) {
+    const superTech Lead = await User.findById(session.user.id);
+    if (!superTech Lead || superTech Lead.college.toString() !== mentor.college.toString()) {
       return NextResponse.json({ error: 'Cannot update mentor from different college' }, { status: 403 });
     }
 
     // Update mentor
-    const updatedMentor = await User.findByIdAndUpdate(
+    const updatedTech Lead = await User.findByIdAndUpdate(
       id,
       {
         name: updateData.name,
@@ -43,8 +43,8 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Mentor updated successfully',
-      mentor: updatedMentor
+      message: 'Tech Lead updated successfully',
+      mentor: updatedTech Lead
     });
 
   } catch (error) {
@@ -59,7 +59,7 @@ export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -69,13 +69,13 @@ export async function DELETE(request, { params }) {
 
     // Get the mentor to delete
     const mentor = await User.findById(id);
-    if (!mentor || mentor.role !== 'mentor') {
-      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    if (!mentor || mentor.role !== 'Tech Lead') {
+      return NextResponse.json({ error: 'Tech Lead not found' }, { status: 404 });
     }
 
     // Verify super-mentor can manage this mentor
-    const superMentor = await User.findById(session.user.id);
-    if (!superMentor || superMentor.college.toString() !== mentor.college.toString()) {
+    const superTech Lead = await User.findById(session.user.id);
+    if (!superTech Lead || superTech Lead.college.toString() !== mentor.college.toString()) {
       return NextResponse.json({ error: 'Cannot delete mentor from different college' }, { status: 403 });
     }
 
@@ -87,7 +87,7 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Mentor removed successfully'
+      message: 'Tech Lead removed successfully'
     });
 
   } catch (error) {

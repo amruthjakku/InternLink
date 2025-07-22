@@ -360,12 +360,12 @@ export function AdvancedAnalytics() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">User Distribution by Role</h3>
                   <EnhancedDoughnutChart
                     data={{
-                      labels: ['Interns', 'Mentors', 'Super-Mentors', 'Admins'],
+                      labels: ['AI Developer Interns', 'Tech Leads', 'Super-Tech Leads', 'Admins'],
                       datasets: [{
                         data: [
                           userMetrics.byRole.intern,
                           userMetrics.byRole.mentor,
-                          userMetrics.byRole['super-mentor'],
+                          userMetrics.byRole['POC'],
                           userMetrics.byRole.admin
                         ],
                         backgroundColor: [
@@ -475,11 +475,11 @@ export function AdvancedAnalytics() {
                           <span className="font-semibold">{taskMetrics.byCreator.admin}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Super-Mentor Created</span>
-                          <span className="font-semibold">{taskMetrics.byCreator['super-mentor']}</span>
+                          <span className="text-sm text-gray-600">Super-Tech Lead Created</span>
+                          <span className="font-semibold">{taskMetrics.byCreator['POC']}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Mentor Created</span>
+                          <span className="text-sm text-gray-600">Tech Lead Created</span>
                           <span className="font-semibold">{taskMetrics.byCreator.mentor}</span>
                         </div>
                       </div>
@@ -505,13 +505,13 @@ export function AdvancedAnalytics() {
                           Total Users
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Interns
+                          AI Developer Interns
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Mentors
+                          Tech Leads
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Super-Mentors
+                          Super-Tech Leads
                         </th>
                       </tr>
                     </thead>
@@ -531,7 +531,7 @@ export function AdvancedAnalytics() {
                             {college?.mentors || 0}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {college?.superMentors || 0}
+                            {college?.superTech Leads || 0}
                           </td>
                         </tr>
                       ))}

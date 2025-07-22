@@ -13,8 +13,8 @@ export function POCCommunicationTab() {
   const [loading, setLoading] = useState(true);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
-  const [interns, setInterns] = useState([]);
-  const [mentors, setMentors] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
+  const [mentors, setTechLeads] = useState([]);
   const [roomAnalytics, setRoomAnalytics] = useState({});
   const [announcements, setAnnouncements] = useState([]);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -38,8 +38,8 @@ export function POCCommunicationTab() {
 
   useEffect(() => {
     fetchChatRooms();
-    fetchInterns();
-    fetchMentors();
+    fetchAIDeveloperInterns();
+    fetchTech Leads();
   }, []);
 
   useEffect(() => {
@@ -70,24 +70,24 @@ export function POCCommunicationTab() {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
       const response = await fetch('/api/super-mentor/college-interns');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.interns || []);
+        setAIDeveloperInterns(data.interns || []);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
     }
   };
 
-  const fetchMentors = async () => {
+  const fetchTech Leads = async () => {
     try {
       const response = await fetch('/api/super-mentor/college-mentors');
       if (response.ok) {
         const data = await response.json();
-        setMentors(data.mentors || []);
+        setTechLeads(data.mentors || []);
       }
     } catch (error) {
       console.error('Error fetching mentors:', error);
@@ -961,7 +961,7 @@ function CreateRoomModal({ show, onClose, onSubmit, roomForm, setRoomForm, mento
               <label className="block text-sm font-medium text-gray-700 mb-2">Initial Participants</label>
               <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Tech Leads</h4>
                   {mentors.map(mentor => (
                     <label key={mentor._id} className="flex items-center mb-1">
                       <input
@@ -987,7 +987,7 @@ function CreateRoomModal({ show, onClose, onSubmit, roomForm, setRoomForm, mento
                   ))}
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">AI Developer Interns</h4>
                   {interns.map(intern => (
                     <label key={intern._id} className="flex items-center mb-1">
                       <input
@@ -1116,7 +1116,7 @@ function AnnouncementModal({ show, onClose, onSubmit, roomForm, setRoomForm, men
               <label className="block text-sm font-medium text-gray-700 mb-2">Send to</label>
               <div className="grid grid-cols-2 gap-4 max-h-32 overflow-y-auto">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Mentors</h4>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Tech Leads</h4>
                   {mentors.map(mentor => (
                     <label key={mentor._id} className="flex items-center mb-1">
                       <input
@@ -1142,7 +1142,7 @@ function AnnouncementModal({ show, onClose, onSubmit, roomForm, setRoomForm, men
                   ))}
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Interns</h4>
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">AI Developer Interns</h4>
                   {interns.map(intern => (
                     <label key={intern._id} className="flex items-center mb-1">
                       <input

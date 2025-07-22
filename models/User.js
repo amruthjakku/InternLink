@@ -26,14 +26,14 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'],
-    default: 'AI developer Intern'
+    enum: ['admin', 'POC', 'Tech Lead', 'AI Developer Intern'],
+    default: 'AI Developer Intern'
   },
   college: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
     required: function() {
-      return this.role === 'AI developer Intern' || this.role === 'Tech Lead' || this.role === 'POC';
+      return this.role === 'AI Developer Intern' || this.role === 'Tech Lead' || this.role === 'POC';
     }
   },
   // Add cohortId field to associate users with cohorts
@@ -46,42 +46,14 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  assignedMentor: {
+  assignedTech Lead: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.role === 'AI developer Intern';
+      return this.role === 'AI Developer Intern';
     }
   },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  // Soft delete tracking fields
-  deactivatedAt: {
-    type: Date,
-    default: null
-  },
-  deactivationReason: {
-    type: String,
-    default: null
-  },
-  deactivatedBy: {
-    type: String,
-    default: null
-  },
-  reactivatedAt: {
-    type: Date,
-    default: null
-  },
-  reactivationReason: {
-    type: String,
-    default: null
-  },
-  reactivatedBy: {
-    type: String,
-    default: null
-  },
+
   profileImage: {
     type: String,
     default: null
@@ -125,7 +97,7 @@ const userSchema = new mongoose.Schema({
 // Note: gitlabUsername and gitlabId already have unique indexes from schema definition
 userSchema.index({ role: 1 });
 userSchema.index({ college: 1 });
-userSchema.index({ assignedMentor: 1 });
+userSchema.index({ assignedTech Lead: 1 });
 userSchema.index({ cohortId: 1 }); // Add index for cohortId
 
 // Virtual for college name (populated)
@@ -154,9 +126,8 @@ userSchema.pre('save', function(next) {
 });
 
 // Static methods
-userSchema.statics.findByGitLabUsername = function(username, populateFields = '', includeInactive = false) {
+userSchema.statics.findByGitLabUsername = function(username, populateFields = '') {
   const query = { gitlabUsername: username.toLowerCase() };
-  if (!includeInactive) query.isActive = true;
   let mongooseQuery = this.findOne(query);
   
   // Handle populate fields
@@ -182,7 +153,7 @@ userSchema.statics.findByGitLabUsername = function(username, populateFields = ''
           // Populate cohortId with name and other relevant fields
           mongooseQuery = mongooseQuery.populate({
             path: 'cohortId',
-            select: 'name startDate endDate maxInterns currentInterns'
+            select: 'name startDate endDate maxAI Developer Interns currentAI Developer Interns'
           });
         } catch (error) {
           console.warn('Warning: Could not populate cohortId field:', error.message);
@@ -206,18 +177,13 @@ userSchema.statics.findByGitLabUsername = function(username, populateFields = ''
   return mongooseQuery;
 };
 
-// Find user by GitLab username, including inactive users (for login/reactivation logic)
+// Find user by GitLab username (alias for backward compatibility)
 userSchema.statics.findAnyByGitLabUsername = function(username, populateFields = '') {
-  const query = { gitlabUsername: username.toLowerCase() };
-  let mongooseQuery = this.findOne(query);
-  if (populateFields) {
-    mongooseQuery = mongooseQuery.populate(populateFields);
-  }
-  return mongooseQuery;
+  return this.findByGitLabUsername(username, populateFields);
 };
 
 userSchema.statics.findByRole = function(role, collegeId = null) {
-  const query = { role, isActive: true };
+  const query = { role };
   if (collegeId) {
     query.college = collegeId;
   }
@@ -225,11 +191,11 @@ userSchema.statics.findByRole = function(role, collegeId = null) {
 };
 
 userSchema.statics.getAdmins = function() {
-  return this.find({ role: 'admin', isActive: true });
+  return this.find({ role: 'admin' });
 };
 
 userSchema.statics.getTechLeadsByCollege = function(collegeId) {
-  return this.find({ role: 'Tech Lead', college: collegeId, isActive: true }).populate('college');
+  return this.find({ role: 'Tech Lead', college: collegeId }).populate('college');
 };
 
 userSchema.statics.getAIDeveloperInternsByTechLead = function(techLeadUsername) {
@@ -238,15 +204,14 @@ userSchema.statics.getAIDeveloperInternsByTechLead = function(techLeadUsername) 
     .then(techLead => {
       if (!techLead) return [];
       return this.find({ 
-        role: 'AI developer Intern', 
-        assignedMentor: techLead._id, 
-        isActive: true 
+        role: 'AI Developer Intern', 
+        assignedTech Lead: techLead._id
       }).populate('college');
     });
 };
 
 userSchema.statics.getPOCsByCollege = function(collegeId) {
-  return this.find({ role: 'POC', college: collegeId, isActive: true }).populate('college');
+  return this.find({ role: 'POC', college: collegeId }).populate('college');
 };
 
 userSchema.statics.getAIDeveloperInternsByPOC = function(pocUsername) {
@@ -254,7 +219,7 @@ userSchema.statics.getAIDeveloperInternsByPOC = function(pocUsername) {
     .populate('college')
     .then(poc => {
       if (!poc) return [];
-      return this.find({ role: 'AI developer Intern', college: poc.college, isActive: true }).populate('college');
+      return this.find({ role: 'AI Developer Intern', college: poc.college }).populate('college');
     });
 };
 
@@ -263,7 +228,7 @@ userSchema.statics.getTechLeadsByPOC = function(pocUsername) {
     .populate('college')
     .then(poc => {
       if (!poc) return [];
-      return this.find({ role: 'Tech Lead', college: poc.college, isActive: true }).populate('college');
+      return this.find({ role: 'Tech Lead', college: poc.college }).populate('college');
     });
 };
 
@@ -271,12 +236,12 @@ userSchema.statics.getTechLeadsByPOC = function(pocUsername) {
 userSchema.methods.canManageUser = function(targetUser) {
   if (this.role === 'admin') return true;
   if (this.role === 'POC') {
-    // POC can manage AI developer Interns and Tech Leads in their college
-    if (targetUser.role === 'AI developer Intern' || targetUser.role === 'Tech Lead') {
+    // POC can manage AI Developer Interns and Tech Leads in their college
+    if (targetUser.role === 'AI Developer Intern' || targetUser.role === 'Tech Lead') {
       return this.college.toString() === targetUser.college.toString();
     }
   }
-  if (this.role === 'Tech Lead' && targetUser.role === 'AI developer Intern') {
+  if (this.role === 'Tech Lead' && targetUser.role === 'AI Developer Intern') {
     return this.college.toString() === targetUser.college.toString();
   }
   return false;
@@ -284,7 +249,7 @@ userSchema.methods.canManageUser = function(targetUser) {
 
 userSchema.methods.canAccessCollege = function(collegeId) {
   if (this.role === 'admin') return true;
-  if (this.role === 'POC' || this.role === 'Tech Lead' || this.role === 'AI developer Intern') {
+  if (this.role === 'POC' || this.role === 'Tech Lead' || this.role === 'AI Developer Intern') {
     return this.college.toString() === collegeId.toString();
   }
   return false;
@@ -295,47 +260,7 @@ userSchema.methods.updateLastLogin = function() {
   return this.save();
 };
 
-// Enhanced soft delete methods
-userSchema.methods.softDelete = function(reason = 'Admin action', deletedBy = 'system') {
-  this.isActive = false;
-  this.deactivatedAt = new Date();
-  this.deactivationReason = reason;
-  this.deactivatedBy = deletedBy;
-  this.sessionVersion += 1; // Force session invalidation
-  this.lastSessionReset = new Date();
-  this.updatedAt = new Date();
-  return this.save();
-};
 
-userSchema.methods.reactivate = function(reason = 'Admin action', reactivatedBy = 'system') {
-  // Check for conflicts before reactivating
-  return this.constructor.findOne({
-    $or: [
-      { gitlabUsername: this.gitlabUsername },
-      { email: this.email }
-    ],
-    _id: { $ne: this._id },
-    isActive: true
-  }).then(existingUser => {
-    if (existingUser) {
-      throw new Error(`Cannot reactivate: ${existingUser.gitlabUsername === this.gitlabUsername ? 'GitLab username' : 'Email'} is already in use by another active user`);
-    }
-    
-    // Clear deactivation data and set reactivation data
-    this.isActive = true;
-    this.reactivatedAt = new Date();
-    this.reactivationReason = reason;
-    this.reactivatedBy = reactivatedBy;
-    this.deactivatedAt = null;
-    this.deactivationReason = null;
-    this.deactivatedBy = null;
-    this.sessionVersion += 1; // Force session refresh
-    this.lastTokenRefresh = new Date();
-    this.updatedAt = new Date();
-    
-    return this.save();
-  });
-};
 
 userSchema.methods.assignToCohort = function(cohortId, assignedBy = 'system') {
   const originalCohortId = this.cohortId;
@@ -384,20 +309,7 @@ userSchema.methods.removeFromCohort = function(removedBy = 'system') {
   });
 };
 
-// Static method for safe reactivation with conflict checking
-userSchema.statics.safeReactivate = function(userId, reason = 'Admin action', reactivatedBy = 'system') {
-  return this.findById(userId).then(user => {
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    if (user.isActive) {
-      throw new Error('User is already active');
-    }
-    
-    return user.reactivate(reason, reactivatedBy);
-  });
-};
+
 
 // Static method for bulk operations with proper error handling
 userSchema.statics.bulkUpdateWithValidation = function(userIds, updateData, updatedBy = 'system') {

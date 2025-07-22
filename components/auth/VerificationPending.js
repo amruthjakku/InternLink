@@ -101,7 +101,7 @@ export function VerificationPending({ user, onApprove }) {
                     Simulating Approval...
                   </>
                 ) : (
-                  'Simulate Mentor Approval'
+                  'Simulate Tech Lead Approval'
                 )}
               </button>
             </div>

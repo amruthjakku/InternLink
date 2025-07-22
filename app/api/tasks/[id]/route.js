@@ -127,7 +127,7 @@ export async function PUT(request, { params }) {
     const canEdit = 
       session.user.role === 'admin' || 
       task.createdBy.toString() === session.user.id ||
-      (session.user.role === 'mentor' && task.assignedBy === session.user.gitlabUsername);
+      (session.user.role === 'Tech Lead' && task.assignedBy === session.user.gitlabUsername);
 
     if (!canEdit) {
       return NextResponse.json({ error: 'You do not have permission to edit this task' }, { status: 403 });
@@ -205,16 +205,16 @@ export async function PATCH(request, { params }) {
     }
 
     // Check if the user is authorized to update this task
-    // Interns can only update tasks assigned to them
-    const isAssignedIntern = 
-      session.user.role === 'intern' && 
+    // AI Developer Interns can only update tasks assigned to them
+    const isAssignedAI Developer Intern = 
+      session.user.role === 'AI Developer Intern' && 
       task.assignedTo && 
       task.assignedTo.toString() === session.user.id;
     
-    // Mentors and admins can update any task
-    const isMentorOrAdmin = ['mentor', 'admin'].includes(session.user.role);
+    // Tech Leads and admins can update any task
+    const isTech LeadOrAdmin = ['Tech Lead', 'admin'].includes(session.user.role);
     
-    if (!isAssignedIntern && !isMentorOrAdmin) {
+    if (!isAssignedAI Developer Intern && !isTech LeadOrAdmin) {
       return NextResponse.json({ 
         error: 'You do not have permission to update this task' 
       }, { status: 403 });

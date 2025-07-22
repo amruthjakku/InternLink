@@ -16,17 +16,17 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Fetch teams by finding mentors with assigned interns
-    const mentorsWithInterns = await User.find({
-      role: { $in: ['mentor', 'super-mentor'] },
+    const mentorsWithAI Developer Interns = await User.find({
+      role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     }).populate('college', 'name location');
 
     const teams = [];
     
-    for (const mentor of mentorsWithInterns) {
+    for (const mentor of mentorsWithAI Developer Interns) {
       const interns = await User.find({
         mentorId: mentor._id,
-        role: 'intern',
+        role: 'AI Developer Intern',
         isActive: true
       });
 
@@ -69,7 +69,7 @@ export async function POST(request) {
 
     if (!mentorId || !internIds || !Array.isArray(internIds) || internIds.length === 0) {
       return NextResponse.json({ 
-        error: 'Mentor ID and intern IDs are required' 
+        error: 'Tech Lead ID and intern IDs are required' 
       }, { status: 400 });
     }
 
@@ -78,20 +78,20 @@ export async function POST(request) {
     // Verify mentor exists and is active
     const mentor = await User.findOne({
       _id: mentorId,
-      role: { $in: ['mentor', 'super-mentor'] },
+      role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     });
 
     if (!mentor) {
       return NextResponse.json({ 
-        error: 'Mentor not found or inactive' 
+        error: 'Tech Lead not found or inactive' 
       }, { status: 404 });
     }
 
     // Verify interns exist and are unassigned
     const interns = await User.find({
       _id: { $in: internIds },
-      role: 'intern',
+      role: 'AI Developer Intern',
       isActive: true,
       mentorId: { $exists: false }
     });
@@ -146,7 +146,7 @@ export async function DELETE(request) {
 
     if (!mentorId) {
       return NextResponse.json({ 
-        error: 'Mentor ID is required' 
+        error: 'Tech Lead ID is required' 
       }, { status: 400 });
     }
 

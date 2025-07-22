@@ -29,7 +29,7 @@ export async function GET(request) {
     let query = {};
     
     // If user is intern, show tasks for their cohort
-    if (session.user.role === 'intern') {
+    if (session.user.role === 'AI Developer Intern') {
       // First, try to get weekly tasks
       console.log('Checking for weekly tasks...');
       try {
@@ -97,14 +97,14 @@ export async function GET(request) {
         const user = await User.findById(session.user.id).populate('college');
         
         if (user) {
-          console.log(`Intern ${user.name} (${user._id})`);
+          console.log(`AI Developer Intern ${user.name} (${user._id})`);
           
           // Build query for tasks
           const orConditions = [];
           
           // 1. Add hierarchical tasks (assigned to the intern's college)
           if (user.college) {
-            console.log(`Intern's college ID: ${user.college._id}`);
+            console.log(`AI Developer Intern's college ID: ${user.college._id}`);
             
             // Add tasks assigned to the intern's college through hierarchical assignment
             orConditions.push({
@@ -115,7 +115,7 @@ export async function GET(request) {
           
           // 2. Add cohort-based tasks
           if (user.cohortId) {
-            console.log(`Intern's cohort ID: ${user.cohortId}`);
+            console.log(`AI Developer Intern's cohort ID: ${user.cohortId}`);
             
             // Convert cohortId to ObjectId if it's a string
             let cohortIdObj;
@@ -154,11 +154,11 @@ export async function GET(request) {
           query.$or = orConditions;
           
           // Add a log to show the exact query being used
-          console.log('Intern tasks query:', JSON.stringify(query, null, 2));
+          console.log('AI Developer Intern tasks query:', JSON.stringify(query, null, 2));
           
           console.log('Showing hierarchical, cohort, and individual tasks for intern');
         } else {
-          console.log(`Intern ${session.user.id} not found in database`);
+          console.log(`AI Developer Intern ${session.user.id} not found in database`);
           
           // If intern is not found, show individually assigned tasks
           query.$or = [
@@ -179,7 +179,7 @@ export async function GET(request) {
     }
     
     // If user is mentor, show tasks they created or are assigned to their interns
-    if (session.user.role === 'mentor') {
+    if (session.user.role === 'Tech Lead') {
       if (assignedTo) {
         query.assignedTo = assignedTo;
       }
@@ -202,7 +202,7 @@ export async function GET(request) {
     console.log(`Found ${tasks.length} tasks for user ${session.user.id} with role ${session.user.role}`);
     
     // Enhanced debugging for cohort task matching
-    if (session.user.role === 'intern') {
+    if (session.user.role === 'AI Developer Intern') {
       console.log('=== INTERN TASK DEBUG ===');
       console.log('Session user ID:', session.user.id);
       console.log('Session cohort ID:', session.user.cohortId);
@@ -230,7 +230,7 @@ export async function GET(request) {
 
     // Get individual progress for intern users
     let taskProgressMap = new Map();
-    if (session.user.role === 'intern') {
+    if (session.user.role === 'AI Developer Intern') {
       const taskIds = tasks.map(task => task._id);
       const progressRecords = await TaskProgress.find({
         taskId: { $in: taskIds },
@@ -349,7 +349,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || !['mentor', 'super-mentor', 'admin'].includes(session.user.role)) {
+    if (!session || !['Tech Lead', 'POC', 'admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

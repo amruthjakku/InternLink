@@ -170,9 +170,9 @@ export function AttendanceAnalytics() {
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Roles</option>
-            <option value="intern">Interns</option>
-            <option value="mentor">Mentors</option>
-            <option value="super-mentor">Super-Mentors</option>
+            <option value="AI Developer Intern">AI Developer Interns</option>
+            <option value="Tech Lead">Tech Leads</option>
+            <option value="POC">Super-Tech Leads</option>
             <option value="admin">Admins</option>
           </select>
           
@@ -404,7 +404,7 @@ export function AttendanceAnalytics() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.userRole === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.userRole === 'mentor' ? 'bg-blue-100 text-blue-800' :
+                        user.userRole === 'Tech Lead' ? 'bg-blue-100 text-blue-800' :
                         'bg-green-100 text-green-800'
                       }`}>
                         {user.userRole}
@@ -467,7 +467,7 @@ export function AttendanceAnalytics() {
                       </div>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         user.userRole === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.userRole === 'mentor' ? 'bg-blue-100 text-blue-800' :
+                        user.userRole === 'Tech Lead' ? 'bg-blue-100 text-blue-800' :
                         'bg-green-100 text-green-800'
                       }`}>
                         {user.userRole}

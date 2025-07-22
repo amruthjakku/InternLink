@@ -23,7 +23,7 @@ export async function GET(request) {
     // Get all users with cohorts
     const usersWithCohorts = await db.collection('users').find({ 
       cohortId: { $exists: true, $ne: null },
-      role: 'AI developer Intern'
+      role: 'AI Developer Intern'
     }).toArray();
     
     // Analyze tasks by assignment type
@@ -39,7 +39,7 @@ export async function GET(request) {
         c._id.toString() === (task.cohortId?.toString() || task.cohortId)
       );
       
-      const assignedInterns = usersWithCohorts.filter(u => 
+      const assignedAI Developer Interns = usersWithCohorts.filter(u => 
         u.cohortId.toString() === (task.cohortId?.toString() || task.cohortId)
       );
       
@@ -48,8 +48,8 @@ export async function GET(request) {
         title: task.title,
         cohortId: task.cohortId,
         cohortName: cohort?.name || 'Unknown',
-        assignedInternsCount: assignedInterns.length,
-        assignedInterns: assignedInterns.map(u => ({
+        assignedAI Developer InternsCount: assignedAI Developer Interns.length,
+        assignedAI Developer Interns: assignedAI Developer Interns.map(u => ({
           id: u._id,
           name: u.name,
           gitlabUsername: u.gitlabUsername

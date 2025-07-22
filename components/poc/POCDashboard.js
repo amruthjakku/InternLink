@@ -66,14 +66,14 @@ const POCDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Super Mentor Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900">POC Dashboard</h1>
               <p className="text-gray-600">
                 Welcome back, {session?.user?.name} - {collegeData?.college?.name}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                Super Mentor
+                POC
               </div>
             </div>
           </div>
@@ -138,8 +138,8 @@ const CollegeOverviewTab = ({ collegeData }) => {
               <span className="text-2xl">👨‍💼</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Mentors</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalMentors}</p>
+              <p className="text-sm font-medium text-gray-600">Total Tech Leads</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalTech Leads}</p>
             </div>
           </div>
         </div>
@@ -150,8 +150,8 @@ const CollegeOverviewTab = ({ collegeData }) => {
               <span className="text-2xl">👨‍🎓</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Interns</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalInterns}</p>
+              <p className="text-sm font-medium text-gray-600">Total AI Developer Interns</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalAIDeveloperInterns}</p>
             </div>
           </div>
         </div>
@@ -162,8 +162,8 @@ const CollegeOverviewTab = ({ collegeData }) => {
               <span className="text-2xl">🎯</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Assigned Interns</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.assignedInterns}</p>
+              <p className="text-sm font-medium text-gray-600">Assigned AI Developer Interns</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.assignedAI Developer Interns}</p>
             </div>
           </div>
         </div>
@@ -174,8 +174,8 @@ const CollegeOverviewTab = ({ collegeData }) => {
               <span className="text-2xl">⚠️</span>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Unassigned Interns</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.unassignedInterns}</p>
+              <p className="text-sm font-medium text-gray-600">Unassigned AI Developer Interns</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.unassignedAI Developer Interns}</p>
             </div>
           </div>
         </div>
@@ -207,7 +207,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
       {/* Quick Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Mentors</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tech Leads</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {mentors.map((mentor) => (
               <div key={mentor._id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
@@ -228,7 +228,7 @@ const CollegeOverviewTab = ({ collegeData }) => {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Interns</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent AI Developer Interns</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {interns.slice(0, 10).map((intern) => (
               <div key={intern._id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
@@ -253,8 +253,8 @@ const CollegeOverviewTab = ({ collegeData }) => {
 };
 
 const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
-  const [selectedMentor, setSelectedMentor] = useState(null);
-  const [selectedInterns, setSelectedInterns] = useState([]);
+  const [selectedTech Lead, setSelectedTech Lead] = useState(null);
+  const [selectedAIDeveloperInterns, setSelectedAIDeveloperInterns] = useState([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
   if (!collegeData) {
@@ -262,25 +262,25 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
   }
 
   const { mentors, interns } = collegeData;
-  const unassignedInterns = interns.filter(intern => !intern.mentorId);
+  const unassignedAI Developer Interns = interns.filter(intern => !intern.mentorId);
 
   const handleCreateTeam = async () => {
-    if (!selectedMentor || selectedInterns.length === 0) return;
+    if (!selectedTech Lead || selectedAIDeveloperInterns.length === 0) return;
 
     try {
       const response = await fetch('/api/poc/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorId: selectedMentor._id,
-          internIds: selectedInterns.map(i => i._id)
+          mentorId: selectedTech Lead._id,
+          internIds: selectedAIDeveloperInterns.map(i => i._id)
         })
       });
 
       if (response.ok) {
         alert('Team created successfully!');
-        setSelectedMentor(null);
-        setSelectedInterns([]);
+        setSelectedTech Lead(null);
+        setSelectedAIDeveloperInterns([]);
         setShowCreateTeam(false);
         fetchTeams();
       }
@@ -309,18 +309,18 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
           <h4 className="font-medium text-gray-900 mb-4">Create New Team</h4>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Select Mentor */}
+            {/* Select Tech Lead */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Mentor
+                Select Tech Lead
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {mentors.filter(m => m.role === 'Tech Lead').map((mentor) => (
                   <div
                     key={mentor._id}
-                    onClick={() => setSelectedMentor(mentor)}
+                    onClick={() => setSelectedTech Lead(mentor)}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedMentor?._id === mentor._id
+                      selectedTech Lead?._id === mentor._id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
@@ -332,25 +332,25 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
               </div>
             </div>
 
-            {/* Select Interns */}
+            {/* Select AI Developer Interns */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Interns ({unassignedInterns.length} available)
+                Select AI Developer Interns ({unassignedAI Developer Interns.length} available)
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {unassignedInterns.map((intern) => (
+                {unassignedAI Developer Interns.map((intern) => (
                   <div
                     key={intern._id}
                     onClick={() => {
-                      const isSelected = selectedInterns.find(i => i._id === intern._id);
+                      const isSelected = selectedAIDeveloperInterns.find(i => i._id === intern._id);
                       if (isSelected) {
-                        setSelectedInterns(selectedInterns.filter(i => i._id !== intern._id));
+                        setSelectedAIDeveloperInterns(selectedAIDeveloperInterns.filter(i => i._id !== intern._id));
                       } else {
-                        setSelectedInterns([...selectedInterns, intern]);
+                        setSelectedAIDeveloperInterns([...selectedAIDeveloperInterns, intern]);
                       }
                     }}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedInterns.find(i => i._id === intern._id)
+                      selectedAIDeveloperInterns.find(i => i._id === intern._id)
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
@@ -358,7 +358,7 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
                     <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
-                        checked={!!selectedInterns.find(i => i._id === intern._id)}
+                        checked={!!selectedAIDeveloperInterns.find(i => i._id === intern._id)}
                         readOnly
                         className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                       />
@@ -374,13 +374,13 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
           </div>
 
           {/* Create Button */}
-          {selectedMentor && selectedInterns.length > 0 && (
+          {selectedTech Lead && selectedAIDeveloperInterns.length > 0 && (
             <div className="mt-6">
               <button
                 onClick={handleCreateTeam}
                 className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
-                Create Team: {selectedMentor.name} + {selectedInterns.length} interns
+                Create Team: {selectedTech Lead.name} + {selectedAIDeveloperInterns.length} interns
               </button>
             </div>
           )}
@@ -401,7 +401,7 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h5 className="font-medium text-gray-700 mb-2">Mentor</h5>
+                  <h5 className="font-medium text-gray-700 mb-2">Tech Lead</h5>
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded">
                     <div className="font-medium text-blue-900">{team.mentor?.name}</div>
                     <div className="text-sm text-blue-700">{team.mentor?.gitlabUsername}</div>
@@ -410,7 +410,7 @@ const ManageTeamsTab = ({ collegeData, teams, fetchTeams }) => {
                 
                 <div>
                   <h5 className="font-medium text-gray-700 mb-2">
-                    Interns ({team.interns?.length || 0})
+                    AI Developer Interns ({team.interns?.length || 0})
                   </h5>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {team.interns?.map((intern) => (

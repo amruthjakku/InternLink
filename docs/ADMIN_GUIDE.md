@@ -1,7 +1,7 @@
-# InternLink Admin Guide
+# AI developer InternLink Admin Guide
 
 ## Overview
-This comprehensive guide covers all administrative features and capabilities in InternLink, including user management, system monitoring, and advanced analytics.
+This comprehensive guide covers all administrative features and capabilities in AI developer InternLink, including user management, system monitoring, and advanced analytics.
 
 ## 🏗️ Admin System Architecture
 
@@ -9,13 +9,13 @@ This comprehensive guide covers all administrative features and capabilities in 
 ```
 ADMIN (Super User)
 ├── Can add other Admins (by GitLab username)
-├── Can add/manage Mentors
+├── Can add/manage Tech Leads
 ├── Can create/manage Colleges
 ├── System-wide oversight
 └── Full platform control
 
 MENTOR (College-specific)
-├── Can add Interns (only for their college)
+├── Can add AI developer Interns (only for their college)
 ├── Can manage their college's cohorts
 ├── Can monitor their interns' progress
 └── College-scoped permissions
@@ -111,7 +111,7 @@ npm run dev
 
 ### Access Control
 - **Role-based Access**: Different permissions for each role
-- **College Scoping**: Mentors can only access their college data
+- **College Scoping**: Tech Leads can only access their college data
 - **Admin Privileges**: Full system access for administrators
 - **Audit Logging**: Track all administrative actions
 

@@ -58,14 +58,14 @@ export async function POST(req) {
       const gitlabUsername = row.gitlabUsername?.trim().toLowerCase();
       const role = row.role?.trim();
       const collegeName = row.college?.trim();
-      const assignedMentor = row.assignedMentor?.trim();
+      const assignedTech Lead = row.assignedTech Lead?.trim();
 
       // Basic validation
       if (!name || !role || !gitlabUsername) {
         results.push({ row: rowNum, success: false, message: 'Name, role, and GitLab username are required' });
         continue;
       }
-      if (![ 'intern', 'mentor', 'super-mentor', 'admin' ].includes(role)) {
+      if (![ 'AI Developer Intern', 'Tech Lead', 'POC', 'admin' ].includes(role)) {
         results.push({ row: rowNum, success: false, message: 'Invalid role' });
         continue;
       }
@@ -77,7 +77,7 @@ export async function POST(req) {
       }
       // College handling
       let collegeId = null;
-      if ([ 'intern', 'mentor', 'super-mentor' ].includes(role)) {
+      if ([ 'AI Developer Intern', 'Tech Lead', 'POC' ].includes(role)) {
         if (!collegeName) {
           results.push({ row: rowNum, success: false, message: 'College is required for this role' });
           continue;
@@ -89,19 +89,19 @@ export async function POST(req) {
         }
         collegeId = collegeDoc._id;
       }
-      // assignedMentor handling for interns
-      let assignedMentorId = null;
-      if (role === 'intern') {
-        if (!assignedMentor) {
-          results.push({ row: rowNum, success: false, message: 'assignedMentor is required for interns' });
+      // assignedTech Lead handling for interns
+      let assignedTech LeadId = null;
+      if (role === 'AI Developer Intern') {
+        if (!assignedTech Lead) {
+          results.push({ row: rowNum, success: false, message: 'assignedTech Lead is required for interns' });
           continue;
         }
-        const mentorDoc = await User.findOne({ gitlabUsername: assignedMentor.toLowerCase(), role: 'mentor', college: collegeId });
+        const mentorDoc = await User.findOne({ gitlabUsername: assignedTech Lead.toLowerCase(), role: 'Tech Lead', college: collegeId });
         if (!mentorDoc) {
-          results.push({ row: rowNum, success: false, message: `Mentor '${assignedMentor}' not found in college` });
+          results.push({ row: rowNum, success: false, message: `Tech Lead '${assignedTech Lead}' not found in college` });
           continue;
         }
-        assignedMentorId = mentorDoc._id;
+        assignedTech LeadId = mentorDoc._id;
       }
       // Create user
       const userData = {
@@ -113,7 +113,7 @@ export async function POST(req) {
         isActive: true
       };
       if (collegeId) userData.college = collegeId;
-      if (assignedMentorId) userData.assignedMentor = assignedMentorId;
+      if (assignedTech LeadId) userData.assignedTech Lead = assignedTech LeadId;
       try {
         await new User(userData).save();
         createdCount++;

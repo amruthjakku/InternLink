@@ -367,12 +367,12 @@ export function TasksTab({ user, loading }) {
           
           // For individual tasks, check if assigned to this intern
           if (task.assignmentType === 'individual' || (!task.assignmentType && (task.assignedTo || task.assigneeId))) {
-            const isAssignedToIntern = 
+            const isAssignedToAI Developer Intern = 
               task.assigneeId === user?.id || 
               task.assignedTo === user?.id;
               
-            console.log(`Task ${task.title} is ${isAssignedToIntern ? '' : 'not '}assigned to this intern`);
-            return isAssignedToIntern;
+            console.log(`Task ${task.title} is ${isAssignedToAI Developer Intern ? '' : 'not '}assigned to this intern`);
+            return isAssignedToAI Developer Intern;
           }
           
           // For tasks without assignment type, check both cohort and individual assignment
@@ -391,11 +391,11 @@ export function TasksTab({ user, loading }) {
             }
             
             // Check if assigned directly to this intern
-            const isAssignedToIntern = 
+            const isAssignedToAI Developer Intern = 
               task.assigneeId === user?.id || 
               task.assignedTo === user?.id;
             
-            if (isAssignedToIntern) {
+            if (isAssignedToAI Developer Intern) {
               console.log(`Task ${task.title} is assigned to this intern (legacy format)`);
               return true;
             }
@@ -1277,7 +1277,7 @@ export function TasksTab({ user, loading }) {
                 </h2>
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span>📅 Due: {format(new Date(selectedTask.dueDate), 'MMM dd, yyyy')}</span>
-                  <span>👨‍🏫 Mentor: {selectedTask.mentor || selectedTask.assignedBy || 'Admin'}</span>
+                  <span>👨‍🏫 Tech Lead: {selectedTask.mentor || selectedTask.assignedBy || 'Admin'}</span>
                   <span className={`font-medium ${getPriorityColor(selectedTask.priority)}`}>
                     {getPriorityIcon(selectedTask.priority)} {selectedTask.priority} priority
                   </span>
@@ -1974,7 +1974,7 @@ export function TasksTab({ user, loading }) {
                     Progress
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mentor
+                    Tech Lead
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions

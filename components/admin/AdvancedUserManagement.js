@@ -24,7 +24,7 @@ export function AdvancedUserManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCollege, setFilterCollege] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [mentors, setMentors] = useState([]);
+  const [mentors, setTechLeads] = useState([]);
   const [bulkImportResult, setBulkImportResult] = useState(null);
   const [creatingCohort, setCreatingCohort] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -38,7 +38,7 @@ export function AdvancedUserManagement() {
     fetchUserSegments();
     fetchActivityLogs();
     fetchPermissions();
-    fetchMentors();
+    fetchTech Leads();
   }, []);
 
   const fetchUsers = async () => {
@@ -110,8 +110,8 @@ export function AdvancedUserManagement() {
         setUserSegments([
           { id: 1, name: 'Active Users', userCount: 0, color: '#10B981', description: 'Users active in the last 7 days' },
           { id: 2, name: 'Inactive Users', userCount: 0, color: '#6B7280', description: 'Users not active recently' },
-          { id: 3, name: 'Interns', userCount: 0, color: '#3B82F6', description: 'Users with intern role' },
-          { id: 4, name: 'Mentors', userCount: 0, color: '#F59E0B', description: 'Users with mentor role' }
+          { id: 3, name: 'AI Developer Interns', userCount: 0, color: '#3B82F6', description: 'Users with intern role' },
+          { id: 4, name: 'Tech Leads', userCount: 0, color: '#F59E0B', description: 'Users with mentor role' }
         ]);
       }
     } catch (error) {
@@ -143,7 +143,7 @@ export function AdvancedUserManagement() {
         setPermissions(data.permissions || []);
       } else {
         setPermissions([
-          { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['AI developer Intern', 'Tech Lead', 'admin'] },
+          { id: 1, name: 'View Dashboard', description: 'Access to main dashboard', roles: ['AI Developer Intern', 'Tech Lead', 'admin'] },
           { id: 2, name: 'Manage Tasks', description: 'Create and edit tasks', roles: ['Tech Lead', 'admin'] },
           { id: 3, name: 'View Reports', description: 'Access to analytics and reports', roles: ['Tech Lead', 'admin'] },
           { id: 4, name: 'Manage Users', description: 'Add, edit, and delete users', roles: ['admin'] },
@@ -157,7 +157,7 @@ export function AdvancedUserManagement() {
     }
   };
 
-  const fetchMentors = async (collegeName = null) => {
+  const fetchTech Leads = async (collegeName = null) => {
     try {
       let url = '/api/admin/users?role=Tech%20Lead';
       if (collegeName) {
@@ -166,12 +166,12 @@ export function AdvancedUserManagement() {
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setMentors(data.users || []);
+        setTechLeads(data.users || []);
       } else {
-        setMentors([]);
+        setTechLeads([]);
       }
     } catch (error) {
-      setMentors([]);
+      setTechLeads([]);
     }
   };
 
@@ -191,7 +191,7 @@ export function AdvancedUserManagement() {
       role: user.role,
       college: user.college,
       status: user.status,
-      assignedMentor: user.assignedMentor || '',
+      assignedTech Lead: user.assignedTech Lead || '',
     });
     setShowUserModal(true);
   };
@@ -199,9 +199,9 @@ export function AdvancedUserManagement() {
   const handleFormFieldChange = (field, value) => {
     setEditFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      if ((field === 'college' || field === 'role') && updated.role === 'intern') {
-        fetchMentors(updated.college);
-        updated.assignedMentor = '';
+      if ((field === 'college' || field === 'role') && updated.role === 'AI Developer Intern') {
+        fetchTech Leads(updated.college);
+        updated.assignedTech Lead = '';
       }
       return updated;
     });
@@ -212,8 +212,8 @@ export function AdvancedUserManagement() {
       const url = userData.id ? `/api/admin/users/${userData.id}` : '/api/admin/users';
       const method = userData.id ? 'PUT' : 'POST';
       const payload = { ...userData };
-      if (payload.role !== 'intern') {
-        delete payload.assignedMentor;
+      if (payload.role !== 'AI Developer Intern') {
+        delete payload.assignedTech Lead;
       }
       const response = await fetch(url, {
         method,
@@ -332,11 +332,11 @@ export function AdvancedUserManagement() {
       name: '',
       email: '',
       gitlabUsername: '',
-      role: 'intern',
+      role: 'AI Developer Intern',
       college: '',
       cohort: '',
       status: 'active',
-      assignedMentor: '',
+      assignedTech Lead: '',
     });
     setShowUserModal(true);
   };
@@ -384,7 +384,7 @@ export function AdvancedUserManagement() {
     }
   };
 
-  const handleQuickAddUser = (role = 'intern') => {
+  const handleQuickAddUser = (role = 'AI Developer Intern') => {
     setSelectedUser(null);
     setIsEditMode(true);
     setEditFormData({
@@ -467,10 +467,10 @@ export function AdvancedUserManagement() {
 
   // User distribution data
   const roleDistributionData = {
-    labels: ['AI developer Interns', 'Tech Leads', 'POCs', 'Admins'],
+    labels: ['AI Developer Interns', 'Tech Leads', 'POCs', 'Admins'],
     datasets: [{
       data: [
-        (users && Array.isArray(users)) ? users.filter(u => u.role === 'AI developer Intern').length : 0,
+        (users && Array.isArray(users)) ? users.filter(u => u.role === 'AI Developer Intern').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'Tech Lead').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'POC').length : 0,
         (users && Array.isArray(users)) ? users.filter(u => u.role === 'admin').length : 0
@@ -521,7 +521,7 @@ export function AdvancedUserManagement() {
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-2">Bulk Import Users</h3>
             <p className="text-sm text-gray-600 mb-2">
-              Import users in bulk from a CSV or Excel file. Download the sample sheet to see the required format. Supported roles: AI developer Intern, Tech Lead, POC, admin.
+              Import users in bulk from a CSV or Excel file. Download the sample sheet to see the required format. Supported roles: AI Developer Intern, Tech Lead, POC, admin.
             </p>
             <div className="flex items-center gap-4 mb-4">
               <a href="/sample-user-import.csv" download className="px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm">Download Sample CSV</a>
@@ -751,9 +751,9 @@ export function AdvancedUserManagement() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Roles</option>
-              <option value="intern">Intern</option>
-              <option value="mentor">Mentor</option>
-              <option value="super-mentor">Super Mentor</option>
+              <option value="AI Developer Intern">AI Developer Intern</option>
+              <option value="Tech Lead">Tech Lead</option>
+              <option value="POC">POC</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -951,8 +951,8 @@ export function AdvancedUserManagement() {
             const url = userData.id ? `/api/admin/users/${userData.id}` : '/api/admin/users';
             const method = userData.id ? 'PUT' : 'POST';
             const payload = { ...userData };
-            if (payload.role !== 'intern') {
-              delete payload.assignedMentor;
+            if (payload.role !== 'AI Developer Intern') {
+              delete payload.assignedTech Lead;
             }
             const response = await fetch(url, {
               method,

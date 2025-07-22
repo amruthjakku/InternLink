@@ -19,8 +19,8 @@ export async function GET() {
 
     // Get user statistics
     const totalUsers = await User.countDocuments({ isActive: true });
-    const totalMentors = await User.countDocuments({ role: 'mentor', isActive: true });
-    const totalInterns = await User.countDocuments({ role: 'intern', isActive: true });
+    const totalTech Leads = await User.countDocuments({ role: 'Tech Lead', isActive: true });
+    const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern', isActive: true });
     const totalAdmins = await User.countDocuments({ role: 'admin', isActive: true });
     
     // Get college statistics
@@ -46,15 +46,15 @@ export async function GET() {
     const recentAttendance = await Attendance.countDocuments({
       date: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
     });
-    const expectedAttendance = totalInterns * 7; // Assuming daily attendance
+    const expectedAttendance = totalAIDeveloperInterns * 7; // Assuming daily attendance
     const attendanceRate = expectedAttendance > 0 ? (recentAttendance / expectedAttendance) * 100 : 100;
     const systemHealth = Math.min(100, Math.round((attendanceRate + avgPerformance) / 2));
 
     const stats = {
       totalUsers,
       totalColleges,
-      totalMentors,
-      totalInterns,
+      totalTech Leads,
+      totalAIDeveloperInterns,
       totalAdmins,
       activeUsers,
       systemHealth,

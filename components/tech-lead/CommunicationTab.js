@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 export function CommunicationTab() {
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -14,7 +14,7 @@ export function CommunicationTab() {
   useEffect(() => {
     fetchChats();
     fetchMessages();
-    fetchInterns();
+    fetchAIDeveloperInterns();
   }, []);
 
   const fetchChats = async () => {
@@ -47,18 +47,18 @@ export function CommunicationTab() {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=AI%20developer%20Intern');
+      const response = await fetch('/api/admin/users?role=AI%20Developer%20Intern');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setAIDeveloperInterns(data.users || []);
       } else {
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     }
   };
 
@@ -72,7 +72,7 @@ export function CommunicationTab() {
     const message = {
       id: Date.now(),
       chat_id: selectedChat.id,
-      sender_id: 1, // Mentor ID
+      sender_id: 1, // Tech Lead ID
       sender_name: "Dr. Sarah Wilson",
       message: newMessage,
       timestamp: new Date().toISOString(),

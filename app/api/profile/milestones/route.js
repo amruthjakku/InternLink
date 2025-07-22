@@ -180,10 +180,10 @@ async function generateMilestones(user, db) {
     }
 
     // Role-based milestones
-    if (user.role === 'intern') {
+    if (user.role === 'AI Developer Intern') {
       milestones.push({
         id: 'intern_journey',
-        title: 'Intern Journey Begins',
+        title: 'AI Developer Intern Journey Begins',
         description: 'Started your internship journey',
         icon: '🎓',
         points: 5,
@@ -192,10 +192,10 @@ async function generateMilestones(user, db) {
       });
     }
 
-    if (user.role === 'mentor') {
+    if (user.role === 'Tech Lead') {
       milestones.push({
         id: 'mentor_status',
-        title: 'Mentor Status',
+        title: 'Tech Lead Status',
         description: 'Became a mentor',
         icon: '👨‍🏫',
         points: 100,

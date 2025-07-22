@@ -1,4 +1,4 @@
-# Deployment Guide for InternLink
+# Deployment Guide for AI developer InternLink
 
 ## Issues Fixed for Render Deployment
 

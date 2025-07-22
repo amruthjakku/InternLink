@@ -55,7 +55,7 @@ export async function GET(request) {
           admin: users.filter(u => u.role === 'admin').length,
           'POC': users.filter(u => u.role === 'POC').length,
           mentor: users.filter(u => u.role === 'Tech Lead').length,
-          intern: users.filter(u => u.role === 'AI developer Intern').length
+          intern: users.filter(u => u.role === 'AI Developer Intern').length
         },
         totalTasks: tasks.length,
         tasksByStatus: {
@@ -120,9 +120,9 @@ function convertToCSV(data, type) {
     csv += 'Metric,Value\n';
     csv += `"Total Users","${data.summary.totalUsers}"\n`;
     csv += `"Admin Users","${data.summary.usersByRole.admin}"\n`;
-    csv += `"Super-Mentor Users","${data.summary.usersByRole['POC']}"\n`;
-    csv += `"Mentor Users","${data.summary.usersByRole.mentor}"\n`;
-    csv += `"Intern Users","${data.summary.usersByRole.intern}"\n`;
+    csv += `"Super-Tech Lead Users","${data.summary.usersByRole['POC']}"\n`;
+    csv += `"Tech Lead Users","${data.summary.usersByRole.mentor}"\n`;
+    csv += `"AI Developer Intern Users","${data.summary.usersByRole.intern}"\n`;
     csv += `"Total Tasks","${data.summary.totalTasks}"\n`;
     csv += `"Completed Tasks","${data.summary.tasksByStatus.completed}"\n`;
     csv += `"In Progress Tasks","${data.summary.tasksByStatus.inProgress}"\n`;

@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
 /**
- * Team Activity Component for Mentor Dashboard
+ * Team Activity Component for Tech Lead Dashboard
  * Shows team development activity and individual intern progress
  */
 export default function TeamActivity({ demoMode = false }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState({});
-  const [internActivity, setInternActivity] = useState([]);
+  const [internActivity, setAI Developer InternActivity] = useState([]);
   const [dailyTrend, setDailyTrend] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [error, setError] = useState(null);
@@ -32,7 +32,7 @@ export default function TeamActivity({ demoMode = false }) {
         // Set analytics from real data
         setAnalytics({
           totalCommits: data.analytics?.totalCommits || 0,
-          activeInterns: data.analytics?.activeInterns || 0,
+          activeAIDeveloperInterns: data.analytics?.activeAIDeveloperInterns || 0,
           openIssues: data.analytics?.openIssues || 0,
           mergeRequests: data.analytics?.mergeRequests || 0,
           totalAdditions: data.analytics?.totalAdditions || 0,
@@ -41,21 +41,21 @@ export default function TeamActivity({ demoMode = false }) {
         });
 
         // Set intern activity from real data
-        setInternActivity(data.internActivity || []);
+        setAI Developer InternActivity(data.internActivity || []);
         // Set daily trend from real data
         setDailyTrend(data.dailyTrend || []);
       } else {
         // Fallback to empty data if API fails
         setAnalytics({
           totalCommits: 0,
-          activeInterns: 0,
+          activeAIDeveloperInterns: 0,
           openIssues: 0,
           mergeRequests: 0,
           totalAdditions: 0,
           totalDeletions: 0,
           activeProjects: 0
         });
-        setInternActivity([]);
+        setAI Developer InternActivity([]);
         setDailyTrend([]);
       }
     } catch (error) {
@@ -63,14 +63,14 @@ export default function TeamActivity({ demoMode = false }) {
       // Set empty data on error
       setAnalytics({
         totalCommits: 0,
-        activeInterns: 0,
+        activeAIDeveloperInterns: 0,
         openIssues: 0,
         mergeRequests: 0,
         totalAdditions: 0,
         totalDeletions: 0,
         activeProjects: 0
       });
-      setInternActivity([]);
+      setAI Developer InternActivity([]);
       setDailyTrend([]);
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export default function TeamActivity({ demoMode = false }) {
 
       if (response.ok) {
         setAnalytics(data.analytics);
-        setInternActivity(data.internActivity);
+        setAI Developer InternActivity(data.internActivity);
         setDailyTrend(data.dailyTrend);
         setError(null);
       } else {
@@ -161,9 +161,9 @@ export default function TeamActivity({ demoMode = false }) {
           
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">
-              {analytics.activeInterns || 0}
+              {analytics.activeAIDeveloperInterns || 0}
             </div>
-            <div className="text-sm text-gray-600">Active Interns</div>
+            <div className="text-sm text-gray-600">Active AI Developer Interns</div>
           </div>
           
           <div className="text-center p-4 bg-yellow-50 rounded-lg">
@@ -206,9 +206,9 @@ export default function TeamActivity({ demoMode = false }) {
         </div>
       </div>
 
-      {/* Individual Intern Progress */}
+      {/* Individual AI Developer Intern Progress */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h4 className="font-medium mb-4 text-gray-900">Individual Intern Progress</h4>
+        <h4 className="font-medium mb-4 text-gray-900">Individual AI Developer Intern Progress</h4>
         
         {internActivity.length > 0 ? (
           <div className="space-y-4">
@@ -299,7 +299,7 @@ export default function TeamActivity({ demoMode = false }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <p>No intern activity found</p>
-            <p className="text-sm">Interns will appear here once they connect their GitLab accounts</p>
+            <p className="text-sm">AI Developer Interns will appear here once they connect their GitLab accounts</p>
           </div>
         )}
       </div>

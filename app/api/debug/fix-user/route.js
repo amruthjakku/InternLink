@@ -62,7 +62,7 @@ export async function GET(request) {
         isActive: user.isActive
       };
       
-      user.role = 'AI developer Intern';
+      user.role = 'AI Developer Intern';
       user.isActive = true;
       user.lastTokenRefresh = new Date();
       user.sessionVersion = (user.sessionVersion || 0) + 1;
@@ -133,19 +133,19 @@ export async function POST(request) {
       
       // Find a mentor or super-mentor to assign
       let mentor = await User.findOne({ 
-        role: { $in: ['mentor', 'super-mentor'] },
+        role: { $in: ['Tech Lead', 'POC'] },
         isActive: true 
       });
       
       // If no mentor found, create a default one or make the user not require mentor
       if (!mentor) {
-        // Option 1: Temporarily make assignedMentor not required for this user
+        // Option 1: Temporarily make assignedTech Lead not required for this user
         // by making them a 'pending' role first, then back to intern
         await User.findByIdAndUpdate(user._id, {
-          assignedMentor: undefined,
+          assignedTech Lead: undefined,
           assignedBy: 'system-auto',
-          role: 'AI developer Intern',
-          $unset: { assignedMentor: 1 }  // Remove the field entirely
+          role: 'AI Developer Intern',
+          $unset: { assignedTech Lead: 1 }  // Remove the field entirely
         });
         
         return NextResponse.json({
@@ -155,7 +155,7 @@ export async function POST(request) {
             gitlabUsername: user.gitlabUsername,
             email: user.email,
             role: user.role,
-            needsMentorAssignment: true
+            needsTech LeadAssignment: true
           }
         });
       } else {
@@ -163,7 +163,7 @@ export async function POST(request) {
         const updatedUser = await User.findByIdAndUpdate(
           user._id,
           {
-            assignedMentor: mentor._id,
+            assignedTech Lead: mentor._id,
             assignedBy: 'system-auto'
           },
           { new: true }
@@ -176,7 +176,7 @@ export async function POST(request) {
             gitlabUsername: updatedUser.gitlabUsername,
             email: updatedUser.email,
             role: updatedUser.role,
-            assignedMentor: mentor.gitlabUsername
+            assignedTech Lead: mentor.gitlabUsername
           }
         });
       }
@@ -184,7 +184,7 @@ export async function POST(request) {
     
     if (action === 'list_mentors') {
       const mentors = await User.find({ 
-        role: { $in: ['mentor', 'super-mentor'] }
+        role: { $in: ['Tech Lead', 'POC'] }
       }).select('gitlabUsername email role isActive');
       
       return NextResponse.json({ mentors });
@@ -197,7 +197,7 @@ export async function POST(request) {
         { 
           role: 'pending',
           assignedBy: 'system-temp',
-          $unset: { assignedMentor: 1 }
+          $unset: { assignedTech Lead: 1 }
         },
         { new: true }
       );

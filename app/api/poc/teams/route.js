@@ -8,40 +8,40 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || session.user.role !== 'super-mentor') {
-      return NextResponse.json({ error: 'Unauthorized - Super mentor access required' }, { status: 401 });
+    if (!session?.user || session.user.role !== 'POC') {
+      return NextResponse.json({ error: 'Unauthorized - POC access required' }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    // Find the super mentor's college
-    const superMentor = await User.findOne({
+    // Find the POC's college
+    const superTech Lead = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
-      role: 'super-mentor',
+      role: 'POC',
       isActive: true
     }).populate('college');
 
-    if (!superMentor || !superMentor.college) {
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
-        error: 'Super mentor not found or not assigned to a college' 
+        error: 'POC not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superMentor.college._id;
+    const collegeId = superTech Lead.college._id;
 
     // Fetch mentors with their assigned interns from this college
-    const mentorsWithInterns = await User.find({
+    const mentorsWithAI Developer Interns = await User.find({
       college: collegeId,
-      role: { $in: ['mentor', 'super-mentor'] },
+      role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     }).populate('college', 'name location');
 
     const teams = [];
     
-    for (const mentor of mentorsWithInterns) {
+    for (const mentor of mentorsWithAI Developer Interns) {
       const interns = await User.find({
         mentorId: mentor._id,
-        role: 'intern',
+        role: 'AI Developer Intern',
         isActive: true
       });
 
@@ -61,7 +61,7 @@ export async function GET(request) {
     return NextResponse.json({
       teams,
       total: teams.length,
-      college: superMentor.college
+      college: superTech Lead.college
     });
 
   } catch (error) {
@@ -77,46 +77,46 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || session.user.role !== 'super-mentor') {
-      return NextResponse.json({ error: 'Unauthorized - Super mentor access required' }, { status: 401 });
+    if (!session?.user || session.user.role !== 'POC') {
+      return NextResponse.json({ error: 'Unauthorized - POC access required' }, { status: 401 });
     }
 
     const { mentorId, internIds } = await request.json();
 
     if (!mentorId || !internIds || !Array.isArray(internIds) || internIds.length === 0) {
       return NextResponse.json({ 
-        error: 'Mentor ID and intern IDs are required' 
+        error: 'Tech Lead ID and intern IDs are required' 
       }, { status: 400 });
     }
 
     await connectToDatabase();
 
-    // Find the super mentor's college
-    const superMentor = await User.findOne({
+    // Find the POC's college
+    const superTech Lead = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
-      role: 'super-mentor',
+      role: 'POC',
       isActive: true
     }).populate('college');
 
-    if (!superMentor || !superMentor.college) {
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
-        error: 'Super mentor not found or not assigned to a college' 
+        error: 'POC not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superMentor.college._id;
+    const collegeId = superTech Lead.college._id;
 
     // Verify mentor exists and is in the same college
     const mentor = await User.findOne({
       _id: mentorId,
       college: collegeId,
-      role: { $in: ['mentor', 'super-mentor'] },
+      role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     });
 
     if (!mentor) {
       return NextResponse.json({ 
-        error: 'Mentor not found in your college or inactive' 
+        error: 'Tech Lead not found in your college or inactive' 
       }, { status: 404 });
     }
 
@@ -124,7 +124,7 @@ export async function POST(request) {
     const interns = await User.find({
       _id: { $in: internIds },
       college: collegeId,
-      role: 'intern',
+      role: 'AI Developer Intern',
       isActive: true,
       mentorId: { $exists: false }
     });
@@ -146,7 +146,7 @@ export async function POST(request) {
     );
 
     // Log the team creation
-    console.log(`Super mentor ${superMentor.name} created team: ${mentor.name} assigned ${interns.length} interns`);
+    console.log(`POC ${superTech Lead.name} created team: ${mentor.name} assigned ${interns.length} interns`);
 
     return NextResponse.json({
       message: 'Team created successfully',
@@ -154,7 +154,7 @@ export async function POST(request) {
         mentor: mentor,
         interns: interns,
         assignedCount: updateResult.modifiedCount,
-        college: superMentor.college.name
+        college: superTech Lead.college.name
       }
     });
 
@@ -171,8 +171,8 @@ export async function DELETE(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || session.user.role !== 'super-mentor') {
-      return NextResponse.json({ error: 'Unauthorized - Super mentor access required' }, { status: 401 });
+    if (!session?.user || session.user.role !== 'POC') {
+      return NextResponse.json({ error: 'Unauthorized - POC access required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -180,38 +180,38 @@ export async function DELETE(request) {
 
     if (!mentorId) {
       return NextResponse.json({ 
-        error: 'Mentor ID is required' 
+        error: 'Tech Lead ID is required' 
       }, { status: 400 });
     }
 
     await connectToDatabase();
 
-    // Find the super mentor's college
-    const superMentor = await User.findOne({
+    // Find the POC's college
+    const superTech Lead = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
-      role: 'super-mentor',
+      role: 'POC',
       isActive: true
     }).populate('college');
 
-    if (!superMentor || !superMentor.college) {
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
-        error: 'Super mentor not found or not assigned to a college' 
+        error: 'POC not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superMentor.college._id;
+    const collegeId = superTech Lead.college._id;
 
     // Verify mentor is in the same college
     const mentor = await User.findOne({
       _id: mentorId,
       college: collegeId,
-      role: { $in: ['mentor', 'super-mentor'] },
+      role: { $in: ['Tech Lead', 'POC'] },
       isActive: true
     });
 
     if (!mentor) {
       return NextResponse.json({ 
-        error: 'Mentor not found in your college' 
+        error: 'Tech Lead not found in your college' 
       }, { status: 404 });
     }
 

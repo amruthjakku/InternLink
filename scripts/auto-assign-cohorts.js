@@ -10,7 +10,7 @@ async function autoAssignCohorts() {
     
     // Get all interns without cohort assignments
     const internsWithoutCohorts = await User.find({ 
-      role: 'AI developer Intern',
+      role: 'AI Developer Intern',
       $or: [
         { cohortId: { $exists: false } },
         { cohortId: null }
@@ -49,12 +49,12 @@ async function autoAssignCohorts() {
     console.log(`🎉 Successfully assigned ${assignedCount} interns to cohort ${activeCohort.name}`);
     
     // Show summary
-    const updatedInterns = await User.find({ 
-      role: 'AI developer Intern',
+    const updatedAI Developer Interns = await User.find({ 
+      role: 'AI Developer Intern',
       cohortId: activeCohort._id
     }).populate('cohortId', 'name');
     
-    console.log(`📈 Total interns now in ${activeCohort.name}: ${updatedInterns.length}`);
+    console.log(`📈 Total interns now in ${activeCohort.name}: ${updatedAI Developer Interns.length}`);
     
   } catch (error) {
     console.error('❌ Error in auto-assignment:', error);

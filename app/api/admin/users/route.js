@@ -112,7 +112,7 @@ export async function POST(request) {
     const requestBody = await request.json();
     console.log('POST /api/admin/users - Request body:', requestBody);
     
-    const { gitlabUsername, name, email, role, college, assignedBy, assignedMentor, cohort, autoDetected } = requestBody;
+    const { gitlabUsername, name, email, role, college, assignedBy, assignedTech Lead, cohort, autoDetected } = requestBody;
 
     if (!gitlabUsername) {
       return NextResponse.json({ error: 'GitLab username is required' }, { status: 400 });
@@ -122,7 +122,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Role is required' }, { status: 400 });
     }
 
-    if ((role === 'intern' || role === 'mentor' || role === 'super-mentor') && !college) {
+    if ((role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC') && !college) {
       return NextResponse.json({ error: 'College is required for interns, mentors, and super-mentors' }, { status: 400 });
     }
 
@@ -150,7 +150,7 @@ export async function POST(request) {
 
     // Find college ObjectId if college is provided
     let collegeId = null;
-    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
+    if (college && (role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC')) {
       const collegeDoc = await College.findOne({ 
         name: college.trim(),
         isActive: true 
@@ -189,13 +189,13 @@ export async function POST(request) {
       userData.college = collegeId;
     }
 
-    // Add assignedMentor for interns (optional)
-    if (role === 'intern' && assignedMentor) {
-      userData.assignedMentor = assignedMentor;
+    // Add assignedTech Lead for interns (optional)
+    if (role === 'AI Developer Intern' && assignedTech Lead) {
+      userData.assignedTech Lead = assignedTech Lead;
     }
 
     // Add cohort assignment for interns (optional)
-    if (role === 'intern' && cohort) {
+    if (role === 'AI Developer Intern' && cohort) {
       userData.cohortId = cohort;
     }
 

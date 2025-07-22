@@ -37,13 +37,13 @@ const CombinedCollegeManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCollege, setEditingCollege] = useState(null);
-  const [mentors, setMentors] = useState([]);
+  const [mentors, setTechLeads] = useState([]);
   const [newCollege, setNewCollege] = useState({
     name: '',
     description: '',
     location: '',
     website: '',
-    superMentorUsername: ''
+    superTech LeadUsername: ''
   });
 
   // Fetch colleges
@@ -78,7 +78,7 @@ const CombinedCollegeManagement = () => {
 
       if (response.ok) {
         setShowAddModal(false);
-        setNewCollege({ name: '', description: '', location: '', website: '', superMentorUsername: '' });
+        setNewCollege({ name: '', description: '', location: '', website: '', superTech LeadUsername: '' });
         fetchColleges(); // Refresh the list
       } else {
         const error = await response.json();
@@ -114,7 +114,7 @@ const CombinedCollegeManagement = () => {
   const filteredColleges = colleges.filter(college =>
     college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     college.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (college.superMentorName && college.superMentorName.toLowerCase().includes(searchTerm.toLowerCase()))
+    (college.superTech LeadName && college.superTech LeadName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Fetch POCs for dropdowns
@@ -123,7 +123,7 @@ const CombinedCollegeManagement = () => {
       const response = await fetch('/api/admin/users?role=POC');
       if (response.ok) {
         const data = await response.json();
-        setMentors(data.users || []); // Keep the same state variable for compatibility
+        setTechLeads(data.users || []); // Keep the same state variable for compatibility
       }
     } catch (error) {
       console.error('Error fetching POCs:', error);
@@ -138,7 +138,7 @@ const CombinedCollegeManagement = () => {
       description: college.description || '',
       location: college.location || '',
       website: college.website || '',
-      superMentorUsername: college.superMentorUsername || ''
+      superTech LeadUsername: college.superTech LeadUsername || ''
     });
     setShowEditModal(true);
   };
@@ -324,11 +324,11 @@ const CombinedCollegeManagement = () => {
                       {/* Stats Row */}
                       <div className="grid grid-cols-3 gap-2 mb-3 p-2 bg-gray-50 rounded-lg">
                         <div className="text-center">
-                          <div className="text-lg font-bold text-gray-900">{college.totalInterns || 0}</div>
+                          <div className="text-lg font-bold text-gray-900">{college.totalAIDeveloperInterns || 0}</div>
                           <div className="text-xs text-gray-600">Total</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-bold text-green-600">{college.activeInterns || 0}</div>
+                          <div className="text-lg font-bold text-green-600">{college.activeAIDeveloperInterns || 0}</div>
                           <div className="text-xs text-gray-600">Active</div>
                         </div>
                         <div className="text-center">
@@ -437,8 +437,8 @@ const CombinedCollegeManagement = () => {
                   Super-mentor
                 </label>
                 <select
-                  value={newCollege.superMentorUsername}
-                  onChange={(e) => setNewCollege({...newCollege, superMentorUsername: e.target.value})}
+                  value={newCollege.superTech LeadUsername}
+                  onChange={(e) => setNewCollege({...newCollege, superTech LeadUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="">Select a POC</option>
@@ -538,8 +538,8 @@ const CombinedCollegeManagement = () => {
                   Assigned Super-mentor
                 </label>
                 <select
-                  value={editingCollege.superMentorUsername}
-                  onChange={(e) => setEditingCollege({...editingCollege, superMentorUsername: e.target.value})}
+                  value={editingCollege.superTech LeadUsername}
+                  onChange={(e) => setEditingCollege({...editingCollege, superTech LeadUsername: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">No POC assigned</option>
@@ -929,7 +929,7 @@ export default function AdminDashboard() {
                     Admin Dashboard
                   </h1>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    InternLink Management Center
+                    AI Developer InternLink Management Center
                   </p>
                 </div>
               </div>
@@ -1116,16 +1116,16 @@ export default function AdminDashboard() {
                     subtitle={`${stats.collegeUtilization || 0}% utilized`}
                   />
                   <MetricCard
-                    title="Total Mentors"
-                    value={`${stats.totalMentors || 0} + ${stats.totalPOCs || 0}`}
+                    title="Total Tech Leads"
+                    value={`${stats.totalTech Leads || 0} + ${stats.totalPOCs || 0}`}
                     change={stats.totalPOCs || 0}
                     icon="👨‍🏫"
                     color="orange"
                     subtitle={`${stats.totalPOCs || 0} POCs`}
                   />
                   <MetricCard
-                    title="Total Interns"
-                    value={stats.totalInterns || 0}
+                    title="Total AI Developer Interns"
+                    value={stats.totalAIDeveloperInterns || 0}
                     change={stats.recentlyActiveUsers || 0}
                     icon="🎓"
                     color="teal"

@@ -57,9 +57,9 @@ export async function PUT(request, { params }) {
     }
 
     const data = await request.json();
-    const { name, description, startDate, endDate, mentorId, maxInterns } = data;
+    const { name, description, startDate, endDate, mentorId, maxAI Developer Interns } = data;
 
-    if (!name || !startDate || !endDate || !maxInterns) {
+    if (!name || !startDate || !endDate || !maxAI Developer Interns) {
       return NextResponse.json({ 
         error: 'Name, start date, end date, and max interns are required' 
       }, { status: 400 });
@@ -73,7 +73,7 @@ export async function PUT(request, { params }) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       mentorId: mentorId || null,
-      maxInterns: parseInt(maxInterns),
+      maxAI Developer Interns: parseInt(maxAI Developer Interns),
       updatedAt: new Date()
     };
 

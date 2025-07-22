@@ -204,7 +204,7 @@ async function assignTaskToColleges(taskId, collegeIds) {
     const users = await User.find({
       college: { $in: collegeIds },
       isActive: true,
-      role: { $in: ['intern', 'mentor'] } // Only assign to interns and mentors
+      role: { $in: ['AI Developer Intern', 'Tech Lead'] } // Only assign to interns and mentors
     });
 
     // Update users to include this task in their assigned tasks

@@ -1,7 +1,7 @@
 const { seedDemoData } = require('../utils/database');
 
 async function setup() {
-  console.log('🚀 Setting up GitLab Internship Tracker...');
+  console.log('🚀 Setting up GitLab AI Developer Internship Tracker...');
   
   try {
     console.log('📊 Seeding demo data...');

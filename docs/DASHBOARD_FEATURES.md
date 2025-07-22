@@ -1,9 +1,9 @@
-# InternLink Dashboard Features Guide
+# AI developer InternLink Dashboard Features Guide
 
 ## Overview
-This comprehensive guide covers all dashboard features available to different user roles in InternLink, including intern dashboards, mentor dashboards, and performance tracking capabilities.
+This comprehensive guide covers all dashboard features available to different user roles in AI developer InternLink, including intern dashboards, mentor dashboards, and performance tracking capabilities.
 
-## 👨‍🎓 Intern Dashboard Features
+## 👨‍🎓 AI developer Intern Dashboard Features
 
 ### ✅ Currently Implemented
 - Basic dashboard layout with tabs
@@ -85,12 +85,12 @@ This comprehensive guide covers all dashboard features available to different us
 - **Trend Analysis**: Week-over-week performance comparison
 - **Insights Generation**: Automated insights based on patterns
 
-## 👨‍🏫 Mentor Dashboard Features
+## 👨‍🏫 Tech Lead Dashboard Features
 
 ### ✅ Currently Implemented
 - Basic dashboard layout with tabs
 - Overview statistics cards
-- Intern management interface
+- AI developer Intern management interface
 - Task management basic structure
 - College management basic structure
 - Attendance tracking interface
@@ -102,7 +102,7 @@ This comprehensive guide covers all dashboard features available to different us
 ### 🚀 Advanced Overview Dashboard
 
 #### Real-time Performance Metrics
-- **Dynamic Charts**: Intern performance visualization over time
+- **Dynamic Charts**: AI developer Intern performance visualization over time
 - **Team Performance**: Aggregate team metrics and trends
 - **Individual Tracking**: Detailed per-intern performance data
 - **Comparative Analysis**: Performance comparison across interns
@@ -131,9 +131,9 @@ This comprehensive guide covers all dashboard features available to different us
 - **Predictive Analytics**: Forecast future completion rates
 - **Performance Indicators**: Key performance metrics tracking
 
-### 📈 Advanced Intern Management
+### 📈 Advanced AI developer Intern Management
 
-#### Individual Intern Analytics
+#### Individual AI developer Intern Analytics
 - **Detailed Profiles**: Comprehensive intern performance profiles
 - **Skill Assessment**: Current skill levels and development areas
 - **Progress Tracking**: Individual progress toward goals

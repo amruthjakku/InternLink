@@ -5,11 +5,11 @@ import { format, subDays, parseISO, eachDayOfInterval } from 'date-fns';
 import { CollegeBadge } from '../CollegeLogo';
 // Using real API calls - no mock data
 
-export function AttendanceTab({ userRole = 'mentor' }) {
+export function AttendanceTab({ userRole = 'Tech Lead' }) {
   const [attendance, setAttendance] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedIntern, setSelectedIntern] = useState('');
+  const [selectedAIDeveloperIntern, setSelectedAIDeveloperIntern] = useState('');
   const [showIPSettings, setShowIPSettings] = useState(false);
   const [allowedIPs, setAllowedIPs] = useState(['192.168.1.0/24', '10.0.0.0/8']);
   const [activeView, setActiveView] = useState('overview'); // 'overview', 'history', 'analytics'
@@ -21,7 +21,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
 
   useEffect(() => {
     fetchAttendanceData();
-    fetchInterns();
+    fetchAIDeveloperInterns();
     fetchAttendanceHistory();
   }, []);
 
@@ -46,10 +46,10 @@ export function AttendanceTab({ userRole = 'mentor' }) {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
       // Different API endpoints based on user role
-      let endpoint = '/api/admin/users?role=AI%20developer%20Intern';
+      let endpoint = '/api/admin/users?role=AI%20Developer%20Intern';
       if (userRole === 'Tech Lead') {
         endpoint = '/api/tech-lead/assigned-interns';
       } else if (userRole === 'POC') {
@@ -59,13 +59,13 @@ export function AttendanceTab({ userRole = 'mentor' }) {
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || data.interns || []);
+        setAIDeveloperInterns(data.users || data.interns || []);
       } else {
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     }
   };
 
@@ -93,7 +93,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
     return attendance.filter(record => record.date === date);
   };
 
-  const getInternAttendanceStats = (internId) => {
+  const getAI Developer InternAttendanceStats = (internId) => {
     const internAttendance = attendance.filter(record => record.intern_id === internId);
     const presentDays = internAttendance.filter(record => record.status === 'present').length;
     const totalDays = internAttendance.length;
@@ -292,11 +292,11 @@ export function AttendanceTab({ userRole = 'mentor' }) {
             Daily Records - {new Date(selectedDate).toLocaleDateString()}
           </h3>
           <select
-            value={selectedIntern}
-            onChange={(e) => setSelectedIntern(e.target.value)}
+            value={selectedAIDeveloperIntern}
+            onChange={(e) => setSelectedAIDeveloperIntern(e.target.value)}
             className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
-            <option value="">All Interns</option>
+            <option value="">All AI Developer Interns</option>
             {interns.map(intern => (
               <option key={intern.id} value={intern.id}>{intern.name}</option>
             ))}
@@ -308,7 +308,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Intern
+                  AI Developer Intern
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -332,7 +332,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {todayAttendance
-                .filter(record => !selectedIntern || record.intern_id.toString() === selectedIntern)
+                .filter(record => !selectedAIDeveloperIntern || record.intern_id.toString() === selectedAIDeveloperIntern)
                 .map(record => {
                   const intern = interns.find(i => i.id === record.intern_id);
                   return (
@@ -396,12 +396,12 @@ export function AttendanceTab({ userRole = 'mentor' }) {
           <div className="space-y-3">
             {interns
               .sort((a, b) => {
-                const statsA = getInternAttendanceStats(a.id);
-                const statsB = getInternAttendanceStats(b.id);
+                const statsA = getAI Developer InternAttendanceStats(a.id);
+                const statsB = getAI Developer InternAttendanceStats(b.id);
                 return parseFloat(statsB.attendanceRate) - parseFloat(statsA.attendanceRate);
               })
               .map(intern => {
-                const stats = getInternAttendanceStats(intern.id);
+                const stats = getAI Developer InternAttendanceStats(intern.id);
                 return (
                   <div key={intern.id} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -456,7 +456,7 @@ export function AttendanceTab({ userRole = 'mentor' }) {
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
                   {interns.filter(intern => {
-                    const stats = getInternAttendanceStats(intern.id);
+                    const stats = getAI Developer InternAttendanceStats(intern.id);
                     return parseFloat(stats.attendanceRate) >= 90;
                   }).length}
                 </div>

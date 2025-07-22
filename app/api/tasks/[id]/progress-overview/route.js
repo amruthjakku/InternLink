@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
     }
 
     // Only mentors, super-mentors, and admins can view progress overview
-    if (!['mentor', 'super-mentor', 'admin'].includes(session.user.role)) {
+    if (!['Tech Lead', 'POC', 'admin'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -40,23 +40,23 @@ export async function GET(request, { params }) {
       .sort({ updatedAt: -1 });
 
     // Get all interns who should have this task (but might not have progress records yet)
-    let expectedInterns = [];
+    let expectedAI Developer Interns = [];
     
     if (task.assignmentType === 'individual' && task.assignedTo) {
       const intern = await User.findById(task.assignedTo);
-      if (intern && intern.role === 'intern') {
-        expectedInterns = [intern];
+      if (intern && intern.role === 'AI Developer Intern') {
+        expectedAI Developer Interns = [intern];
       }
     } else if (task.assignmentType === 'cohort' && task.cohortId) {
-      expectedInterns = await User.find({ 
+      expectedAI Developer Interns = await User.find({ 
         cohortId: task.cohortId, 
-        role: 'intern',
+        role: 'AI Developer Intern',
         isActive: true 
       });
     } else if (task.assignmentType === 'hierarchical' && task.assignedTo?.colleges) {
-      expectedInterns = await User.find({
+      expectedAI Developer Interns = await User.find({
         college: { $in: task.assignedTo.colleges },
-        role: 'intern',
+        role: 'AI Developer Intern',
         isActive: true
       });
     }
@@ -68,7 +68,7 @@ export async function GET(request, { params }) {
     });
 
     // Build comprehensive progress overview
-    const progressOverview = expectedInterns.map(intern => {
+    const progressOverview = expectedAI Developer Interns.map(intern => {
       const progress = progressMap.get(intern._id.toString());
       
       return {
@@ -109,7 +109,7 @@ export async function GET(request, { params }) {
     });
 
     // Calculate summary statistics
-    const totalInterns = progressOverview.length;
+    const totalAIDeveloperInterns = progressOverview.length;
     const completedCount = progressOverview.filter(p => 
       ['completed', 'done'].includes(p.progress.status)
     ).length;
@@ -126,8 +126,8 @@ export async function GET(request, { params }) {
       p.progress.needsHelp
     ).length;
 
-    const averageProgress = totalInterns > 0 
-      ? Math.round(progressOverview.reduce((sum, p) => sum + p.progress.progress, 0) / totalInterns)
+    const averageProgress = totalAIDeveloperInterns > 0 
+      ? Math.round(progressOverview.reduce((sum, p) => sum + p.progress.progress, 0) / totalAIDeveloperInterns)
       : 0;
 
     const totalPointsEarned = progressOverview.reduce((sum, p) => sum + p.progress.pointsEarned, 0);
@@ -147,7 +147,7 @@ export async function GET(request, { params }) {
         estimatedHours: task.estimatedHours
       },
       summary: {
-        totalInterns,
+        totalAIDeveloperInterns,
         completedCount,
         inProgressCount,
         reviewCount,
@@ -156,7 +156,7 @@ export async function GET(request, { params }) {
         averageProgress,
         totalPointsEarned,
         totalHoursLogged: Math.round(totalHoursLogged * 10) / 10,
-        completionRate: totalInterns > 0 ? Math.round((completedCount / totalInterns) * 100) : 0
+        completionRate: totalAIDeveloperInterns > 0 ? Math.round((completedCount / totalAIDeveloperInterns) * 100) : 0
       },
       progressOverview: progressOverview.sort((a, b) => {
         // Sort by status priority, then by progress percentage

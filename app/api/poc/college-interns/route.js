@@ -14,7 +14,7 @@ export async function GET() {
     
     console.log('Super-mentor API: Session user:', session?.user?.email, 'Role:', session?.user?.role);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       console.log('Super-mentor API: Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -45,9 +45,9 @@ export async function GET() {
 
     // Get super-mentor's college
     console.log('Super-mentor API: Looking up super-mentor with ID:', session.user.id);
-    let superMentor;
+    let superTech Lead;
     try {
-      superMentor = await User.findById(session.user.id).populate('college');
+      superTech Lead = await User.findById(session.user.id).populate('college');
     } catch (userError) {
       console.error('Super-mentor API: Error finding super-mentor:', userError);
       return NextResponse.json({ 
@@ -55,31 +55,31 @@ export async function GET() {
       }, { status: 500 });
     }
     
-    console.log('Super-mentor API: Found super-mentor:', superMentor?.name, 'College:', superMentor?.college?.name);
+    console.log('Super-mentor API: Found super-mentor:', superTech Lead?.name, 'College:', superTech Lead?.college?.name);
     
-    if (!superMentor) {
+    if (!superTech Lead) {
       console.log('Super-mentor API: Super-mentor not found');
       return NextResponse.json({ error: 'Super-mentor not found' }, { status: 404 });
     }
     
-    if (!superMentor.college) {
+    if (!superTech Lead.college) {
       console.log('Super-mentor API: Super-mentor college not found');
       return NextResponse.json({ error: 'Super-mentor college not found' }, { status: 404 });
     }
 
     // Get all interns in the same college
-    console.log('Super-mentor API: Looking up interns for college ID:', superMentor.college._id);
+    console.log('Super-mentor API: Looking up interns for college ID:', superTech Lead.college._id);
     
     let interns;
     try {
       interns = await User.find({ 
-        role: 'intern', 
-        college: superMentor.college._id,
+        role: 'AI Developer Intern', 
+        college: superTech Lead.college._id,
         isActive: true 
       })
       .populate('college', 'name')
-      .populate('assignedMentor', 'name email')
-      .select('gitlabUsername name email college assignedMentor isActive createdAt lastLoginAt')
+      .populate('assignedTech Lead', 'name email')
+      .select('gitlabUsername name email college assignedTech Lead isActive createdAt lastLoginAt')
       .sort({ createdAt: -1 });
       
       console.log('Super-mentor API: Found', interns.length, 'interns for college');
@@ -91,7 +91,7 @@ export async function GET() {
     }
 
     // Format interns for frontend
-    const formattedInterns = interns.map(intern => ({
+    const formattedAI Developer Interns = interns.map(intern => ({
       _id: intern._id,
       id: intern._id,
       gitlabUsername: intern.gitlabUsername,
@@ -99,8 +99,8 @@ export async function GET() {
       email: intern.email,
       college_name: intern.college?.name || 'N/A',
       status: intern.isActive ? 'active' : 'inactive',
-      assignedMentor: intern.assignedMentor?._id || null,
-      assignedMentorName: intern.assignedMentor?.name || null,
+      assignedTech Lead: intern.assignedTech Lead?._id || null,
+      assignedTech LeadName: intern.assignedTech Lead?.name || null,
       createdAt: intern.createdAt,
       lastLoginAt: intern.lastLoginAt,
       // Mock data for now - these would come from other collections
@@ -110,7 +110,7 @@ export async function GET() {
       performance_score: Math.floor(Math.random() * 30) + 70
     }));
 
-    const response = { interns: formattedInterns };
+    const response = { interns: formattedAI Developer Interns };
     
     // Cache the response
     API_CACHE.set(cacheKey, {

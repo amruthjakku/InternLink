@@ -24,9 +24,9 @@ export async function GET() {
       totalColleges: colleges.length,
       totalUsers: users.length,
       usersByRole: {
-        intern: users.filter(u => u.role === 'intern').length,
-        mentor: users.filter(u => u.role === 'mentor').length,
-        'super-mentor': users.filter(u => u.role === 'super-mentor').length,
+        intern: users.filter(u => u.role === 'AI Developer Intern').length,
+        mentor: users.filter(u => u.role === 'Tech Lead').length,
+        'POC': users.filter(u => u.role === 'POC').length,
         admin: users.filter(u => u.role === 'admin').length
       },
       usersWithColleges: users.filter(u => u.college).length,
@@ -43,9 +43,9 @@ export async function GET() {
           collegeName: college.name,
           collegeId: college._id.toString(),
           totalUsers: collegeUsers.length,
-          interns: collegeUsers.filter(u => u.role === 'intern').length,
-          mentors: collegeUsers.filter(u => u.role === 'mentor').length,
-          superMentors: collegeUsers.filter(u => u.role === 'super-mentor').length,
+          interns: collegeUsers.filter(u => u.role === 'AI Developer Intern').length,
+          mentors: collegeUsers.filter(u => u.role === 'Tech Lead').length,
+          superTech Leads: collegeUsers.filter(u => u.role === 'POC').length,
           userDetails: collegeUsers.map(u => ({
             name: u.name,
             role: u.role,
@@ -63,7 +63,7 @@ export async function GET() {
       })),
       
       // All intern data for analysis
-      allInterns: users.filter(u => u.role === 'intern').map(u => ({
+      allAI Developer Interns: users.filter(u => u.role === 'AI Developer Intern').map(u => ({
         id: u._id.toString(),
         name: u.name,
         gitlabUsername: u.gitlabUsername,
@@ -74,7 +74,7 @@ export async function GET() {
       })),
       
       // All mentors data for analysis
-      allMentors: users.filter(u => u.role === 'mentor').map(u => ({
+      allTech Leads: users.filter(u => u.role === 'Tech Lead').map(u => ({
         id: u._id.toString(),
         name: u.name,
         gitlabUsername: u.gitlabUsername,

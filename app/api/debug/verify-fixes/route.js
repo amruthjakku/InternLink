@@ -59,7 +59,7 @@ export async function GET() {
         gitlabId: '999999',
         name: 'Test User',
         email: 'test@example.com',
-        role: 'AI developer Intern',
+        role: 'AI Developer Intern',
         isActive: true
       });
       await testUser.save();
@@ -70,14 +70,14 @@ export async function GET() {
     const updatedUser = await User.findByIdAndUpdate(
       testUser._id,
       {
-        role: 'mentor',
+        role: 'Tech Lead',
         lastTokenRefresh: new Date(),
         sessionVersion: (testUser.sessionVersion || 1) + 1
       },
       { new: true }
     );
 
-    const updateWorked = updatedUser.role === 'mentor' && 
+    const updateWorked = updatedUser.role === 'Tech Lead' && 
                         updatedUser.lastTokenRefresh > beforeUpdate;
 
     verificationResults.checks.push({
@@ -85,7 +85,7 @@ export async function GET() {
       status: updateWorked ? 'PASS' : 'FAIL',
       message: updateWorked ? 'Database updates work correctly' : 'Database updates failed',
       details: {
-        roleUpdated: updatedUser.role === 'mentor',
+        roleUpdated: updatedUser.role === 'Tech Lead',
         tokenRefreshSet: !!updatedUser.lastTokenRefresh,
         sessionVersionIncremented: updatedUser.sessionVersion > (testUser.sessionVersion || 1)
       }

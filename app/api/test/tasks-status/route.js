@@ -14,7 +14,7 @@ export async function GET(request) {
     // Get all users with cohorts
     const usersWithCohorts = await db.collection('users').find({ 
       cohortId: { $exists: true, $ne: null },
-      role: 'intern'
+      role: 'AI Developer Intern'
     }).toArray();
     
     // Analyze tasks by assignment type

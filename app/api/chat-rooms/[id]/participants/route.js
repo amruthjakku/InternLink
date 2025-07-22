@@ -35,7 +35,7 @@ export async function POST(request, { params }) {
     const canAddParticipants = 
       chatRoom.createdBy.toString() === session.user._id.toString() ||
       session.user.role === 'admin' ||
-      session.user.role === 'super-mentor' ||
+      session.user.role === 'POC' ||
       chatRoom.participants.some(p => 
         p.user.toString() === session.user._id.toString() && p.role === 'admin'
       );
@@ -111,7 +111,7 @@ export async function DELETE(request, { params }) {
     const canRemoveParticipants = 
       chatRoom.createdBy.toString() === session.user._id.toString() ||
       session.user.role === 'admin' ||
-      session.user.role === 'super-mentor' ||
+      session.user.role === 'POC' ||
       chatRoom.participants.some(p => 
         p.user.toString() === session.user._id.toString() && p.role === 'admin'
       ) ||

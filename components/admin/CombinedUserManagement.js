@@ -4,8 +4,8 @@ const CombinedUserManagement = () => {
   const [users, setUsers] = useState([
     { _id: '1', name: 'John Smith', email: 'john@example.com', role: 'Tech Lead', college: 'Tech University', gitlabUsername: 'johnsmith', isActive: true },
     { _id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', role: 'POC', college: 'Innovation College', gitlabUsername: 'sarahj', isActive: true },
-    { _id: '3', name: 'Michael Brown', email: 'michael@example.com', role: 'AI developer Intern', college: 'Tech University', gitlabUsername: 'michaelb', isActive: true },
-    { _id: '4', name: 'Emily Davis', email: 'emily@example.com', role: 'AI developer Intern', college: 'Digital Arts Institute', gitlabUsername: 'emilyd', isActive: false },
+    { _id: '3', name: 'Michael Brown', email: 'michael@example.com', role: 'AI Developer Intern', college: 'Tech University', gitlabUsername: 'michaelb', isActive: true },
+    { _id: '4', name: 'Emily Davis', email: 'emily@example.com', role: 'AI Developer Intern', college: 'Digital Arts Institute', gitlabUsername: 'emilyd', isActive: false },
     { _id: '5', name: 'Robert Wilson', email: 'robert@example.com', role: 'Tech Lead', college: 'Innovation College', gitlabUsername: 'robertw', isActive: true }
   ]);
 
@@ -50,9 +50,9 @@ const CombinedUserManagement = () => {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="all">All Roles</option>
-            <option value="intern">Interns</option>
-            <option value="mentor">Mentors</option>
-            <option value="super-mentor">Super Mentors</option>
+            <option value="AI Developer Intern">AI Developer Interns</option>
+            <option value="Tech Lead">Tech Leads</option>
+            <option value="POC">POCs</option>
             <option value="admin">Admins</option>
           </select>
         </div>

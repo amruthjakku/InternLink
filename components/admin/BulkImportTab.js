@@ -108,7 +108,7 @@ export function BulkImportTab() {
         filename: 'users_template.csv',
         headers: ['gitlabUsername', 'name', 'email', 'role', 'college', 'cohort'],
         sample: [
-          'john_doe', 'John Doe', 'john@example.com', 'intern', 'MIT', 'Batch 2024'
+          'john_doe', 'John Doe', 'john@example.com', 'AI Developer Intern', 'MIT', 'Batch 2024'
         ]
       },
       tasks: {
@@ -204,7 +204,7 @@ export function BulkImportTab() {
   };
 
   // Check if user has permission (admin or super-mentor)
-  if (!user || (user.role !== 'admin' && user.role !== 'super-mentor')) {
+  if (!user || (user.role !== 'admin' && user.role !== 'POC')) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="text-center">
@@ -229,7 +229,7 @@ export function BulkImportTab() {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-yellow-100 text-yellow-800'
             }`}>
-              {user.role === 'admin' ? '👑 Admin' : '🌟 Super-Mentor'}
+              {user.role === 'admin' ? '👑 Admin' : '🌟 Super-Tech Lead'}
             </span>
           </div>
         </div>

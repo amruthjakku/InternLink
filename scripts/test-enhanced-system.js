@@ -39,7 +39,7 @@ class EnhancedSystemTester {
         gitlabId: 'test-123',
         name: 'Test Soft Delete User',
         email: 'test-soft-delete@example.com',
-        role: 'AI developer Intern',
+        role: 'AI Developer Intern',
         assignedBy: 'test-admin'
       });
 
@@ -104,7 +104,7 @@ class EnhancedSystemTester {
         gitlabId: 'test-456',
         name: 'Test Duplicate User',
         email: 'test-soft-delete@example.com', // Same email
-        role: 'AI developer Intern',
+        role: 'AI Developer Intern',
         assignedBy: 'test-admin'
       });
 
@@ -149,7 +149,7 @@ class EnhancedSystemTester {
         description: 'Test cohort for enhanced system',
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        maxInterns: 10,
+        maxAI Developer Interns: 10,
         createdBy: 'test-admin'
       });
 
@@ -208,7 +208,7 @@ class EnhancedSystemTester {
           gitlabId: `bulk-${i}`,
           name: `Test Bulk User ${i}`,
           email: `test-bulk-${i}@example.com`,
-          role: 'AI developer Intern',
+          role: 'AI Developer Intern',
           assignedBy: 'test-admin'
         });
 

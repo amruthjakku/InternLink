@@ -8,7 +8,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'super-mentor') {
+    if (!session || session.user.role !== 'POC') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,15 +18,15 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (role !== 'mentor') {
+    if (role !== 'Tech Lead') {
       return NextResponse.json({ error: 'Can only create mentor accounts' }, { status: 400 });
     }
 
     await connectToDatabase();
 
     // Verify super-mentor can manage this college
-    const superMentor = await User.findById(session.user.id);
-    if (!superMentor || superMentor.college.toString() !== college) {
+    const superTech Lead = await User.findById(session.user.id);
+    if (!superTech Lead || superTech Lead.college.toString() !== college) {
       return NextResponse.json({ error: 'Cannot create mentor for different college' }, { status: 403 });
     }
 
@@ -54,18 +54,18 @@ export async function POST(request) {
       isActive: true
     };
 
-    const newMentor = new User(userData);
-    await newMentor.save();
+    const newTech Lead = new User(userData);
+    await newTech Lead.save();
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Mentor created successfully',
+      message: 'Tech Lead created successfully',
       mentor: {
-        _id: newMentor._id,
-        gitlabUsername: newMentor.gitlabUsername,
-        name: newMentor.name,
-        email: newMentor.email,
-        role: newMentor.role
+        _id: newTech Lead._id,
+        gitlabUsername: newTech Lead.gitlabUsername,
+        name: newTech Lead.name,
+        email: newTech Lead.email,
+        role: newTech Lead.role
       }
     });
 

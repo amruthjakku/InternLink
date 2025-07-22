@@ -5,7 +5,7 @@
 ### 🎯 **Workflow Description**
 1. **Admin creates tasks** → Assigns to cohorts → Selects colleges within those cohorts
 2. **Super-mentors manage their college** → View all mentors and interns → Create teams by assigning interns to mentors
-3. **Hierarchical structure**: Admin → Cohort → Colleges → Teams (Mentor + Interns)
+3. **Hierarchical structure**: Admin → Cohort → Colleges → Teams (Tech Lead + AI developer Interns)
 
 ---
 
@@ -31,8 +31,8 @@
 
 #### 4. **Team Management** 👥
 - **Sub-tabs:**
-  - **Super Mentors**: Manage super mentors and their colleges
-  - **Mentor Teams**: Assign interns to mentors
+  - **POCs**: Manage POCs and their colleges
+  - **Tech Lead Teams**: Assign interns to mentors
   - **Team Overview**: View all teams and assignments
 
 #### 5. **Monitoring & Analytics** 📈
@@ -84,17 +84,17 @@ Selects Colleges in Cohort
     ↓
 Auto-assigns to Users in Selected Colleges
     ↓
-Users (Interns + Mentors) receive task
+Users (AI developer Interns + Tech Leads) receive task
 ```
 
 ---
 
-## 👨‍🏫 **Super Mentor Dashboard & Workflow**
+## 👨‍🏫 **POC Dashboard & Workflow**
 
-### **Super Mentor Access**
+### **POC Access**
 - **URL**: `/super-mentor/dashboard`
 - **Role Required**: `super-mentor`
-- **Auto-redirect**: Super mentors redirected to their dashboard on login
+- **Auto-redirect**: POCs redirected to their dashboard on login
 
 ### **Dashboard Features**
 
@@ -112,7 +112,7 @@ Users (Interns + Mentors) receive task
 4. Track team performance
 ```
 
-#### **API Endpoints for Super Mentors**
+#### **API Endpoints for POCs**
 ```javascript
 // Get college overview
 GET /api/super-mentor/college-overview
@@ -142,7 +142,7 @@ DELETE /api/super-mentor/teams?mentorId=mentor_id
 ✅ components/admin/TeamManagement.js
 ✅ components/admin/MonitoringAnalytics.js
 ✅ components/admin/SystemTools.js
-✅ components/super-mentor/SuperMentorDashboard.js
+✅ components/super-mentor/SuperTechLeadDashboard.js
 ```
 
 ### **New API Endpoints**
@@ -173,8 +173,8 @@ DELETE /api/super-mentor/teams?mentorId=mentor_id
 5. Selects colleges: "Tech University", "Innovation College"
 6. Task automatically assigned to all interns/mentors in those colleges
 
-### **Example 2: Super Mentor Creates Team**
-1. **Super Mentor** logs into `/super-mentor/dashboard`
+### **Example 2: POC Creates Team**
+1. **POC** logs into `/super-mentor/dashboard`
 2. Goes to **Manage Teams** tab
 3. Clicks "Create New Team"
 4. Selects mentor: "John Smith"
@@ -204,12 +204,12 @@ Teams work on task under mentor guidance
 
 ### **Role-Based Access Control**
 - **Admin/Super-Admin**: Full access to admin dashboard and task creation
-- **Super-Mentor**: Access to college-specific team management
-- **Mentor**: View assigned tasks and team members
-- **Intern**: View assigned tasks and submit work
+- **Super-Tech Lead**: Access to college-specific team management
+- **Tech Lead**: View assigned tasks and team members
+- **AI developer Intern**: View assigned tasks and submit work
 
 ### **Data Isolation**
-- Super mentors can only manage users from their assigned college
+- POCs can only manage users from their assigned college
 - Tasks respect cohort-college boundaries
 - Team creation restricted to same-college users
 
@@ -223,13 +223,13 @@ Teams work on task under mentor guidance
 ✅ Better organization of features
 ✅ Clear workflow from cohort → college → teams
 
-### **For Super Mentors**
+### **For POCs**
 ✅ Dedicated dashboard for college management
 ✅ Easy team creation and management
 ✅ College-specific overview and analytics
 ✅ Control over mentor-intern assignments
 
-### **For Mentors & Interns**
+### **For Tech Leads & AI developer Interns**
 ✅ Clear team structure and assignments
 ✅ Tasks automatically appear based on college/cohort
 ✅ Better mentorship relationships

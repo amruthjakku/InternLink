@@ -77,7 +77,7 @@ export async function GET(request) {
     
     // Get current state
     const cohorts = await db.collection('cohorts').find({}).toArray();
-    const users = await db.collection('users').find({ role: 'intern' }).toArray();
+    const users = await db.collection('users').find({ role: 'AI Developer Intern' }).toArray();
     
     const internsWithCohorts = users.filter(u => u.cohortId).length;
     const internsWithoutCohorts = users.length - internsWithCohorts;
@@ -89,7 +89,7 @@ export async function GET(request) {
         isActive: c.isActive,
         memberCount: c.memberCount || 0
       })),
-      totalInterns: users.length,
+      totalAIDeveloperInterns: users.length,
       internsWithCohorts,
       internsWithoutCohorts,
       needsSetup: cohorts.length === 0

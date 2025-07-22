@@ -14,7 +14,7 @@ export async function POST(request) {
   try {
     // Get authenticated user
     const session = await getServerSession(authOptions);
-    if (!session || !['mentor', 'admin', 'super-mentor'].includes(session.user.role)) {
+    if (!session || !['Tech Lead', 'admin', 'POC'].includes(session.user.role)) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -94,7 +94,7 @@ export async function GET(request) {
     }
 
     // Check if user has access to this task
-    if (session.user.role === 'intern') {
+    if (session.user.role === 'AI Developer Intern') {
       // For interns, only return template info if the task is assigned to them
       // This check would need to be expanded based on your task assignment logic
       const isAssigned = true; // Placeholder - implement your assignment check here
@@ -107,7 +107,7 @@ export async function GET(request) {
     // If task has a template repository, check if it's valid
     if (task.gitlabTemplateRepo && task.gitlabTemplateRepo.projectId) {
       // For admins, we could validate the template repository exists
-      if (['mentor', 'admin', 'super-mentor'].includes(session.user.role)) {
+      if (['Tech Lead', 'admin', 'POC'].includes(session.user.role)) {
         try {
           // Get GitLab integration for admin
           const integration = await GitLabIntegration.findOne({ userId: session.user.id });

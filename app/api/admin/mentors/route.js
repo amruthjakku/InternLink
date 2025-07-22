@@ -15,7 +15,7 @@ export async function GET() {
     
     const mentors = await db.collection('users')
       .find({ 
-        role: { $in: ['mentor', 'super-mentor'] },
+        role: { $in: ['Tech Lead', 'POC'] },
         isActive: true 
       })
       .sort({ name: 1 })

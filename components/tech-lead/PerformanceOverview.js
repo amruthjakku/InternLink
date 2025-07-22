@@ -16,7 +16,7 @@ export function PerformanceOverview() {
 
   const fetchPerformanceData = async () => {
     try {
-      const response = await fetch('/api/mentor/performance');
+      const response = await fetch('/api/tech-lead/performance');
       if (response.ok) {
         const data = await response.json();
         setPerformanceData(data);
@@ -55,9 +55,9 @@ export function PerformanceOverview() {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Interns</p>
+              <p className="text-sm font-medium text-gray-600">Total AI Developer Interns</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {performanceData?.totalInterns || 0}
+                {performanceData?.totalAIDeveloperInterns || 0}
               </p>
             </div>
           </div>

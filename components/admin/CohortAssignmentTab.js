@@ -6,11 +6,11 @@ import { useAuth } from '../AuthProvider';
 export function CohortAssignmentTab() {
   const { user } = useAuth();
   const [cohorts, setCohorts] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCohort, setSelectedCohort] = useState('');
-  const [selectedInterns, setSelectedInterns] = useState([]);
-  const [assigningInterns, setAssigningInterns] = useState(false);
+  const [selectedAIDeveloperInterns, setSelectedAIDeveloperInterns] = useState([]);
+  const [assigningAIDeveloperInterns, setAssigningAIDeveloperInterns] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -40,7 +40,7 @@ export function CohortAssignmentTab() {
         throw new Error(`Failed to fetch interns: ${internsRes.status} ${internsRes.statusText}`);
       }
       const internsData = await internsRes.json();
-      setInterns(internsData.users || []);
+      setAIDeveloperInterns(internsData.users || []);
       console.log(`Loaded ${internsData.users?.length || 0} interns`);
       
     } catch (error) {
@@ -64,16 +64,16 @@ export function CohortAssignmentTab() {
     }
     
     setSelectedCohort(cohortId);
-    setSelectedInterns([]);
+    setSelectedAIDeveloperInterns([]);
   };
 
-  const handleInternSelection = (internId) => {
+  const handleAI Developer InternSelection = (internId) => {
     console.log(`Toggling selection for intern ID: ${internId}`);
     
     // Ensure internId is a string
     const internIdStr = String(internId);
     
-    setSelectedInterns(prev => {
+    setSelectedAIDeveloperInterns(prev => {
       if (prev.includes(internIdStr)) {
         console.log(`Removing intern ID ${internIdStr} from selection`);
         return prev.filter(id => id !== internIdStr);
@@ -85,18 +85,18 @@ export function CohortAssignmentTab() {
   };
 
   const handleSelectAll = () => {
-    if (selectedInterns.length === filteredInterns.length) {
+    if (selectedAIDeveloperInterns.length === filteredAI Developer Interns.length) {
       console.log('Deselecting all interns');
-      setSelectedInterns([]);
+      setSelectedAIDeveloperInterns([]);
     } else {
       // Ensure all IDs are strings
-      const internIds = filteredInterns.map(intern => String(intern._id));
+      const internIds = filteredAI Developer Interns.map(intern => String(intern._id));
       console.log(`Selecting all ${internIds.length} interns`);
-      setSelectedInterns(internIds);
+      setSelectedAIDeveloperInterns(internIds);
     }
   };
 
-  const handleAssignInterns = async () => {
+  const handleAssignAI Developer Interns = async () => {
     // Clear previous messages
     setErrorMessage('');
     setSuccessMessage('');
@@ -107,7 +107,7 @@ export function CohortAssignmentTab() {
       return;
     }
     
-    if (selectedInterns.length === 0) {
+    if (selectedAIDeveloperInterns.length === 0) {
       setErrorMessage('❌ Please select at least one intern to assign');
       return;
     }
@@ -120,26 +120,26 @@ export function CohortAssignmentTab() {
     }
 
     // Verify selected interns exist
-    const validInterns = selectedInterns.filter(internId => 
+    const validAI Developer Interns = selectedAIDeveloperInterns.filter(internId => 
       interns.some(intern => intern._id === internId)
     );
     
-    if (validInterns.length !== selectedInterns.length) {
-      setErrorMessage(`Some selected interns are invalid. Found ${validInterns.length} out of ${selectedInterns.length}`);
+    if (validAI Developer Interns.length !== selectedAIDeveloperInterns.length) {
+      setErrorMessage(`Some selected interns are invalid. Found ${validAI Developer Interns.length} out of ${selectedAIDeveloperInterns.length}`);
       return;
     }
 
-    setAssigningInterns(true);
+    setAssigningAIDeveloperInterns(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      console.log(`🎯 Assigning ${selectedInterns.length} interns to cohort "${cohortObj.name}" (${selectedCohort})`);
+      console.log(`🎯 Assigning ${selectedAIDeveloperInterns.length} interns to cohort "${cohortObj.name}" (${selectedCohort})`);
       
       // Log the exact data being sent
       const requestData = {
         cohortId: selectedCohort,
-        userIds: selectedInterns,
+        userIds: selectedAIDeveloperInterns,
         action: 'assign'
       };
       console.log('Request data:', requestData);
@@ -186,7 +186,7 @@ export function CohortAssignmentTab() {
         }
         
         // Clear selections and refresh data
-        setSelectedInterns([]);
+        setSelectedAIDeveloperInterns([]);
         await fetchData();
         
       } else {
@@ -197,7 +197,7 @@ export function CohortAssignmentTab() {
         // Log additional details for debugging
         console.error('Request was:', {
           cohortId: selectedCohort,
-          userIds: selectedInterns,
+          userIds: selectedAIDeveloperInterns,
           action: 'assign'
         });
       }
@@ -215,12 +215,12 @@ export function CohortAssignmentTab() {
       
       setErrorMessage(errorMsg);
     } finally {
-      setAssigningInterns(false);
+      setAssigningAIDeveloperInterns(false);
     }
   };
 
   // Filter interns based on search term
-  const filteredInterns = interns.filter(intern => {
+  const filteredAI Developer Interns = interns.filter(intern => {
     const searchLower = searchTerm.toLowerCase();
     return (
       intern.name.toLowerCase().includes(searchLower) ||
@@ -237,20 +237,20 @@ export function CohortAssignmentTab() {
   };
   
   // Debug function to log intern and cohort data
-  const logInternData = (e) => {
+  const logAI Developer InternData = (e) => {
     e.preventDefault();
     console.log('Available cohorts:', cohorts);
-    console.log('Interns:', interns);
+    console.log('AI Developer Interns:', interns);
     console.log('Selected cohort:', selectedCohort);
-    console.log('Selected interns:', selectedInterns);
+    console.log('Selected interns:', selectedAIDeveloperInterns);
     
     // Get more details about the selected cohort
     const selectedCohortObj = cohorts.find(c => c._id === selectedCohort);
     console.log('Selected cohort details:', selectedCohortObj);
     
     // Get details about selected interns
-    const selectedInternsDetails = interns.filter(intern => selectedInterns.includes(intern._id));
-    console.log('Selected interns details:', selectedInternsDetails);
+    const selectedAIDeveloperInternsDetails = interns.filter(intern => selectedAIDeveloperInterns.includes(intern._id));
+    console.log('Selected interns details:', selectedAIDeveloperInternsDetails);
     
     // Show alert with summary
     alert(`Debug Info:
@@ -258,16 +258,16 @@ export function CohortAssignmentTab() {
 - ${interns.length} interns loaded
 - Selected cohort: ${selectedCohort ? selectedCohort : 'None'}
 - Selected cohort name: ${selectedCohortObj ? selectedCohortObj.name : 'None'}
-- ${selectedInterns.length} interns selected
-- First intern ID: ${selectedInterns.length > 0 ? selectedInterns[0] : 'None'}`);
+- ${selectedAIDeveloperInterns.length} interns selected
+- First intern ID: ${selectedAIDeveloperInterns.length > 0 ? selectedAIDeveloperInterns[0] : 'None'}`);
     
     // Test the API directly
-    if (selectedCohort && selectedInterns.length > 0) {
+    if (selectedCohort && selectedAIDeveloperInterns.length > 0) {
       fetch('/api/admin/assign-intern-cohort', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          internId: selectedInterns[0],
+          internId: selectedAIDeveloperInterns[0],
           cohortId: selectedCohort
         })
       })
@@ -309,7 +309,7 @@ export function CohortAssignmentTab() {
           </div>
           <div>
             <button 
-              onClick={logInternData}
+              onClick={logAI Developer InternData}
               className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
             >
               Debug Info
@@ -334,7 +334,7 @@ export function CohortAssignmentTab() {
             <option value="">-- Select a Cohort --</option>
             {cohorts.map(cohort => (
               <option key={cohort._id} value={cohort._id}>
-                {cohort.name} ({cohort.currentInterns || 0}/{cohort.maxInterns || 'unlimited'})
+                {cohort.name} ({cohort.currentAI Developer Interns || 0}/{cohort.maxAI Developer Interns || 'unlimited'})
               </option>
             ))}
           </select>
@@ -358,9 +358,9 @@ export function CohortAssignmentTab() {
           </div>
         )}
 
-        {/* Intern Search */}
+        {/* AI Developer Intern Search */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Search Interns</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Search AI Developer Interns</label>
           <input
             type="text"
             value={searchTerm}
@@ -370,31 +370,31 @@ export function CohortAssignmentTab() {
           />
         </div>
 
-        {/* Intern List */}
+        {/* AI Developer Intern List */}
         <div className="border border-gray-200 rounded-md overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
             <div className="flex items-center">
               <input
                 type="checkbox"
-                checked={selectedInterns.length === filteredInterns.length && filteredInterns.length > 0}
+                checked={selectedAIDeveloperInterns.length === filteredAI Developer Interns.length && filteredAI Developer Interns.length > 0}
                 onChange={handleSelectAll}
                 className="h-4 w-4 text-blue-600 rounded"
               />
               <span className="ml-2 text-sm font-medium text-gray-700">
-                Select All ({filteredInterns.length})
+                Select All ({filteredAI Developer Interns.length})
               </span>
             </div>
             <button
-              onClick={handleAssignInterns}
-              disabled={selectedInterns.length === 0 || !selectedCohort || assigningInterns}
+              onClick={handleAssignAI Developer Interns}
+              disabled={selectedAIDeveloperInterns.length === 0 || !selectedCohort || assigningAIDeveloperInterns}
               className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {assigningInterns ? 'Assigning...' : `Assign ${selectedInterns.length} Intern(s)`}
+              {assigningAIDeveloperInterns ? 'Assigning...' : `Assign ${selectedAIDeveloperInterns.length} AI Developer Intern(s)`}
             </button>
           </div>
           
           <div className="max-h-96 overflow-y-auto">
-            {filteredInterns.length === 0 ? (
+            {filteredAI Developer Interns.length === 0 ? (
               <div className="px-4 py-3 text-center text-gray-500">
                 No interns found matching your search
               </div>
@@ -417,13 +417,13 @@ export function CohortAssignmentTab() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredInterns.map(intern => (
+                  {filteredAI Developer Interns.map(intern => (
                     <tr key={intern._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedInterns.includes(String(intern._id))}
-                          onChange={() => handleInternSelection(String(intern._id))}
+                          checked={selectedAIDeveloperInterns.includes(String(intern._id))}
+                          onChange={() => handleAI Developer InternSelection(String(intern._id))}
                           className="h-4 w-4 text-blue-600 rounded"
                         />
                         <div className="text-xs text-gray-400 mt-1">{String(intern._id)}</div>

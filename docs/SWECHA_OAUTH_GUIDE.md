@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-This guide documents the complete OAuth integration with Swecha's GitLab instance (`https://code.swecha.org`) for the InternLink platform. Users can now sign in directly with their Swecha GitLab accounts and seamlessly connect their repositories for progress tracking.
+This guide documents the complete OAuth integration with Swecha's GitLab instance (`https://code.swecha.org`) for the AI developer InternLink platform. Users can now sign in directly with their Swecha GitLab accounts and seamlessly connect their repositories for progress tracking.
 
 ## 🔐 OAuth Application Configuration
 
@@ -81,7 +81,7 @@ GitLabProvider({
 - Fetches initial repository data
 
 ### 4. Enhanced GitLab Tab
-**File**: `components/intern/GitLabTab.js`
+**File**: `components/ai-developer-intern/GitLabTab.js`
 
 **New Features**:
 - OAuth connection detection
@@ -126,7 +126,7 @@ GitLabProvider({
     email: "user@example.com",
     gitlabUsername: "username",
     gitlabId: "12345",
-    role: "intern"
+    role: "AI developer Intern"
   },
   gitlabAccessToken: "oauth_token",
   gitlabRefreshToken: "refresh_token",

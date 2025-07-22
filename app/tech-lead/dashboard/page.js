@@ -107,7 +107,7 @@ export default function TechLeadDashboardPage() {
     );
   }
 
-  console.log('Rendering MentorDashboardPage with user role:', session?.user?.role);
+  console.log('Rendering TechLeadDashboardPage with user role:', session?.user?.role);
   
   return (
     <AuthProvider>

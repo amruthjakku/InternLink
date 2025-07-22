@@ -88,7 +88,7 @@ export async function GET() {
     // Get users without colleges
     const usersWithoutColleges = await User.find({
       college: { $exists: false },
-      role: { $in: ['intern', 'mentor', 'super-mentor'] },
+      role: { $in: ['AI Developer Intern', 'Tech Lead', 'POC'] },
       isActive: true
     }).select('_id name gitlabUsername role');
 

@@ -53,7 +53,7 @@ export async function GET(request) {
         colleges.map(async (college) => {
           const internsCount = await User.countDocuments({
             college: college._id,
-            role: 'intern',
+            role: 'AI Developer Intern',
             isActive: true
           });
 

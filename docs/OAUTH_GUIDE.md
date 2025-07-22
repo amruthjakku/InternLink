@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide documents the transition from GitLab Personal Access Tokens (PATs) to OAuth-based authentication for GitLab integration in the InternLink application.
+This guide documents the transition from GitLab Personal Access Tokens (PATs) to OAuth-based authentication for GitLab integration in the AI developer InternLink application.
 
 ## Table of Contents
 

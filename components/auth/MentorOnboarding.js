@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
+export default function Tech LeadOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
   const [formData, setFormData] = useState({
     collegeName: '',
     collegeDescription: '',
@@ -12,7 +12,7 @@ export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMod
     cohortDescription: '',
     startDate: '',
     endDate: '',
-    maxInterns: 20
+    maxAI Developer Interns: 20
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -50,8 +50,8 @@ export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMod
       }
     }
     
-    if (formData.maxInterns < 1 || formData.maxInterns > 100) {
-      newErrors.maxInterns = 'Max interns must be between 1 and 100';
+    if (formData.maxAI Developer Interns < 1 || formData.maxAI Developer Interns > 100) {
+      newErrors.maxAI Developer Interns = 'Max interns must be between 1 and 100';
     }
     
     setErrors(newErrors);
@@ -110,7 +110,7 @@ export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMod
           collegeId: collegeResult.collegeId,
           startDate: formData.startDate,
           endDate: formData.endDate,
-          maxInterns: parseInt(formData.maxInterns)
+          maxAI Developer Interns: parseInt(formData.maxAI Developer Interns)
         }),
       });
 
@@ -147,7 +147,7 @@ export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMod
           </button>
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Mentor Setup
+            Tech Lead Setup
           </h2>
           <p className="text-gray-600">
             Create your college and first cohort to get started
@@ -255,21 +255,21 @@ export default function MentorOnboarding({ onComplete, onBack, userInfo, demoMod
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Interns
+                  Max AI Developer Interns
                 </label>
                 <input
                   type="number"
-                  name="maxInterns"
-                  value={formData.maxInterns}
+                  name="maxAI Developer Interns"
+                  value={formData.maxAI Developer Interns}
                   onChange={handleInputChange}
                   min="1"
                   max="100"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.maxInterns ? 'border-red-500' : 'border-gray-300'
+                    errors.maxAI Developer Interns ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
-                {errors.maxInterns && (
-                  <p className="text-red-500 text-sm mt-1">{errors.maxInterns}</p>
+                {errors.maxAI Developer Interns && (
+                  <p className="text-red-500 text-sm mt-1">{errors.maxAI Developer Interns}</p>
                 )}
               </div>
             </div>

@@ -5,23 +5,23 @@ import { useSession } from 'next-auth/react';
 import { getCollegeName } from '../../utils/helpers';
 import { CollegeBadge } from '../CollegeLogo';
 
-export function InternManagement() {
+export function AI Developer InternManagement() {
   const { data: session } = useSession();
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (session) {
-      fetchInterns();
+      fetchAIDeveloperInterns();
     }
   }, [session]);
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/mentor/interns');
+      const response = await fetch('/api/tech-lead/interns');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.interns || []);
+        setAIDeveloperInterns(data.interns || []);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
@@ -33,8 +33,8 @@ export function InternManagement() {
   const handleViewProfile = (internId) => {
     // This would open a detailed profile view or navigate to profile page
     console.log('View profile for intern:', internId);
-    // In a real app, this might navigate to /intern/profile/${internId}
-    window.open(`/intern/profile/${internId}`, '_blank');
+    // In a real app, this might navigate to /ai-developer-intern/profile/${internId}
+    window.open(`/ai-developer-intern/profile/${internId}`, '_blank');
   };
 
   const handleSendMessage = (internId) => {
@@ -64,9 +64,9 @@ export function InternManagement() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-12">
           <div className="text-6xl mb-4">👥</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Interns Assigned</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No AI Developer Interns Assigned</h3>
           <p className="text-gray-600">
-            Interns will appear here once they are assigned to your mentorship.
+            AI Developer Interns will appear here once they are assigned to your mentorship.
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function InternManagement() {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">My Interns ({interns.length})</h3>
+        <h3 className="text-lg font-medium text-gray-900">My AI Developer Interns ({interns.length})</h3>
       </div>
       <div className="divide-y divide-gray-200">
         {interns.map((intern) => (

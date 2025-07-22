@@ -41,7 +41,7 @@ export async function GET(request) {
     });
 
     // Build query based on scope
-    let userQuery = { role: 'intern' };
+    let userQuery = { role: 'AI Developer Intern' };
     
     if (scope === 'cohort' && currentUser.cohortId) {
       userQuery.cohortId = currentUser.cohortId;

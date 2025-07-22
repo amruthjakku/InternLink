@@ -1,7 +1,7 @@
-# InternLink Attendance System Guide
+# AI developer InternLink Attendance System Guide
 
 ## Overview
-InternLink features a comprehensive secure Wi-Fi-based attendance system that ensures attendance can only be marked from authorized networks using IP whitelisting validation. Both interns and mentors can mark attendance, which is reflected in the admin dashboard.
+AI developer InternLink features a comprehensive secure Wi-Fi-based attendance system that ensures attendance can only be marked from authorized networks using IP whitelisting validation. Both interns and mentors can mark attendance, which is reflected in the admin dashboard.
 
 ## 🔐 Security Features
 
@@ -19,25 +19,25 @@ InternLink features a comprehensive secure Wi-Fi-based attendance system that en
 
 ## 🔄 How It Works
 
-### Step 1: Interns Mark Attendance
-1. **Login as Intern** → Navigate to `/intern/dashboard`
+### Step 1: AI developer Interns Mark Attendance
+1. **Login as AI developer Intern** → Navigate to `/ai-developer-intern/dashboard`
 2. **Find Attendance Widget** → "📍 Quick Attendance" section
 3. **Click "Mark Attendance Now"** → System validates IP address
 4. **Success Confirmation** → Shows timestamp, IP, and success message
-5. **Data Stored** → Attendance record saved with user role "intern"
+5. **Data Stored** → Attendance record saved with user role "AI developer Intern"
 
-### Step 2: Mentors Mark Attendance
-1. **Login as Mentor** → Navigate to `/mentor/dashboard`
+### Step 2: Tech Leads Mark Attendance
+1. **Login as Tech Lead** → Navigate to `/tech-lead/dashboard`
 2. **Find Attendance Widget** → "📍 Quick Attendance" section
 3. **Click "Mark Attendance Now"** → System validates IP address
 4. **Success Confirmation** → Shows timestamp, IP, and success message
-5. **Data Stored** → Attendance record saved with user role "mentor"
+5. **Data Stored** → Attendance record saved with user role "Tech Lead"
 
 ### Step 3: Admin Views All Attendance
 1. **Login as Admin** → Navigate to `/admin/dashboard`
 2. **Click "Attendance Analytics" Tab** → Opens comprehensive dashboard
 3. **View All Data** → See attendance from BOTH interns and mentors
-4. **Filter by Role** → Choose "All", "Intern", or "Mentor"
+4. **Filter by Role** → Choose "All", "AI developer Intern", or "Tech Lead"
 5. **Real-time Updates** → New attendance appears immediately
 
 ## 📊 Admin Dashboard Features
@@ -51,7 +51,7 @@ InternLink features a comprehensive secure Wi-Fi-based attendance system that en
 - **📊 Trends**: Weekly/monthly patterns for entire organization
 
 ### Filtering & Analysis
-- **Role Filter**: View "All Users", "Interns Only", or "Mentors Only"
+- **Role Filter**: View "All Users", "AI developer Interns Only", or "Tech Leads Only"
 - **Date Range**: Custom date filtering for historical analysis
 - **College Filter**: Filter by educational institution
 - **Real-time Updates**: Live data as users mark attendance
@@ -65,7 +65,7 @@ InternLink features a comprehensive secure Wi-Fi-based attendance system that en
 
 ## 👥 User Features
 
-### For Interns & Mentors
+### For AI developer Interns & Tech Leads
 
 #### Quick Attendance Widget
 - **One-click Marking**: Fast attendance marking from dashboard
@@ -99,7 +99,7 @@ InternLink features a comprehensive secure Wi-Fi-based attendance system that en
 // Attendance Record
 {
   userId: ObjectId,
-  userRole: String, // 'intern', 'mentor', 'admin'
+  userRole: String, // 'AI developer Intern', 'Tech Lead', 'admin'
   timestamp: Date,
   ipAddress: String,
   location: String,

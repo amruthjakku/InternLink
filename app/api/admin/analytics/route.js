@@ -30,13 +30,13 @@ export async function GET(request) {
     console.log('=== USER-COLLEGE DEBUG ===');
     console.log('Total users:', users.length);
     console.log('Users by role:', {
-      intern: users.filter(u => u.role === 'AI developer Intern').length,
+      intern: users.filter(u => u.role === 'AI Developer Intern').length,
       mentor: users.filter(u => u.role === 'Tech Lead').length,
       'POC': users.filter(u => u.role === 'POC').length,
       admin: users.filter(u => u.role === 'admin').length
     });
-    console.log('Interns with colleges:', users.filter(u => u.role === 'AI developer Intern' && u.college).length);
-    console.log('Sample intern data:', users.filter(u => u.role === 'AI developer Intern').slice(0, 3).map(u => ({
+    console.log('AI Developer Interns with colleges:', users.filter(u => u.role === 'AI Developer Intern' && u.college).length);
+    console.log('Sample intern data:', users.filter(u => u.role === 'AI Developer Intern').slice(0, 3).map(u => ({
       name: u.name,
       college: u.college ? { id: u.college._id ? u.college._id.toString() : 'no-id', name: u.college.name } : null
     })));
@@ -73,7 +73,7 @@ export async function GET(request) {
         admin: users.filter(u => u.role === 'admin').length,
         'POC': users.filter(u => u.role === 'POC').length,
         mentor: users.filter(u => u.role === 'Tech Lead').length,
-        intern: users.filter(u => u.role === 'AI developer Intern').length
+        intern: users.filter(u => u.role === 'AI Developer Intern').length
       },
       recentSignups: users.filter(u => u.createdAt && new Date(u.createdAt) >= startDate).length,
       activeInPeriod: users.filter(u => u.lastLoginAt && new Date(u.lastLoginAt) >= startDate).length
@@ -113,7 +113,7 @@ export async function GET(request) {
                  user.college._id.toString() === collegeId.toString();
           
           // Debug the first few comparisons
-          if (user && user.role === 'AI developer Intern') {
+          if (user && user.role === 'AI Developer Intern') {
             console.log(`Checking user "${user.name}":`, {
               hasCollege: !!user.college,
               userCollegeId: user.college?._id?.toString(),
@@ -150,7 +150,7 @@ export async function GET(request) {
                 users: 0,
                 interns: 0,
                 mentors: 0,
-                superMentors: 0
+                superTech Leads: 0
               };
             }
 
@@ -159,9 +159,9 @@ export async function GET(request) {
             return {
               name: collegeName,
               users: collegeUsers.length,
-              interns: collegeUsers.filter(u => u.role === 'AI developer Intern').length,
+              interns: collegeUsers.filter(u => u.role === 'AI Developer Intern').length,
               mentors: collegeUsers.filter(u => u.role === 'Tech Lead').length,
-              superMentors: collegeUsers.filter(u => u.role === 'POC').length
+              superTech Leads: collegeUsers.filter(u => u.role === 'POC').length
             };
           } catch (err) {
             console.warn('Error processing college distribution:', err);
@@ -170,7 +170,7 @@ export async function GET(request) {
               users: 0,
               interns: 0,
               mentors: 0,
-              superMentors: 0
+              superTech Leads: 0
             };
           }
         })
@@ -186,7 +186,7 @@ export async function GET(request) {
           users: 0,
           interns: 0,
           mentors: 0,
-          superMentors: 0
+          superTech Leads: 0
         }))
       };
     }

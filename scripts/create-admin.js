@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI developer Intern'] },
+  role: { type: String, required: true, enum: ['admin', 'POC', 'Tech Lead', 'AI Developer Intern'] },
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
   assignedBy: { type: String, required: true },
   isActive: { type: Boolean, default: true },
@@ -83,12 +83,12 @@ async function createTestData() {
     console.log('Admin user created:', adminUser.name);
 
     // Create test mentor user
-    const existingMentor = await User.findOne({ gitlabUsername: 'testmentor' });
-    if (!existingMentor) {
+    const existingTech Lead = await User.findOne({ gitlabUsername: 'testmentor' });
+    if (!existingTech Lead) {
       const mentorUser = new User({
         gitlabUsername: 'testmentor',
         gitlabId: 'mentor123',
-        name: 'Test Mentor',
+        name: 'Test Tech Lead',
         email: 'mentor@test.edu',
         role: 'Tech Lead',
         college: testCollege._id,
@@ -96,24 +96,24 @@ async function createTestData() {
         isActive: true
       });
       await mentorUser.save();
-      console.log('Mentor user created:', mentorUser.name);
+      console.log('Tech Lead user created:', mentorUser.name);
     }
 
     // Create test intern user
-    const existingIntern = await User.findOne({ gitlabUsername: 'testintern' });
-    if (!existingIntern) {
+    const existingAI Developer Intern = await User.findOne({ gitlabUsername: 'testintern' });
+    if (!existingAI Developer Intern) {
       const internUser = new User({
         gitlabUsername: 'testintern',
         gitlabId: 'intern123',
-        name: 'Test Intern',
+        name: 'Test AI Developer Intern',
         email: 'intern@test.edu',
-        role: 'AI developer Intern',
+        role: 'AI Developer Intern',
         college: testCollege._id,
-        assignedBy: 'Test Mentor',
+        assignedBy: 'Test Tech Lead',
         isActive: true
       });
       await internUser.save();
-      console.log('Intern user created:', internUser.name);
+      console.log('AI Developer Intern user created:', internUser.name);
     }
 
     console.log('\n✅ Test data created successfully!');

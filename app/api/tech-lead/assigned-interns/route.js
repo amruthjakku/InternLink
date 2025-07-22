@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'mentor') {
+    if (!session || session.user.role !== 'Tech Lead') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,8 +17,8 @@ export async function GET() {
     // Get mentor's assigned interns
     const mentor = await User.findById(session.user.id);
     const interns = await User.find({ 
-      role: 'intern', 
-      assignedMentor: mentor._id,
+      role: 'AI Developer Intern', 
+      assignedTech Lead: mentor._id,
       isActive: true 
     })
     .populate('college', 'name')
@@ -26,7 +26,7 @@ export async function GET() {
     .sort({ createdAt: -1 });
 
     // Format interns for frontend
-    const formattedInterns = interns.map(intern => ({
+    const formattedAI Developer Interns = interns.map(intern => ({
       _id: intern._id,
       id: intern._id,
       gitlabUsername: intern.gitlabUsername,
@@ -43,7 +43,7 @@ export async function GET() {
       performance_score: Math.floor(Math.random() * 30) + 70
     }));
 
-    return NextResponse.json({ users: formattedInterns });
+    return NextResponse.json({ users: formattedAI Developer Interns });
 
   } catch (error) {
     console.error('Error fetching assigned interns:', error);

@@ -88,7 +88,7 @@ export async function PUT(request, { params }) {
 
     // Find college ObjectId if college is provided
     let collegeId = null;
-    if (college && (role === 'intern' || role === 'mentor' || role === 'super-mentor')) {
+    if (college && (role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC')) {
       const collegeDoc = await College.findOne({ 
         name: college.trim(),
         isActive: true 
@@ -104,7 +104,7 @@ export async function PUT(request, { params }) {
     }
 
     // Validate college for roles that require it
-    if ((role === 'intern' || role === 'mentor' || role === 'super-mentor') && !college) {
+    if ((role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC') && !college) {
       return NextResponse.json({ 
         error: 'College is required for intern, mentor, and super-mentor roles' 
       }, { status: 400 });
@@ -125,15 +125,15 @@ export async function PUT(request, { params }) {
     }
 
     // If changing to mentor role and college is provided, check if college already has a mentor
-    if (role === 'mentor' && collegeId && user.role !== 'mentor') {
-      const existingMentor = await User.findOne({ 
-        role: 'mentor', 
+    if (role === 'Tech Lead' && collegeId && user.role !== 'Tech Lead') {
+      const existingTech Lead = await User.findOne({ 
+        role: 'Tech Lead', 
         college: collegeId, 
         isActive: true,
         _id: { $ne: id } // Exclude current user
       });
 
-      if (existingMentor) {
+      if (existingTech Lead) {
         return NextResponse.json({ 
           error: 'This college already has a mentor assigned' 
         }, { status: 400 });

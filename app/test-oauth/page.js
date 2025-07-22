@@ -42,7 +42,7 @@ export default function TestOAuth() {
       <div className="bg-blue-50 p-4 rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-3">Expected GitLab OAuth Settings:</h2>
         <ul className="list-disc list-inside space-y-1 text-sm">
-          <li><strong>Application Name:</strong> InternLink</li>
+          <li><strong>Application Name:</strong> AI Developer InternLink</li>
           <li><strong>Redirect URI:</strong> http://localhost:3000/api/auth/callback/gitlab</li>
           <li><strong>Client ID:</strong> d43453fb6c1a46dc611d0a3d83c501771cbbf16abcaf3721805d14abf05ae859</li>
           <li><strong>Scopes:</strong> read_user, api, read_repository</li>

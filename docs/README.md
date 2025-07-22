@@ -1,6 +1,6 @@
-# InternLink Documentation Index
+# AI developer InternLink Documentation Index
 
-Welcome to the comprehensive documentation for InternLink - the modern internship management platform.
+Welcome to the comprehensive documentation for AI developer InternLink - the modern internship management platform.
 
 ## 📚 Documentation Structure
 
@@ -42,7 +42,7 @@ Welcome to the comprehensive documentation for InternLink - the modern internshi
 3. Implement GitLab integration using [GITLAB_INTEGRATION.md](./GITLAB_INTEGRATION.md)
 4. Set up testing with [TESTING_GUIDE.md](./TESTING_GUIDE.md)
 
-### For Users (Interns/Mentors)
+### For Users (AI developer Interns/Tech Leads)
 1. Explore dashboard features in [DASHBOARD_FEATURES.md](./DASHBOARD_FEATURES.md)
 2. Learn about task system in [TASK_SYSTEM_GUIDE.md](./TASK_SYSTEM_GUIDE.md)
 3. Understand attendance system in [ATTENDANCE_GUIDE.md](./ATTENDANCE_GUIDE.md)

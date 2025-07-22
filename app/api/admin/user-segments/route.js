@@ -21,8 +21,8 @@ export async function GET() {
       lastLoginAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Active in last 7 days
     });
     const inactiveUsers = totalUsers - activeUsers;
-    const interns = await User.countDocuments({ role: 'intern', isActive: true });
-    const mentors = await User.countDocuments({ role: 'mentor', isActive: true });
+    const interns = await User.countDocuments({ role: 'AI Developer Intern', isActive: true });
+    const mentors = await User.countDocuments({ role: 'Tech Lead', isActive: true });
     const admins = await User.countDocuments({ role: 'admin', isActive: true });
     const superAdmins = await User.countDocuments({ role: 'super-admin', isActive: true });
 
@@ -43,14 +43,14 @@ export async function GET() {
       },
       {
         id: 3,
-        name: 'Interns',
+        name: 'AI Developer Interns',
         description: 'Users with intern role',
         count: interns,
         color: '#3B82F6'
       },
       {
         id: 4,
-        name: 'Mentors',
+        name: 'Tech Leads',
         description: 'Users with mentor role',
         count: mentors,
         color: '#F59E0B'

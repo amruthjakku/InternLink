@@ -426,8 +426,8 @@ const CollegeTasksTab = ({ cohorts }) => {
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <div>Interns: {collegeGroup.interns || 0}</div>
-                      <div>Mentors: {collegeGroup.mentors || 0}</div>
+                      <div>AI Developer Interns: {collegeGroup.interns || 0}</div>
+                      <div>Tech Leads: {collegeGroup.mentors || 0}</div>
                     </div>
                     {/* Task assignment details would go here */}
                   </div>

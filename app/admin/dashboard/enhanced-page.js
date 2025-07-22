@@ -369,8 +369,8 @@ export default function EnhancedAdminDashboard() {
         setStats(statsData.stats || {
           totalUsers: 0,
           totalColleges: 0,
-          totalMentors: 0,
-          totalInterns: 0,
+          totalTech Leads: 0,
+          totalAIDeveloperInterns: 0,
           activeUsers: 0,
           systemHealth: 100,
           avgPerformance: 0,
@@ -380,8 +380,8 @@ export default function EnhancedAdminDashboard() {
         setStats({
           totalUsers: 0,
           totalColleges: 0,
-          totalMentors: 0,
-          totalInterns: 0,
+          totalTech Leads: 0,
+          totalAIDeveloperInterns: 0,
           activeUsers: 0,
           systemHealth: 100,
           avgPerformance: 0,
@@ -393,8 +393,8 @@ export default function EnhancedAdminDashboard() {
       setStats({
         totalUsers: 0,
         totalColleges: 0,
-        totalMentors: 0,
-        totalInterns: 0,
+        totalTech Leads: 0,
+        totalAIDeveloperInterns: 0,
         activeUsers: 0,
         systemHealth: 100,
         avgPerformance: 0,
@@ -438,7 +438,7 @@ export default function EnhancedAdminDashboard() {
                     Admin Dashboard
                   </h1>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    InternLink Management Center
+                    AI Developer InternLink Management Center
                   </p>
                 </div>
               </div>
@@ -610,15 +610,15 @@ export default function EnhancedAdminDashboard() {
                     color="purple"
                   />
                   <MetricCard
-                    title="Total Mentors"
-                    value={stats.totalMentors || 0}
+                    title="Total Tech Leads"
+                    value={stats.totalTech Leads || 0}
                     change={2.1}
                     icon="👨‍🏫"
                     color="orange"
                   />
                   <MetricCard
-                    title="Total Interns"
-                    value={stats.totalInterns || 0}
+                    title="Total AI Developer Interns"
+                    value={stats.totalAIDeveloperInterns || 0}
                     change={4.3}
                     icon="🎓"
                     color="teal"

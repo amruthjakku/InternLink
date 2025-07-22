@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RoleSelection from './RoleSelection';
-import MentorOnboarding from './MentorOnboarding';
-import InternOnboarding from './InternOnboarding';
+import Tech LeadOnboarding from './Tech LeadOnboarding';
+import AI Developer InternOnboarding from './AI Developer InternOnboarding';
 
 const OnboardingFlow = () => {
   const { data: session, status } = useSession();
@@ -28,18 +28,18 @@ const OnboardingFlow = () => {
       
       if (demoRole) {
         const demoDemoUser = {
-          id: demoRole === 'mentor' ? 'demo_mentor_1' : 'demo_intern_1',
-          name: demoRole === 'mentor' ? 'Dr. Sarah Wilson' : 'John Smith',
-          email: demoRole === 'mentor' ? 'mentor@demo.com' : 'intern@demo.com',
-          gitlabId: demoRole === 'mentor' ? '999999' : '888888',
-          gitlabUsername: demoRole === 'mentor' ? 'demo_mentor' : 'demo_intern',
+          id: demoRole === 'Tech Lead' ? 'demo_mentor_1' : 'demo_intern_1',
+          name: demoRole === 'Tech Lead' ? 'Dr. Sarah Wilson' : 'John Smith',
+          email: demoRole === 'Tech Lead' ? 'mentor@demo.com' : 'intern@demo.com',
+          gitlabId: demoRole === 'Tech Lead' ? '999999' : '888888',
+          gitlabUsername: demoRole === 'Tech Lead' ? 'demo_mentor' : 'demo_intern',
           image: null, // No placeholder image
           role: demoRole,
           isDemo: true
         };
         setDemoUser(demoDemoUser);
         setSelectedRole(demoRole);
-        setCurrentStep(demoRole === 'mentor' ? 'mentor-onboarding' : 'intern-onboarding');
+        setCurrentStep(demoRole === 'Tech Lead' ? 'mentor-onboarding' : 'intern-onboarding');
       }
       setLoading(false);
       return;
@@ -67,7 +67,7 @@ const OnboardingFlow = () => {
         // Redirect to appropriate dashboard
         if (data.role === 'Tech Lead') {
           router.push('/tech-lead/dashboard');
-        } else if (data.role === 'AI developer Intern') {
+        } else if (data.role === 'AI Developer Intern') {
           router.push('/ai-developer-intern/dashboard');
         }
       } else {
@@ -94,7 +94,7 @@ const OnboardingFlow = () => {
         localStorage.setItem('demoRole', selectedRole);
         if (selectedRole === 'Tech Lead') {
           router.push('/tech-lead/dashboard?demo=true');
-        } else if (selectedRole === 'AI developer Intern') {
+        } else if (selectedRole === 'AI Developer Intern') {
           router.push('/ai-developer-intern/dashboard?demo=true');
         }
         return;
@@ -117,7 +117,7 @@ const OnboardingFlow = () => {
         // Redirect to appropriate dashboard
         if (selectedRole === 'Tech Lead') {
           router.push('/tech-lead/dashboard');
-        } else if (selectedRole === 'AI developer Intern') {
+        } else if (selectedRole === 'AI Developer Intern') {
           router.push('/ai-developer-intern/dashboard');
         }
       } else {
@@ -168,7 +168,7 @@ const OnboardingFlow = () => {
           <div className="max-w-4xl mx-auto px-4 py-2">
             <div className="flex items-center justify-center">
               <span className="text-yellow-800 text-sm font-medium">
-                🎭 Demo Mode - {selectedRole === 'mentor' ? 'Mentor' : 'Intern'} Experience
+                🎭 Demo Mode - {selectedRole === 'Tech Lead' ? 'Tech Lead' : 'AI Developer Intern'} Experience
               </span>
             </div>
           </div>
@@ -211,7 +211,7 @@ const OnboardingFlow = () => {
         )}
 
         {currentStep === 'mentor-onboarding' && (
-          <MentorOnboarding 
+          <Tech LeadOnboarding 
             onComplete={handleOnboardingComplete}
             onBack={handleBack}
             userInfo={userInfo}
@@ -220,7 +220,7 @@ const OnboardingFlow = () => {
         )}
 
         {currentStep === 'intern-onboarding' && (
-          <InternOnboarding 
+          <AI Developer InternOnboarding 
             onComplete={handleOnboardingComplete}
             onBack={handleBack}
             userInfo={userInfo}

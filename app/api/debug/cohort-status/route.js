@@ -17,7 +17,7 @@ export async function GET(request) {
     const cohorts = await db.collection('cohorts').find({}).toArray();
     
     // Get users
-    const users = await db.collection('users').find({ role: 'intern' }).toArray();
+    const users = await db.collection('users').find({ role: 'AI Developer Intern' }).toArray();
     
     // Count assignments
     const internsWithCohorts = users.filter(u => u.cohortId).length;

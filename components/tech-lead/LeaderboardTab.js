@@ -5,30 +5,30 @@ import { CollegeBadge } from '../CollegeLogo';
 // Using real API calls - no mock data
 
 export function LeaderboardTab() {
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('all-time');
   const [selectedMetric, setSelectedMetric] = useState('performance');
 
   useEffect(() => {
-    fetchInterns();
+    fetchAIDeveloperInterns();
     fetchColleges();
     fetchCategories();
   }, []);
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=AI%20developer%20Intern');
+      const response = await fetch('/api/admin/users?role=AI%20Developer%20Intern');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setAIDeveloperInterns(data.users || []);
       } else {
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     }
   };
 
@@ -63,26 +63,26 @@ export function LeaderboardTab() {
   };
 
   const getLeaderboardData = () => {
-    let sortedInterns = [...interns];
+    let sortedAI Developer Interns = [...interns];
     
     switch (selectedMetric) {
       case 'performance':
-        sortedInterns.sort((a, b) => b.performance_score - a.performance_score);
+        sortedAI Developer Interns.sort((a, b) => b.performance_score - a.performance_score);
         break;
       case 'completion':
-        sortedInterns.sort((a, b) => b.completion_rate - a.completion_rate);
+        sortedAI Developer Interns.sort((a, b) => b.completion_rate - a.completion_rate);
         break;
       case 'commits':
-        sortedInterns.sort((a, b) => b.total_commits - a.total_commits);
+        sortedAI Developer Interns.sort((a, b) => b.total_commits - a.total_commits);
         break;
       case 'attendance':
-        sortedInterns.sort((a, b) => b.attendance_rate - a.attendance_rate);
+        sortedAI Developer Interns.sort((a, b) => b.attendance_rate - a.attendance_rate);
         break;
       default:
-        sortedInterns.sort((a, b) => b.performance_score - a.performance_score);
+        sortedAI Developer Interns.sort((a, b) => b.performance_score - a.performance_score);
     }
     
-    return sortedInterns;
+    return sortedAI Developer Interns;
   };
 
   const getMetricValue = (intern, metric) => {
@@ -115,13 +115,13 @@ export function LeaderboardTab() {
     }
   };
 
-  const InternLeaderboard = () => {
+  const AI Developer InternLeaderboard = () => {
     const leaderboardData = getLeaderboardData();
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Intern Leaderboard</h3>
+          <h3 className="text-lg font-semibold text-gray-900">AI Developer Intern Leaderboard</h3>
           <div className="flex space-x-3">
             <select
               value={selectedMetric}
@@ -220,20 +220,20 @@ export function LeaderboardTab() {
 
   const CollegeRankings = () => {
     const collegeStats = colleges.map(college => {
-      const collegeInterns = interns.filter(intern => intern.college_id === college.id);
-      const avgPerformance = collegeInterns.length > 0 
-        ? collegeInterns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeInterns.length 
+      const collegeAI Developer Interns = interns.filter(intern => intern.college_id === college.id);
+      const avgPerformance = collegeAI Developer Interns.length > 0 
+        ? collegeAI Developer Interns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAI Developer Interns.length 
         : 0;
-      const totalTasks = collegeInterns.reduce((sum, intern) => sum + intern.total_tasks, 0);
-      const completedTasks = collegeInterns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
+      const totalTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.total_tasks, 0);
+      const completedTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
       const avgCompletion = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
       return {
         ...college,
         avgPerformance,
         avgCompletion,
-        totalInterns: collegeInterns.length,
-        activeInterns: collegeInterns.filter(intern => intern.status === 'active').length
+        totalAIDeveloperInterns: collegeAI Developer Interns.length,
+        activeAIDeveloperInterns: collegeAI Developer Interns.filter(intern => intern.status === 'active').length
       };
     }).sort((a, b) => b.avgPerformance - a.avgPerformance);
 
@@ -274,12 +274,12 @@ export function LeaderboardTab() {
               
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{college.totalInterns}</div>
-                  <div className="text-gray-500">Total Interns</div>
+                  <div className="font-medium text-gray-900">{college.totalAIDeveloperInterns}</div>
+                  <div className="text-gray-500">Total AI Developer Interns</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{college.activeInterns}</div>
-                  <div className="text-gray-500">Active Interns</div>
+                  <div className="font-medium text-gray-900">{college.activeAIDeveloperInterns}</div>
+                  <div className="text-gray-500">Active AI Developer Interns</div>
                 </div>
                 <div className="text-center">
                   <div className="font-medium text-gray-900">{college.avgCompletion.toFixed(1)}%</div>
@@ -287,7 +287,7 @@ export function LeaderboardTab() {
                 </div>
                 <div className="text-center">
                   <div className="font-medium text-gray-900">
-                    {((college.activeInterns / college.totalInterns) * 100 || 0).toFixed(1)}%
+                    {((college.activeAIDeveloperInterns / college.totalAIDeveloperInterns) * 100 || 0).toFixed(1)}%
                   </div>
                   <div className="text-gray-500">Active Rate</div>
                 </div>
@@ -432,7 +432,7 @@ export function LeaderboardTab() {
 
   return (
     <div className="space-y-6">
-      <InternLeaderboard />
+      <AI Developer InternLeaderboard />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CollegeRankings />
         <PerformanceInsights />

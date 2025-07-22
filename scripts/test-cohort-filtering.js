@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-console.log('🔍 Testing Cohort Filtering and College Intern Counts...\n');
+console.log('🔍 Testing Cohort Filtering and College AI Developer Intern Counts...\n');
 
 import fs from 'fs';
 import path from 'path';
@@ -14,19 +14,19 @@ const mockUsers = [
     _id: '1',
     name: 'John Doe',
     cohortId: 'cohort123', // String format
-    role: 'AI developer Intern'
+    role: 'AI Developer Intern'
   },
   {
     _id: '2', 
     name: 'Jane Smith',
     cohortId: { _id: 'cohort123', name: 'Cohort A' }, // Object format
-    role: 'AI developer Intern'
+    role: 'AI Developer Intern'
   },
   {
     _id: '3',
     name: 'Bob Johnson', 
     cohortId: null, // No cohort
-    role: 'AI developer Intern'
+    role: 'AI Developer Intern'
   }
 ];
 
@@ -57,12 +57,12 @@ console.log('\n📋 Test 2: College API Enhancement Check');
 const collegeApiPath = 'app/api/admin/colleges/route.js';
 const collegeApiContent = fs.readFileSync(collegeApiPath, 'utf8');
 
-const hasInternCounts = collegeApiContent.includes('totalInterns') && 
-                       collegeApiContent.includes('activeInterns') &&
+const hasAI Developer InternCounts = collegeApiContent.includes('totalAIDeveloperInterns') && 
+                       collegeApiContent.includes('activeAIDeveloperInterns') &&
                        collegeApiContent.includes('internsWithCohorts');
 
 console.log(`   College API file: ${collegeApiPath}`);
-console.log(`   Has intern count calculations: ${hasInternCounts ? '✅ YES' : '❌ NO'}`);
+console.log(`   Has intern count calculations: ${hasAI Developer InternCounts ? '✅ YES' : '❌ NO'}`);
 
 console.log('\n📋 Test 3: Component Filtering Fix Check');
 
@@ -78,10 +78,10 @@ console.log(`   Has filtering fix: ${hasFilteringFix ? '✅ YES' : '❌ NO'}`);
 
 console.log('\n🎯 SUMMARY:');
 console.log(`   Cohort filtering logic: ${filteredUsers.length === 2 ? '✅ FIXED' : '❌ NEEDS WORK'}`);
-console.log(`   College API intern counts: ${hasInternCounts ? '✅ FIXED' : '❌ NEEDS WORK'}`);
+console.log(`   College API intern counts: ${hasAI Developer InternCounts ? '✅ FIXED' : '❌ NEEDS WORK'}`);
 console.log(`   Component filtering fix: ${hasFilteringFix ? '✅ FIXED' : '❌ NEEDS WORK'}`);
 
-const allFixed = (filteredUsers.length === 2) && hasInternCounts && hasFilteringFix;
+const allFixed = (filteredUsers.length === 2) && hasAI Developer InternCounts && hasFilteringFix;
 console.log(`\n🏆 Overall Status: ${allFixed ? '✅ ALL ISSUES FIXED' : '⚠️ SOME ISSUES REMAIN'}`);
 
 if (allFixed) {

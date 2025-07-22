@@ -22,7 +22,7 @@ const collegeSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-  superMentorUsername: {
+  superTech LeadUsername: {
     type: String,
     required: false,
     trim: true,
@@ -52,24 +52,24 @@ const collegeSchema = new mongoose.Schema({
 
 // Indexes
 // Note: name already has unique index from schema definition
-collegeSchema.index({ superMentorUsername: 1 });
+collegeSchema.index({ superTech LeadUsername: 1 });
 collegeSchema.index({ isActive: 1 });
 
 // Virtual for POC details
 collegeSchema.virtual('poc', {
   ref: 'User',
-  localField: 'superMentorUsername',
+  localField: 'superTech LeadUsername',
   foreignField: 'gitlabUsername',
   justOne: true
 });
 
 // Virtual for AI developer interns count
-collegeSchema.virtual('aiDeveloperInternsCount', {
+collegeSchema.virtual('aiDeveloperAI Developer InternsCount', {
   ref: 'User',
   localField: '_id',
   foreignField: 'college',
   count: true,
-  match: { role: 'AI developer Intern', isActive: true }
+  match: { role: 'AI Developer Intern', isActive: true }
 });
 
 // Ensure virtual fields are serialized
@@ -84,15 +84,15 @@ collegeSchema.pre('save', function(next) {
 // Static methods
 collegeSchema.statics.findByPOC = function(pocUsername) {
   return this.findOne({ 
-    superMentorUsername: pocUsername.toLowerCase(), 
+    superTech LeadUsername: pocUsername.toLowerCase(), 
     isActive: true 
-  }).populate('superMentor');
+  }).populate('superTech Lead');
 };
 
 collegeSchema.statics.getAllActive = function() {
   return this.find({ isActive: true })
-    .populate('superMentor')
-    .populate('aiDeveloperInternsCount');
+    .populate('superTech Lead')
+    .populate('aiDeveloperAI Developer InternsCount');
 };
 
 // Instance methods
@@ -100,7 +100,7 @@ collegeSchema.methods.getAIDeveloperInterns = function() {
   const User = mongoose.model('User');
   return User.find({ 
     college: this._id, 
-    role: 'AI developer Intern', 
+    role: 'AI Developer Intern', 
     isActive: true 
   });
 };
@@ -109,7 +109,7 @@ collegeSchema.methods.addAIDeveloperIntern = function(internData) {
   const User = mongoose.model('User');
   return new User({
     ...internData,
-    role: 'AI developer Intern',
+    role: 'AI Developer Intern',
     college: this._id
   }).save();
 };

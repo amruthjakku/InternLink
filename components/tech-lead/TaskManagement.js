@@ -8,7 +8,7 @@ export function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
@@ -19,13 +19,13 @@ export function TaskManagement() {
   useEffect(() => {
     if (session) {
       fetchTasks();
-      fetchInterns();
+      fetchAIDeveloperInterns();
     }
   }, [session]);
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/mentor/tasks');
+      const response = await fetch('/api/tech-lead/tasks');
       if (response.ok) {
         const data = await response.json();
         setTasks(data.tasks || []);
@@ -37,12 +37,12 @@ export function TaskManagement() {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/mentor/interns');
+      const response = await fetch('/api/tech-lead/interns');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.interns || []);
+        setAIDeveloperInterns(data.interns || []);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
@@ -52,7 +52,7 @@ export function TaskManagement() {
   const handleCreateTask = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/mentor/tasks', {
+      const response = await fetch('/api/tech-lead/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export function TaskManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign to Intern
+                  Assign to AI Developer Intern
                 </label>
                 <select 
                   value={taskForm.assignedTo}

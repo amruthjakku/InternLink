@@ -1,7 +1,7 @@
 # Comprehensive Implementation Guide - Progress Tracker Next.js App
 
 ## Overview
-This document provides a complete roadmap for implementing all missing features from the Streamlit frontend into the Next.js application, covering all three dashboards: Mentor, Intern, and Admin.
+This document provides a complete roadmap for implementing all missing features from the Streamlit frontend into the Next.js application, covering all three dashboards: Tech Lead, AI developer Intern, and Admin.
 
 ## Table of Contents
 1. [Feature Gap Analysis](#feature-gap-analysis)
@@ -15,14 +15,14 @@ This document provides a complete roadmap for implementing all missing features 
 
 ## Feature Gap Analysis
 
-### Mentor Dashboard Missing Features
+### Tech Lead Dashboard Missing Features
 - ✅ **Advanced Analytics**: Real-time performance metrics, activity heatmaps, bottleneck detection
 - ✅ **Task Dependencies**: Interactive dependency graphs, bulk operations, templates
 - ✅ **Enhanced Communication**: Video meetings, file sharing, real-time chat
 - ✅ **College Management**: Performance analytics, bulk operations, comparison tools
 - ✅ **Reporting**: Custom report builder, automated scheduling, export options
 
-### Intern Dashboard Missing Features
+### AI developer Intern Dashboard Missing Features
 - ✅ **Progress Visualization**: Interactive charts, skill radar, activity heatmap, streaks
 - ✅ **Task Management**: Kanban board, time tracking, notes, file attachments
 - ✅ **Performance Analytics**: Peer comparison, predictions, goal tracking
@@ -43,7 +43,7 @@ This document provides a complete roadmap for implementing all missing features 
 │                    Frontend (Next.js)                      │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   Mentor    │  │    Intern   │  │    Admin    │        │
+│  │   Tech Lead    │  │    AI developer Intern   │  │    Admin    │        │
 │  │  Dashboard  │  │  Dashboard  │  │  Dashboard  │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 ├─────────────────────────────────────────────────────────────┤
@@ -475,12 +475,12 @@ components/
 │       └── Layout.js
 ```
 
-### Mentor Components
+### Tech Lead Components
 ```
-components/mentor/
+components/tech-lead/
 ├── AdvancedOverviewTab.js
 ├── TaskDependencyManager.js
-├── EnhancedInternManagement.js
+├── EnhancedAI developer InternManagement.js
 ├── AdvancedTaskManagement.js
 ├── EnhancedCommunication.js
 ├── AdvancedCollegeManagement.js
@@ -488,9 +488,9 @@ components/mentor/
 └── AdvancedAnalytics.js
 ```
 
-### Intern Components
+### AI developer Intern Components
 ```
-components/intern/
+components/ai-developer-intern/
 ├── AdvancedProgressTab.js
 ├── EnhancedTasksTab.js
 ├── AdvancedPerformanceTab.js

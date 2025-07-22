@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   gitlabId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, enum: ['admin', 'Tech Lead', 'AI developer Intern', 'POC'] },
+  role: { type: String, required: true, enum: ['admin', 'Tech Lead', 'AI Developer Intern', 'POC'] },
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
   cohortId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cohort' },
   assignedBy: { type: String, required: true },
@@ -68,7 +68,7 @@ async function performDataSyncAudit() {
 
     const users = await User.find({}).populate('college').populate('cohortId');
     const colleges = await College.find({});
-    const cohorts = await Cohort.find({}).populate('college').populate('mentor');
+    const cohorts = await Cohort.find({}).populate('college').populate('Tech Lead');
 
     console.log(`📊 Current Data Count:`);
     console.log(`   Users: ${users.length}`);
@@ -215,14 +215,14 @@ async function performDataSyncAudit() {
       
       const interns = await User.countDocuments({ 
         college: college._id, 
-        role: 'AI developer Intern', 
+        role: 'AI Developer Intern', 
         isActive: true 
       });
 
       console.log(`   ${college.name}:`);
       console.log(`     Total Users: ${collegeUsers}`);
-      console.log(`     Mentors: ${mentors}`);
-      console.log(`     Interns: ${interns}`);
+      console.log(`     Tech Leads: ${mentors}`);
+      console.log(`     AI Developer Interns: ${interns}`);
     }
 
     // 7. Check for Test/Mock Data

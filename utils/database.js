@@ -1,5 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import { connectToDatabase as connectMongoose } from '../lib/mongoose';
+import { connectToDatabase as connectMongoose } from '../lib/mongoose.js';
 
 // Legacy MongoClient for direct MongoDB operations
 // This is kept for backward compatibility with existing code
@@ -74,7 +74,6 @@ export async function createUser(userData) {
       ...userData,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isActive: true,
       onboardingComplete: false
     });
     return result.insertedId;
@@ -120,8 +119,7 @@ export async function createCollege(collegeData) {
     const result = await db.collection('colleges').insertOne({
       ...collegeData,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true
+      updatedAt: new Date()
     });
     return result.insertedId;
   } catch (error) {
@@ -133,7 +131,7 @@ export async function createCollege(collegeData) {
 export async function getAllColleges() {
   try {
     const db = await getDatabase();
-    return await db.collection('colleges').find({ isActive: true }).toArray();
+    return await db.collection('colleges').find({}).toArray();
   } catch (error) {
     console.error('Error fetching colleges:', error);
     throw error;
@@ -150,12 +148,11 @@ export async function getCollegeById(collegeId) {
   }
 }
 
-export async function getCollegesByMentor(mentorId) {
+export async function getCollegesByTech Lead(mentorId) {
   try {
     const db = await getDatabase();
     return await db.collection('colleges').find({ 
-      createdBy: mentorId,
-      isActive: true 
+      createdBy: mentorId
     }).toArray();
   } catch (error) {
     console.error('Error fetching colleges by mentor:', error);
@@ -169,10 +166,9 @@ export async function createCohort(cohortData) {
     const db = await getDatabase();
     const result = await db.collection('cohorts').insertOne({
       ...cohortData,
-      currentInterns: 0,
+      currentAI Developer Interns: 0,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true
+      updatedAt: new Date()
     });
     return result.insertedId;
   } catch (error) {
@@ -185,8 +181,7 @@ export async function getCohortsByCollege(collegeId) {
   try {
     const db = await getDatabase();
     return await db.collection('cohorts').find({ 
-      collegeId: new ObjectId(collegeId),
-      isActive: true 
+      collegeId: new ObjectId(collegeId)
     }).toArray();
   } catch (error) {
     console.error('Error fetching cohorts:', error);
@@ -240,7 +235,7 @@ export async function createJoinRequest(requestData) {
   }
 }
 
-export async function getJoinRequestsByMentor(mentorId) {
+export async function getJoinRequestsByTech Lead(mentorId) {
   try {
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ mentorId }).toArray();
@@ -250,7 +245,7 @@ export async function getJoinRequestsByMentor(mentorId) {
   }
 }
 
-export async function getJoinRequestsByIntern(internId) {
+export async function getJoinRequestsByAI Developer Intern(internId) {
   try {
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ internId }).toArray();

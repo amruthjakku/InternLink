@@ -3,7 +3,7 @@
  */
 
 export function detectUserRole(gitlabUsername) {
-  if (!gitlabUsername) return 'intern'; // Default fallback
+  if (!gitlabUsername) return 'AI Developer Intern'; // Default fallback
   
   const username = gitlabUsername.toLowerCase().trim();
   
@@ -18,10 +18,10 @@ export function detectUserRole(gitlabUsername) {
     /^master/,          // starts with 'master'
   ];
   
-  // Mentor patterns
+  // Tech Lead patterns
   const mentorPatterns = [
-    /^mentor/,          // starts with 'mentor'
-    /mentor$/,          // ends with 'mentor'
+    /^mentor/,          // starts with 'Tech Lead'
+    /mentor$/,          // ends with 'Tech Lead'
     /^lead/,            // starts with 'lead'
     /^senior/,          // starts with 'senior'
     /^supervisor/,      // starts with 'supervisor'
@@ -32,7 +32,7 @@ export function detectUserRole(gitlabUsername) {
   ];
   
   // Super-mentor patterns (higher priority than regular mentor)
-  const superMentorPatterns = [
+  const superTech LeadPatterns = [
     /^poc/,    // starts with 'poc'
     /^chief/,           // starts with 'chief'
     /^head/,            // starts with 'head'
@@ -48,7 +48,7 @@ export function detectUserRole(gitlabUsername) {
     }
   }
   
-  for (const pattern of superMentorPatterns) {
+  for (const pattern of superTech LeadPatterns) {
     if (pattern.test(username)) {
       return 'POC';
     }
@@ -60,8 +60,8 @@ export function detectUserRole(gitlabUsername) {
     }
   }
   
-  // Default to AI developer Intern if no patterns match
-  return 'AI developer Intern';
+  // Default to AI Developer Intern if no patterns match
+  return 'AI Developer Intern';
 }
 
 /**
@@ -209,7 +209,7 @@ function calculateConfidence(username, role) {
   }
   
   // Medium confidence for other patterns
-  if (role !== 'AI developer Intern') {
+  if (role !== 'AI Developer Intern') {
     return 0.6;
   }
   

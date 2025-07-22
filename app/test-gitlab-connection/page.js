@@ -55,7 +55,7 @@ export default function TestGitLabConnection() {
             <ol className="list-decimal list-inside text-sm text-blue-700 space-y-1">
               <li>Go to <a href="https://code.swecha.org/-/profile/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="underline">Swecha GitLab → Settings → Access Tokens</a></li>
               <li>Click "Add new token"</li>
-              <li>Give it a name (e.g., "InternLink Integration")</li>
+              <li>Give it a name (e.g., "AI Developer InternLink Integration")</li>
               <li>Select scopes: <code className="bg-blue-100 px-1 rounded">read_user</code>, <code className="bg-blue-100 px-1 rounded">read_api</code>, <code className="bg-blue-100 px-1 rounded">read_repository</code></li>
               <li>Click "Create personal access token"</li>
               <li>Copy the token (starts with <code className="bg-blue-100 px-1 rounded">glpat-</code>)</li>

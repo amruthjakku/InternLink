@@ -24,21 +24,21 @@ export function TaskManagementTab() {
   const [filterPriority, setFilterPriority] = useState('all');
   const svgRef = useRef();
 
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTasksAndInterns();
+    fetchTasksAndAI Developer Interns();
   }, []);
 
-  const fetchTasksAndInterns = async () => {
+  const fetchTasksAndAI Developer Interns = async () => {
     try {
       setLoading(true);
       
       // Fetch real tasks and interns data
       const [tasksResponse, internsResponse] = await Promise.all([
         fetch('/api/tasks'),
-        fetch('/api/admin/users?role=AI%20developer%20Intern')
+        fetch('/api/admin/users?role=AI%20Developer%20Intern')
       ]);
 
       if (tasksResponse.ok) {
@@ -48,12 +48,12 @@ export function TaskManagementTab() {
 
       if (internsResponse.ok) {
         const internsData = await internsResponse.json();
-        setInterns(internsData.users || []);
+        setAIDeveloperInterns(internsData.users || []);
       }
     } catch (error) {
       console.error('Error fetching tasks and interns:', error);
       setTasks([]);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     } finally {
       setLoading(false);
     }

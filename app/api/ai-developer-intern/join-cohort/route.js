@@ -9,7 +9,7 @@ export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'AI developer Intern') {
+    if (!session || session.user.role !== 'AI Developer Intern') {
       return NextResponse.json({ error: 'Unauthorized - Only AI developer interns can join cohorts' }, { status: 401 });
     }
 
@@ -44,14 +44,12 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Cohort not found' }, { status: 404 });
       }
       
-      if (!targetCohort.isActive) {
-        return NextResponse.json({ error: 'This cohort is not active' }, { status: 400 });
-      }
+
     } else {
-      // Auto-assign to first available active cohort
-      targetCohort = await Cohort.findOne({ isActive: true });
+      // Auto-assign to first available cohort
+      targetCohort = await Cohort.findOne({});
       if (!targetCohort) {
-        return NextResponse.json({ error: 'No active cohorts available' }, { status: 404 });
+        return NextResponse.json({ error: 'No cohorts available' }, { status: 404 });
       }
     }
 
@@ -81,7 +79,7 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'AI developer Intern') {
+    if (!session || session.user.role !== 'AI Developer Intern') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -90,8 +88,8 @@ export async function GET(request) {
     // Get current user's cohort status
     const user = await User.findById(session.user.id).populate('cohortId', 'name startDate endDate');
     
-    // Get all available active cohorts
-    const availableCohorts = await Cohort.find({ isActive: true })
+    // Get all available cohorts
+    const availableCohorts = await Cohort.find({})
       .select('name description startDate endDate memberCount maxMembers');
 
     return NextResponse.json({

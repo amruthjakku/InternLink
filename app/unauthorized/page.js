@@ -15,8 +15,8 @@ export default function Unauthorized() {
     // In a real app, this would be handled by the admin/mentor
     // For demo purposes, redirect to appropriate dashboard
     const dashboardPath = session?.user?.role === 'admin' ? '/admin/dashboard' :
-                         session?.user?.role === 'mentor' ? '/mentor/dashboard' :
-                         '/intern/dashboard';
+                         session?.user?.role === 'Tech Lead' ? '/tech-lead/dashboard' :
+                         '/ai-developer-intern/dashboard';
     router.push(dashboardPath);
   };
 

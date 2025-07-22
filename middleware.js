@@ -24,17 +24,9 @@ export async function middleware(request) {
     return NextResponse.redirect(url);
   }
   
-  // If the user is inactive, redirect to error page
-  if (token?.isActive === false) {
-    const url = new URL('/auth/error', request.url);
-    url.searchParams.set('error', 'AccessDenied');
-    return NextResponse.redirect(url);
-  }
+
   
-  // If the user has a pending role, redirect to registration
-  if (token?.role === 'pending' && !pathname.startsWith('/registration')) {
-    return NextResponse.redirect(new URL('/registration', request.url));
-  }
+
   
   // Role-based access control
   if (token) {
@@ -53,8 +45,8 @@ export async function middleware(request) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // AI developer Intern routes (accessible by AI developer Interns, Tech Leads, and POCs for supervision)
-    if (pathname.startsWith('/ai-developer-intern') && !['admin', 'Tech Lead', 'POC', 'AI developer Intern'].includes(token.role)) {
+    // AI Developer Intern routes (accessible by AI Developer Interns, Tech Leads, and POCs for supervision)
+    if (pathname.startsWith('/ai-developer-intern') && !['admin', 'Tech Lead', 'POC', 'AI Developer Intern'].includes(token.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

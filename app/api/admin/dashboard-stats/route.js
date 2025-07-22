@@ -20,8 +20,8 @@ export async function GET() {
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ isActive: true });
     const inactiveUsers = await User.countDocuments({ isActive: false });
-    const totalInterns = await User.countDocuments({ role: 'AI developer Intern' });
-    const totalMentors = await User.countDocuments({ role: 'Tech Lead' });
+    const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern' });
+    const totalTech Leads = await User.countDocuments({ role: 'Tech Lead' });
     const totalPOCs = await User.countDocuments({ role: 'POC' });
     const totalAdmins = await User.countDocuments({ role: 'admin' });
     
@@ -61,8 +61,8 @@ export async function GET() {
       totalUsers,
       activeUsers,
       inactiveUsers,
-      totalInterns,
-      totalMentors,
+      totalAIDeveloperInterns,
+      totalTech Leads,
       totalPOCs,
       totalAdmins,
       totalColleges,

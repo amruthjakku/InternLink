@@ -40,18 +40,18 @@ export async function GET(request) {
     const { User } = await import('../../../models/User');
     
     // Build query based on parameters
-    const query = { role: 'AI developer Intern' };
+    const query = { role: 'AI Developer Intern' };
     
     if (collegeId) query.college = collegeId;
-    if (mentorId) query.assignedMentor = mentorId;
+    if (mentorId) query.assignedTech Lead = mentorId;
     if (status === 'active') query.isActive = true;
     if (status === 'inactive') query.isActive = false;
     
     // Execute query with pagination
-    const totalInterns = await User.countDocuments(query);
+    const totalAIDeveloperInterns = await User.countDocuments(query);
     const interns = await User.find(query)
       .populate('college', 'name')
-      .populate('assignedMentor', 'name email')
+      .populate('assignedTech Lead', 'name email')
       .populate('cohortId', 'name startDate endDate')
       .select('-password')
       .sort({ createdAt: -1 })
@@ -69,10 +69,10 @@ export async function GET(request) {
           id: intern.college._id,
           name: intern.college.name
         } : null,
-        mentor: intern.assignedMentor ? {
-          id: intern.assignedMentor._id,
-          name: intern.assignedMentor.name,
-          email: intern.assignedMentor.email
+        mentor: intern.assignedTech Lead ? {
+          id: intern.assignedTech Lead._id,
+          name: intern.assignedTech Lead.name,
+          email: intern.assignedTech Lead.email
         } : null,
         cohort: intern.cohortId ? {
           id: intern.cohortId._id,
@@ -85,10 +85,10 @@ export async function GET(request) {
         lastLoginAt: intern.lastLoginAt
       })),
       pagination: {
-        total: totalInterns,
+        total: totalAIDeveloperInterns,
         page,
         limit,
-        pages: Math.ceil(totalInterns / limit)
+        pages: Math.ceil(totalAIDeveloperInterns / limit)
       }
     };
     

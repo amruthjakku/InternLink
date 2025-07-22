@@ -16,7 +16,7 @@ export function TeamActivity() {
 
   const fetchTeamActivity = async () => {
     try {
-      const response = await fetch('/api/mentor/team-activity');
+      const response = await fetch('/api/tech-lead/team-activity');
       if (response.ok) {
         const data = await response.json();
         setActivities(data.activities || []);

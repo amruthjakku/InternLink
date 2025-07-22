@@ -83,7 +83,7 @@ export async function GET(request) {
     // Get all users without cohort assignments
     const usersWithoutCohorts = await User.find({ 
       cohortId: { $exists: false },
-      role: 'intern'
+      role: 'AI Developer Intern'
     }).select('name email role');
 
     // Get all available cohorts

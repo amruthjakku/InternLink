@@ -142,7 +142,7 @@ const DataIntegrityTab = () => {
     { id: 'missing-colleges', name: 'Users without Colleges', status: 'warning', count: 5 },
     { id: 'invalid-cohorts', name: 'Invalid Cohort Assignments', status: 'healthy', count: 0 },
     { id: 'duplicate-emails', name: 'Duplicate Emails', status: 'error', count: 2 },
-    { id: 'inactive-mentors', name: 'Inactive Mentors with Interns', status: 'warning', count: 3 }
+    { id: 'inactive-mentors', name: 'Inactive Tech Leads with AI Developer Interns', status: 'warning', count: 3 }
   ]);
 
   const getStatusColor = (status) => {

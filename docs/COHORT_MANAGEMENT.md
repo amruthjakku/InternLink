@@ -1,4 +1,4 @@
-# InternLink Cohort Management Guide
+# AI developer InternLink Cohort Management Guide
 
 ## Overview
 The cohort management system allows administrators to organize interns into cohorts and manage the relationship between cohorts and colleges. This feature provides comprehensive tools for cohort creation, college assignment, and bulk operations.
@@ -16,8 +16,8 @@ The cohort management system allows administrators to organize interns into coho
   endDate: Date,
   mentorId: ObjectId (ref: User),
   collegeId: ObjectId (ref: College), // Primary college association
-  maxInterns: Number,
-  currentInterns: Number,
+  maxAI developer Interns: Number,
+  currentAI developer Interns: Number,
   memberCount: Number,
   createdBy: String,
   isActive: Boolean
@@ -198,7 +198,7 @@ const results = await Promise.all(
 ### Cohort Statistics
 - **Member Count**: Total users in each cohort
 - **College Distribution**: Number of colleges per cohort
-- **Role Breakdown**: Interns, mentors, and admins per cohort
+- **Role Breakdown**: AI developer Interns, mentors, and admins per cohort
 - **Activity Metrics**: Engagement and participation rates
 
 ### College Analytics

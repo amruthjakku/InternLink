@@ -168,7 +168,7 @@ async function generateUserStats(user, db) {
     if (user.role === 'Tech Lead' || user.role === 'POC') {
       // Count mentees or managed interns
       const mentees = await User.countDocuments({
-        assignedMentor: user._id
+        assignedTech Lead: user._id
       });
       stats.menteesManaged = mentees;
 

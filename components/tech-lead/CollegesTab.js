@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 export function CollegesTab() {
   const [colleges, setColleges] = useState([]);
   const [cohorts, setCohorts] = useState([]);
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingCollege, setEditingCollege] = useState(null);
@@ -14,7 +14,7 @@ export function CollegesTab() {
   useEffect(() => {
     fetchColleges();
     fetchCohorts();
-    fetchInterns();
+    fetchAIDeveloperInterns();
   }, []);
 
   const fetchColleges = async () => {
@@ -47,33 +47,33 @@ export function CollegesTab() {
     }
   };
 
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=AI%20developer%20Intern');
+      const response = await fetch('/api/admin/users?role=AI%20Developer%20Intern');
       if (response.ok) {
         const data = await response.json();
-        setInterns(data.users || []);
+        setAIDeveloperInterns(data.users || []);
       } else {
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     }
   };
 
   const getCollegeStats = (collegeId) => {
-    const collegeInterns = interns.filter(intern => intern.college_id === collegeId);
+    const collegeAI Developer Interns = interns.filter(intern => intern.college_id === collegeId);
     const collegeCohorts = cohorts.filter(cohort => cohort.college_id === collegeId);
-    const totalTasks = collegeInterns.reduce((sum, intern) => sum + intern.total_tasks, 0);
-    const completedTasks = collegeInterns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
-    const avgPerformance = collegeInterns.length > 0 
-      ? collegeInterns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeInterns.length 
+    const totalTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.total_tasks, 0);
+    const completedTasks = collegeAI Developer Interns.reduce((sum, intern) => sum + intern.completed_tasks, 0);
+    const avgPerformance = collegeAI Developer Interns.length > 0 
+      ? collegeAI Developer Interns.reduce((sum, intern) => sum + intern.performance_score, 0) / collegeAI Developer Interns.length 
       : 0;
 
     return {
-      totalInterns: collegeInterns.length,
-      activeInterns: collegeInterns.filter(intern => intern.status === 'active').length,
+      totalAIDeveloperInterns: collegeAI Developer Interns.length,
+      activeAIDeveloperInterns: collegeAI Developer Interns.filter(intern => intern.status === 'active').length,
       totalCohorts: collegeCohorts.length,
       activeCohorts: collegeCohorts.filter(cohort => cohort.status === 'active').length,
       completionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
@@ -215,12 +215,12 @@ export function CollegesTab() {
               
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{college.totalInterns}</div>
-                  <div className="text-gray-500">Total Interns</div>
+                  <div className="font-medium text-gray-900">{college.totalAIDeveloperInterns}</div>
+                  <div className="text-gray-500">Total AI Developer Interns</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{college.activeInterns}</div>
-                  <div className="text-gray-500">Active Interns</div>
+                  <div className="font-medium text-gray-900">{college.activeAIDeveloperInterns}</div>
+                  <div className="text-gray-500">Active AI Developer Interns</div>
                 </div>
                 <div className="text-center">
                   <div className="font-medium text-gray-900">{college.totalCohorts}</div>
@@ -289,12 +289,12 @@ export function CollegesTab() {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-blue-50 p-3 rounded">
-                  <div className="text-lg font-bold text-blue-600">{stats.totalInterns}</div>
-                  <div className="text-sm text-gray-600">Total Interns</div>
+                  <div className="text-lg font-bold text-blue-600">{stats.totalAIDeveloperInterns}</div>
+                  <div className="text-sm text-gray-600">Total AI Developer Interns</div>
                 </div>
                 <div className="bg-green-50 p-3 rounded">
-                  <div className="text-lg font-bold text-green-600">{stats.activeInterns}</div>
-                  <div className="text-sm text-gray-600">Active Interns</div>
+                  <div className="text-lg font-bold text-green-600">{stats.activeAIDeveloperInterns}</div>
+                  <div className="text-sm text-gray-600">Active AI Developer Interns</div>
                 </div>
                 <div className="bg-purple-50 p-3 rounded">
                   <div className="text-lg font-bold text-purple-600">{stats.totalCohorts}</div>
@@ -502,14 +502,14 @@ export function CollegesTab() {
       <h3 className="text-lg font-semibold text-gray-900 mb-6">College Analytics</h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Intern Distribution */}
+        {/* AI Developer Intern Distribution */}
         <div>
-          <h4 className="text-sm font-medium text-gray-900 mb-4">Intern Distribution</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-4">AI Developer Intern Distribution</h4>
           <div className="space-y-3">
             {colleges.map(college => {
               const stats = getCollegeStats(college.id);
               const percentage = interns.length > 0 
-                ? (stats.totalInterns / interns.length * 100).toFixed(1)
+                ? (stats.totalAIDeveloperInterns / interns.length * 100).toFixed(1)
                 : 0;
               
               return (
@@ -517,7 +517,7 @@ export function CollegesTab() {
                   <div className="flex-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-900">{college.name}</span>
-                      <span className="text-gray-500">{stats.totalInterns} interns ({percentage}%)</span>
+                      <span className="text-gray-500">{stats.totalAIDeveloperInterns} interns ({percentage}%)</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                       <div

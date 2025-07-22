@@ -2,7 +2,7 @@
 
 ## Overview
 
-The InternLink platform now supports individual task progress tracking, allowing each intern to have their own progress status for shared tasks. This system ensures that when tasks are assigned to cohorts, each intern's progress is tracked separately.
+The AI developer InternLink platform now supports individual task progress tracking, allowing each intern to have their own progress status for shared tasks. This system ensures that when tasks are assigned to cohorts, each intern's progress is tracked separately.
 
 ## Key Features
 
@@ -34,8 +34,8 @@ The InternLink platform now supports individual task progress tracking, allowing
   pointsEarned: Number,       // Points earned by this intern
   startedAt: Date,           // When intern started the task
   completedAt: Date,         // When intern completed the task
-  submissionUrl: String,     // Intern's submission link
-  submissionNotes: String,   // Intern's notes
+  submissionUrl: String,     // AI developer Intern's submission link
+  submissionNotes: String,   // AI developer Intern's notes
   needsHelp: Boolean,        // Help request flag
   helpMessage: String,       // Help request message
   subtaskProgress: [{        // Individual subtask progress
@@ -85,7 +85,7 @@ PATCH /api/tasks/[id]/subtasks/[subtaskId]
 ```
 Updates individual subtask completion status.
 
-### Admin/Mentor Endpoints
+### Admin/Tech Lead Endpoints
 
 #### Progress Overview
 ```
@@ -121,7 +121,7 @@ This script will:
 
 ## Usage Examples
 
-### For Interns
+### For AI developer Interns
 
 #### Viewing Tasks
 - Tasks API now returns individual progress information
@@ -138,7 +138,7 @@ This script will:
 - Add submission URLs and notes
 - Request help when needed
 
-### For Mentors/Admins
+### For Tech Leads/Admins
 
 #### Monitoring Progress
 - View progress overview for any task
@@ -157,8 +157,8 @@ This script will:
 - No shared completion status
 - Individual effort is properly tracked
 
-### 2. Better Mentoring
-- Mentors can see who needs help
+### 2. Better Tech Leading
+- Tech Leads can see who needs help
 - Individual progress monitoring
 - Targeted support for struggling interns
 

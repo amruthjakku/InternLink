@@ -15,7 +15,7 @@ export async function GET() {
     
     const interns = await db.collection('users')
       .find({ 
-        role: 'intern',
+        role: 'AI Developer Intern',
         isActive: true 
       })
       .sort({ name: 1 })

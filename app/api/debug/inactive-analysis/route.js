@@ -9,7 +9,7 @@ export async function GET() {
     // Get all users with detailed info
     const allUsers = await User.find({})
       .populate('college')
-      .populate('assignedMentor')
+      .populate('assignedTech Lead')
       .sort({ createdAt: -1 });
     
     const analysis = {
@@ -22,7 +22,7 @@ export async function GET() {
         admin: allUsers.filter(u => !u.isActive && u.role === 'admin').length,
         'POC': allUsers.filter(u => !u.isActive && u.role === 'POC').length,
         'Tech Lead': allUsers.filter(u => !u.isActive && u.role === 'Tech Lead').length,
-        'AI developer Intern': allUsers.filter(u => !u.isActive && u.role === 'AI developer Intern').length,
+        'AI Developer Intern': allUsers.filter(u => !u.isActive && u.role === 'AI Developer Intern').length,
         pending: allUsers.filter(u => !u.isActive && u.role === 'pending').length,
       },
       
@@ -37,17 +37,17 @@ export async function GET() {
         college: user.college?.name || 'No college',
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt,
-        assignedMentor: user.assignedMentor?.gitlabUsername || 'None',
+        assignedTech Lead: user.assignedTech Lead?.gitlabUsername || 'None',
         hasRequiredFields: {
           hasCollege: !!user.college,
-          hasMentor: user.role !== 'AI developer Intern' || !!user.assignedMentor,
+          hasTech Lead: user.role !== 'AI Developer Intern' || !!user.assignedTech Lead,
           hasAssignedBy: !!user.assignedBy
         }
       })),
       
       // Common patterns
       patterns: {
-        missingMentors: allUsers.filter(u => u.role === 'AI developer Intern' && !u.assignedMentor).length,
+        missingTech Leads: allUsers.filter(u => u.role === 'AI Developer Intern' && !u.assignedTech Lead).length,
         missingColleges: allUsers.filter(u => !u.college && u.role !== 'admin').length,
         neverLoggedIn: allUsers.filter(u => !u.lastLoginAt).length,
         oldAccounts: allUsers.filter(u => {

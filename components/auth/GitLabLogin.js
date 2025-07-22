@@ -81,20 +81,20 @@ export function GitLabLogin() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => handleDemoLogin('mentor')}
+                  onClick={() => handleDemoLogin('Tech Lead')}
                   disabled={isLoading}
                   className="flex flex-col items-center py-3 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
                 >
                   <span className="text-lg mb-1">👨‍🏫</span>
-                  Demo Mentor
+                  Demo Tech Lead
                 </button>
                 <button
-                  onClick={() => handleDemoLogin('intern')}
+                  onClick={() => handleDemoLogin('AI Developer Intern')}
                   disabled={isLoading}
                   className="flex flex-col items-center py-3 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
                 >
                   <span className="text-lg mb-1">👨‍🎓</span>
-                  Demo Intern
+                  Demo AI Developer Intern
                 </button>
               </div>
             </div>

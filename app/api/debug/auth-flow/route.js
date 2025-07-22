@@ -83,9 +83,9 @@ export async function GET() {
     // Step 4: Role-based access check
     const accessRules = {
       admin: ['admin'],
-      'super-mentor': ['mentor'],
-      mentor: ['mentor'], 
-      intern: ['intern']
+      'POC': ['Tech Lead'],
+      mentor: ['Tech Lead'], 
+      intern: ['AI Developer Intern']
     };
     
     const expectedDashboard = accessRules[user.role]?.[0];

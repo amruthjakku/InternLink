@@ -25,7 +25,7 @@ export async function GET(request) {
   
   switch (error) {
     case 'AccessDenied':
-      errorMessage = 'Your GitLab account is not yet registered in our system';
+      errorMessage = 'Authentication failed - please try again';
       errorCode = 'access_denied';
       break;
     case 'OAuthSignin':

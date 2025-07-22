@@ -2,32 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
-import { InternManagementTab } from './tech-lead/InternManagementTab';
+import { AIDeveloperInternManagementTab } from './tech-lead/AIDeveloperInternManagementTab';
 import { AdvancedTaskManagement } from './tech-lead/AdvancedTaskManagement';
 import { AttendanceTab } from './tech-lead/AttendanceTab';
 import { LeaderboardTab } from './tech-lead/LeaderboardTab';
 import { CommunicationTab } from './tech-lead/CommunicationTab';
-import { POCCommunicationTab } from './tech-lead/SuperMentorCommunicationTab';
+import { POCCommunicationTab } from './tech-lead/SuperTechLeadCommunicationTab';
 import { MeetingsTab } from './tech-lead/MeetingsTab';
 import { AIAssistantTab } from './tech-lead/AIAssistantTab';
 import { PerformanceOverview } from './tech-lead/PerformanceOverview';
 import { TeamActivity } from './tech-lead/TeamActivity';
-import { TechLeadManagementTab } from './tech-lead/MentorManagementTab';
+import { TechLeadManagementTab } from './tech-lead/TechLeadManagementTab';
 import { CohortManagementTab } from './tech-lead/CohortManagementTab';
 import TeamActivityDashboard from './dashboard/TeamActivity';
 import { CollegeBadge } from './CollegeLogo';
 import GitLabIntegrationDashboard from './dashboard/GitLabIntegration';
 import { EnhancedChat } from './EnhancedChat';
 
-export function MentorDashboard() {
+export function TechLeadDashboard() {
   const { user, refreshUserData, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [activeGroup, setActiveGroup] = useState('management');
-  const [interns, setInterns] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  console.log('MentorDashboard component initialized with user:', user?.name, 'role:', user?.role);
+  console.log('TechLeadDashboard component initialized with user:', user?.name, 'role:', user?.role);
 
   // Grouped tabs structure similar to admin dashboard
   const getTabGroups = (role) => {
@@ -38,7 +38,7 @@ export function MentorDashboard() {
         color: 'blue',
         tabs: [
           { id: 'overview', name: 'Overview', icon: '📊', description: 'Dashboard overview and key metrics' },
-          { id: 'intern-management', name: 'Intern Management', icon: '👨‍🎓', description: 'Manage assigned interns' },
+          { id: 'intern-management', name: 'AI Developer Intern Management', icon: '👨‍🎓', description: 'Manage assigned interns' },
           { id: 'performance', name: 'Performance', icon: '📈', description: 'Monitor intern performance' },
           { id: 'attendance', name: 'Attendance', icon: '📍', description: 'Track attendance records' }
         ]
@@ -74,7 +74,7 @@ export function MentorDashboard() {
           icon: '⚙️',
           color: 'orange',
           tabs: [
-            { id: 'mentor-management', name: 'Mentor Management', icon: '👨‍🏫', description: 'Manage mentors' },
+            { id: 'mentor-management', name: 'Tech Lead Management', icon: '👨‍🏫', description: 'Manage mentors' },
             { id: 'cohort-management', name: 'Cohort Management', icon: '🎓', description: 'Manage cohorts' },
             { id: 'task-management', name: 'Task Management', icon: '📝', description: 'Advanced task management' },
             { id: 'system-overview', name: 'System Overview', icon: '🏢', description: 'System-wide overview' }
@@ -102,18 +102,18 @@ export function MentorDashboard() {
     if (user) {
       setActiveTab('overview');
       setActiveGroup('management');
-      fetchInterns();
+      fetchAIDeveloperInterns();
     }
   }, [user]);
 
 
   
   // Use SWR for fetching interns data
-  const fetchInterns = async () => {
+  const fetchAIDeveloperInterns = async () => {
     setLoading(true);
     try {
       // Different API endpoints based on role
-      let endpoint = '/api/admin/users?role=AI%20developer%20Intern';
+      let endpoint = '/api/admin/users?role=AI%20Developer%20Intern';
       
       console.log('Fetching interns for user role:', user?.role);
       
@@ -131,7 +131,7 @@ export function MentorDashboard() {
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched interns data:', data);
-        setInterns(data.users || data.interns || []);
+        setAIDeveloperInterns(data.users || data.interns || []);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to fetch interns:', response.status, errorData.error || 'Unknown error');
@@ -142,11 +142,11 @@ export function MentorDashboard() {
           await refreshUserData();
         }
         
-        setInterns([]);
+        setAIDeveloperInterns([]);
       }
     } catch (error) {
       console.error('Error fetching interns:', error);
-      setInterns([]);
+      setAIDeveloperInterns([]);
     } finally {
       setLoading(false);
     }
@@ -157,7 +157,7 @@ export function MentorDashboard() {
     try {
       await refreshUserData();
       // Also refresh the interns data since role might have changed
-      await fetchInterns();
+      await fetchAIDeveloperInterns();
       alert('✅ Session refreshed! Your dashboard has been updated with the latest permissions.');
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -179,8 +179,8 @@ export function MentorDashboard() {
   };
 
   const renderOverview = () => {
-    const totalInterns = interns.length;
-    const activeInterns = interns.filter(i => i.status === 'active').length;
+    const totalAIDeveloperInterns = interns.length;
+    const activeAIDeveloperInterns = interns.filter(i => i.status === 'active').length;
     const totalTasks = interns.reduce((sum, intern) => sum + (intern.total_tasks || 0), 0);
     const completedTasks = interns.reduce((sum, intern) => sum + (intern.completed_tasks || 0), 0);
     const overallCompletion = totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : 0;
@@ -193,8 +193,8 @@ export function MentorDashboard() {
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-xl text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">Total Interns</p>
-                <p className="text-3xl font-bold">{totalInterns}</p>
+                <p className="text-blue-100 text-sm">Total AI Developer Interns</p>
+                <p className="text-3xl font-bold">{totalAIDeveloperInterns}</p>
               </div>
               <div className="text-3xl opacity-80">👥</div>
             </div>
@@ -203,8 +203,8 @@ export function MentorDashboard() {
           <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-xl text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Active Interns</p>
-                <p className="text-3xl font-bold">{activeInterns}</p>
+                <p className="text-green-100 text-sm">Active AI Developer Interns</p>
+                <p className="text-3xl font-bold">{activeAIDeveloperInterns}</p>
               </div>
               <div className="text-3xl opacity-80">✅</div>
             </div>
@@ -299,11 +299,11 @@ export function MentorDashboard() {
           </div>
         </div>
 
-        {/* Interns Performance Table */}
+        {/* AI Developer Interns Performance Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Intern Performance Overview</h3>
+              <h3 className="text-lg font-semibold text-gray-900">AI Developer Intern Performance Overview</h3>
               <span className="text-sm text-gray-500">{interns.length} interns</span>
             </div>
           </div>
@@ -312,7 +312,7 @@ export function MentorDashboard() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Intern
+                    AI Developer Intern
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     College
@@ -402,7 +402,7 @@ export function MentorDashboard() {
       case 'overview':
         return renderOverview();
       case 'intern-management':
-        return <InternManagementTab {...commonProps} />;
+        return <AIDeveloperInternManagementTab {...commonProps} />;
       case 'mentor-management':
         return user?.role === 'POC' ? <TechLeadManagementTab {...commonProps} /> : renderAccessDenied();
       case 'cohort-management':

@@ -48,7 +48,7 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
         return '🌟';
       case 'Tech Lead':
         return '👨‍🏫';
-      case 'AI developer Intern':
+      case 'AI Developer Intern':
         return '🎓';
       default:
         return '👤';
@@ -63,7 +63,7 @@ export function ProfileCard({ user, showMilestones = true, compact = false }) {
         return 'bg-yellow-100 text-yellow-800';
       case 'Tech Lead':
         return 'bg-blue-100 text-blue-800';
-      case 'AI developer Intern':
+      case 'AI Developer Intern':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';

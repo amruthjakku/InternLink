@@ -50,8 +50,8 @@ const TeamManagement = () => {
   };
 
   const subTabs = [
-    { id: 'super-mentors', name: 'Super Mentors', icon: '👨‍🏫', description: 'Manage super mentors and their colleges' },
-    { id: 'mentor-teams', name: 'Mentor Teams', icon: '👥', description: 'Assign interns to mentors' },
+    { id: 'super-mentors', name: 'POCs', icon: '👨‍🏫', description: 'Manage POCs and their colleges' },
+    { id: 'mentor-teams', name: 'Tech Lead Teams', icon: '👥', description: 'Assign interns to mentors' },
     { id: 'team-overview', name: 'Team Overview', icon: '📊', description: 'View all teams and assignments' }
   ];
 
@@ -65,7 +65,7 @@ const TeamManagement = () => {
             </div>
             Team Management
           </h2>
-          <p className="text-gray-600 mt-1">Manage super mentors, mentors, and intern team assignments</p>
+          <p className="text-gray-600 mt-1">Manage POCs, mentors, and intern team assignments</p>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ const TeamManagement = () => {
             <POCsTab colleges={colleges} users={users} />
           )}
           {activeSubTab === 'mentor-teams' && (
-            <MentorTeamsTab colleges={colleges} users={users} teams={teams} fetchTeams={fetchTeams} />
+            <Tech LeadTeamsTab colleges={colleges} users={users} teams={teams} fetchTeams={fetchTeams} />
           )}
           {activeSubTab === 'team-overview' && (
             <TeamOverviewTab teams={teams} colleges={colleges} />
@@ -125,7 +125,7 @@ const POCsTab = ({ colleges, users }) => {
         const data = await response.json();
         setCollegeUsers({
           mentors: data.users?.filter(u => u.role === 'Tech Lead' || u.role === 'POC') || [],
-          interns: data.users?.filter(u => u.role === 'AI developer Intern') || []
+          interns: data.users?.filter(u => u.role === 'AI Developer Intern') || []
         });
       }
     } catch (error) {
@@ -136,11 +136,11 @@ const POCsTab = ({ colleges, users }) => {
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-800 mb-2">👨‍🏫 Super Mentor Management</h3>
+        <h3 className="font-medium text-blue-800 mb-2">👨‍🏫 POC Management</h3>
         <div className="text-sm text-blue-700 space-y-1">
-          <div>• Super mentors can view all mentors and interns in their college</div>
+          <div>• POCs can view all mentors and interns in their college</div>
           <div>• They can create teams by assigning interns to mentors</div>
-          <div>• Each college should have one designated super mentor</div>
+          <div>• Each college should have one designated POC</div>
         </div>
       </div>
 
@@ -165,9 +165,9 @@ const POCsTab = ({ colleges, users }) => {
                     <div className="text-sm text-gray-500">{college.location}</div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {college.superMentorUsername && (
+                    {college.superTech LeadUsername && (
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                        Super Mentor Assigned
+                        POC Assigned
                       </span>
                     )}
                   </div>
@@ -185,34 +185,34 @@ const POCsTab = ({ colleges, users }) => {
             </h3>
             
             <div className="space-y-4">
-              {/* Super Mentor Section */}
+              {/* POC Section */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">👨‍🏫</span>
-                  Super Mentor
+                  POC
                 </h4>
-                {selectedCollege.superMentorUsername ? (
+                {selectedCollege.superTech LeadUsername ? (
                   <div className="bg-green-50 border border-green-200 rounded p-3">
                     <div className="font-medium text-green-800">
-                      {selectedCollege.superMentorUsername}
+                      {selectedCollege.superTech LeadUsername}
                     </div>
-                    <div className="text-sm text-green-600">Active Super Mentor</div>
+                    <div className="text-sm text-green-600">Active POC</div>
                   </div>
                 ) : (
                   <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-                    <div className="text-yellow-800">No super mentor assigned</div>
+                    <div className="text-yellow-800">No POC assigned</div>
                     <button className="text-sm text-yellow-600 hover:text-yellow-800 mt-1">
-                      Assign Super Mentor
+                      Assign POC
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Mentors Section */}
+              {/* Tech Leads Section */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">👨‍💼</span>
-                  Mentors ({collegeUsers.mentors.length})
+                  Tech Leads ({collegeUsers.mentors.length})
                 </h4>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {collegeUsers.mentors.map((mentor) => (
@@ -233,11 +233,11 @@ const POCsTab = ({ colleges, users }) => {
                 </div>
               </div>
 
-              {/* Interns Section */}
+              {/* AI Developer Interns Section */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                   <span className="text-lg mr-2">👨‍🎓</span>
-                  Interns ({collegeUsers.interns.length})
+                  AI Developer Interns ({collegeUsers.interns.length})
                 </h4>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {collegeUsers.interns.map((intern) => (
@@ -261,58 +261,58 @@ const POCsTab = ({ colleges, users }) => {
   );
 };
 
-const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
+const Tech LeadTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
   const [selectedCollege, setSelectedCollege] = useState(null);
-  const [mentors, setMentors] = useState([]);
-  const [interns, setInterns] = useState([]);
-  const [selectedMentor, setSelectedMentor] = useState(null);
-  const [selectedInterns, setSelectedInterns] = useState([]);
+  const [mentors, setTechLeads] = useState([]);
+  const [interns, setAIDeveloperInterns] = useState([]);
+  const [selectedTech Lead, setSelectedTech Lead] = useState(null);
+  const [selectedAIDeveloperInterns, setSelectedAIDeveloperInterns] = useState([]);
 
   const handleCollegeSelect = async (college) => {
     setSelectedCollege(college);
-    setSelectedMentor(null);
-    setSelectedInterns([]);
+    setSelectedTech Lead(null);
+    setSelectedAIDeveloperInterns([]);
     
     try {
       const response = await fetch(`/api/admin/colleges/${college._id}/users`);
       if (response.ok) {
         const data = await response.json();
-        setMentors(data.users?.filter(u => u.role === 'Tech Lead' || u.role === 'POC') || []);
-        setInterns(data.users?.filter(u => u.role === 'AI developer Intern') || []);
+        setTechLeads(data.users?.filter(u => u.role === 'Tech Lead' || u.role === 'POC') || []);
+        setAIDeveloperInterns(data.users?.filter(u => u.role === 'AI Developer Intern') || []);
       }
     } catch (error) {
       console.error('Error fetching college users:', error);
     }
   };
 
-  const handleInternToggle = (intern) => {
-    const isSelected = selectedInterns.find(i => i._id === intern._id);
+  const handleAI Developer InternToggle = (intern) => {
+    const isSelected = selectedAIDeveloperInterns.find(i => i._id === intern._id);
     if (isSelected) {
-      setSelectedInterns(selectedInterns.filter(i => i._id !== intern._id));
+      setSelectedAIDeveloperInterns(selectedAIDeveloperInterns.filter(i => i._id !== intern._id));
     } else {
-      setSelectedInterns([...selectedInterns, intern]);
+      setSelectedAIDeveloperInterns([...selectedAIDeveloperInterns, intern]);
     }
   };
 
   const handleCreateTeam = async () => {
-    if (!selectedMentor || selectedInterns.length === 0) return;
+    if (!selectedTech Lead || selectedAIDeveloperInterns.length === 0) return;
 
     try {
       const response = await fetch('/api/admin/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorId: selectedMentor._id,
-          internIds: selectedInterns.map(i => i._id),
+          mentorId: selectedTech Lead._id,
+          internIds: selectedAIDeveloperInterns.map(i => i._id),
           collegeId: selectedCollege._id,
-          name: `${selectedMentor.name}'s Team`
+          name: `${selectedTech Lead.name}'s Team`
         })
       });
 
       if (response.ok) {
         alert('Team created successfully!');
-        setSelectedMentor(null);
-        setSelectedInterns([]);
+        setSelectedTech Lead(null);
+        setSelectedAIDeveloperInterns([]);
         fetchTeams();
         // Refresh the college data
         handleCollegeSelect(selectedCollege);
@@ -357,17 +357,17 @@ const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
           </div>
         </div>
 
-        {/* Mentor Selection */}
+        {/* Tech Lead Selection */}
         {selectedCollege && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">2. Select Mentor</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">2. Select Tech Lead</h3>
             <div className="space-y-2">
               {mentors.map((mentor) => (
                 <div
                   key={mentor._id}
-                  onClick={() => setSelectedMentor(mentor)}
+                  onClick={() => setSelectedTech Lead(mentor)}
                   className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedMentor?._id === mentor._id
+                    selectedTech Lead?._id === mentor._id
                       ? 'border-green-500 bg-green-50'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
@@ -381,17 +381,17 @@ const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
           </div>
         )}
 
-        {/* Intern Selection */}
-        {selectedMentor && (
+        {/* AI Developer Intern Selection */}
+        {selectedTech Lead && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">3. Select Interns</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">3. Select AI Developer Interns</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {interns.filter(intern => !intern.mentorId).map((intern) => (
                 <div
                   key={intern._id}
-                  onClick={() => handleInternToggle(intern)}
+                  onClick={() => handleAI Developer InternToggle(intern)}
                   className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedInterns.find(i => i._id === intern._id)
+                    selectedAIDeveloperInterns.find(i => i._id === intern._id)
                       ? 'border-green-500 bg-green-50'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
@@ -399,7 +399,7 @@ const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
                   <div className="flex items-center space-x-3">
                     <input
                       type="checkbox"
-                      checked={!!selectedInterns.find(i => i._id === intern._id)}
+                      checked={!!selectedAIDeveloperInterns.find(i => i._id === intern._id)}
                       readOnly
                       className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
@@ -412,13 +412,13 @@ const MentorTeamsTab = ({ colleges, users, teams, fetchTeams }) => {
               ))}
             </div>
 
-            {selectedInterns.length > 0 && (
+            {selectedAIDeveloperInterns.length > 0 && (
               <div className="mt-4">
                 <button
                   onClick={handleCreateTeam}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-green-600 hover:to-emerald-600 transition-all"
                 >
-                  Create Team ({selectedInterns.length} interns)
+                  Create Team ({selectedAIDeveloperInterns.length} interns)
                 </button>
               </div>
             )}
@@ -456,8 +456,8 @@ const TeamOverviewTab = ({ teams, colleges }) => {
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <div>Mentor: {team.mentor?.name}</div>
-                        <div>Interns: {team.interns?.length || 0}</div>
+                        <div>Tech Lead: {team.mentor?.name}</div>
+                        <div>AI Developer Interns: {team.interns?.length || 0}</div>
                         <div>Created: {new Date(team.createdAt).toLocaleDateString()}</div>
                       </div>
                     </div>

@@ -18,14 +18,14 @@ export function LoginPage() {
       <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Intern Progress Tracker 🚀
+            AI Developer Intern Progress Tracker 🚀
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Track your internship progress, access resources, and keep your mentor updated!
           </p>
           <div className="mt-4 space-y-2 text-sm text-gray-500">
-            <p>• Interns: Mark tasks as done, submit links, and see your progress</p>
-            <p>• Mentors: View all interns' progress and activity</p>
+            <p>• AI Developer Interns: Mark tasks as done, submit links, and see your progress</p>
+            <p>• Tech Leads: View all interns' progress and activity</p>
           </div>
         </div>
 
@@ -51,7 +51,7 @@ export function LoginPage() {
                 ) : (
                   <span className="mr-2">👨‍💻</span>
                 )}
-                Login as Intern
+                Login as AI Developer Intern
               </button>
             </div>
             

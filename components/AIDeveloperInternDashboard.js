@@ -19,7 +19,7 @@ import { GitLabCommitTracker } from './GitLabCommitTracker';
 import { ProfileCard } from './ProfileCard';
 import { CollegeLogo } from './CollegeLogo';
 
-export function InternDashboard() {
+export function AIDeveloperInternDashboard() {
   const { user, refreshUserData, logout } = useAuth();
   
 
@@ -253,7 +253,7 @@ export function InternDashboard() {
       case 'attendance':
         return <UnifiedAttendanceTab {...commonProps} />;
       case 'chat':
-        return <EnhancedChat userRole="AI developer Intern" />;
+        return <EnhancedChat userRole="AI Developer Intern" />;
       case 'ai-assistant':
         return <AIAssistantTab {...commonProps} />;
       default:

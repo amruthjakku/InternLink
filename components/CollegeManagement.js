@@ -27,7 +27,7 @@ export function CollegeManagement() {
         console.log(`Total colleges fetched: ${colleges.length}`);
         console.log(`Total users fetched: ${users.length}`);
         console.log('Colleges:', colleges.map(c => ({ id: c._id, name: c.name })));
-        console.log('Interns:', users.filter(u => u.role === 'AI developer Intern').map(u => ({ 
+        console.log('AI Developer Interns:', users.filter(u => u.role === 'AI Developer Intern').map(u => ({ 
           id: u._id, 
           name: u.name, 
           college: u.college, 
@@ -37,8 +37,8 @@ export function CollegeManagement() {
         
         // Calculate statistics for each college
         const collegesWithStats = colleges.map(college => {
-          const collegeInterns = users.filter(user => {
-            if (user.role !== 'AI developer Intern') return false;
+          const collegeAI Developer Interns = users.filter(user => {
+            if (user.role !== 'AI Developer Intern') return false;
             
             // Handle different formats of college ID comparison
             const userCollegeId = user.college?._id || user.college;
@@ -53,17 +53,17 @@ export function CollegeManagement() {
             return userCollegeStr === collegeIdStr;
           });
           
-          const activeInterns = collegeInterns.filter(intern => intern.isActive);
-          const totalInterns = collegeInterns.length;
+          const activeAIDeveloperInterns = collegeAI Developer Interns.filter(intern => intern.isActive);
+          const totalAIDeveloperInterns = collegeAI Developer Interns.length;
           
           // Calculate completion rate (simplified - could be based on actual completion data)
-          const completionRate = totalInterns > 0 ? 
-            Math.round((activeInterns.length / totalInterns) * 100) : 0;
+          const completionRate = totalAIDeveloperInterns > 0 ? 
+            Math.round((activeAIDeveloperInterns.length / totalAIDeveloperInterns) * 100) : 0;
           
           return {
             ...college,
-            totalInterns,
-            activeInterns: activeInterns.length,
+            totalAIDeveloperInterns,
+            activeAIDeveloperInterns: activeAIDeveloperInterns.length,
             completionRate
           };
         });
@@ -72,15 +72,15 @@ export function CollegeManagement() {
         
         // Calculate overall stats
         const totalColleges = colleges.length;
-        const totalInterns = users.filter(u => u.role === 'AI developer Intern').length;
-        const activeInterns = users.filter(u => u.role === 'AI developer Intern' && u.isActive).length;
+        const totalAIDeveloperInterns = users.filter(u => u.role === 'AI Developer Intern').length;
+        const activeAIDeveloperInterns = users.filter(u => u.role === 'AI Developer Intern' && u.isActive).length;
         const avgCompletionRate = collegesWithStats.length > 0 ? 
           Math.round(collegesWithStats.reduce((sum, c) => sum + c.completionRate, 0) / collegesWithStats.length) : 0;
         
         setStats({
           totalColleges,
-          totalInterns,
-          activeInterns,
+          totalAIDeveloperInterns,
+          activeAIDeveloperInterns,
           avgCompletionRate
         });
       }
@@ -149,12 +149,12 @@ export function CollegeManagement() {
           <div className="text-2xl font-bold text-blue-900">{stats.totalColleges || 0}</div>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-          <div className="text-sm font-medium text-green-700">Total Interns</div>
-          <div className="text-2xl font-bold text-green-900">{stats.totalInterns || 0}</div>
+          <div className="text-sm font-medium text-green-700">Total AI Developer Interns</div>
+          <div className="text-2xl font-bold text-green-900">{stats.totalAIDeveloperInterns || 0}</div>
         </div>
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-          <div className="text-sm font-medium text-purple-700">Active Interns</div>
-          <div className="text-2xl font-bold text-purple-900">{stats.activeInterns || 0}</div>
+          <div className="text-sm font-medium text-purple-700">Active AI Developer Interns</div>
+          <div className="text-2xl font-bold text-purple-900">{stats.activeAIDeveloperInterns || 0}</div>
         </div>
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
           <div className="text-sm font-medium text-orange-700">Avg Completion</div>
@@ -182,11 +182,11 @@ export function CollegeManagement() {
               
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{college?.totalInterns || 0}</div>
-                  <div className="text-xs text-gray-600">Total Interns</div>
+                  <div className="text-lg font-bold text-gray-900">{college?.totalAIDeveloperInterns || 0}</div>
+                  <div className="text-xs text-gray-600">Total AI Developer Interns</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">{college?.activeInterns || 0}</div>
+                  <div className="text-lg font-bold text-green-600">{college?.activeAIDeveloperInterns || 0}</div>
                   <div className="text-xs text-gray-600">Active</div>
                 </div>
                 <div className="text-center">
@@ -215,7 +215,7 @@ export function CollegeManagement() {
               
               {/* Additional Info */}
               <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Super-mentor: {college.superMentorName || 'Unassigned'}</span>
+                <span>Super-mentor: {college.superTech LeadName || 'Unassigned'}</span>
                 <span>Added: {new Date(college.createdAt).toLocaleDateString()}</span>
               </div>
             </div>

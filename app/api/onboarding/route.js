@@ -52,7 +52,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Onboarding error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }
@@ -78,7 +78,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Get onboarding status error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }

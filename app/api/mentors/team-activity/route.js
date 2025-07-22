@@ -25,7 +25,7 @@ export async function GET(request) {
 
     // Allow mentors and admins
     if (session.user.role !== 'Tech Lead' && session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Access denied - Mentor role required' }, { status: 403 });
+      return NextResponse.json({ error: 'Access denied - Tech Lead role required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -39,7 +39,7 @@ export async function GET(request) {
     const startDate = subDays(new Date(), daysBack);
 
     // Get all interns
-    const interns = await User.find({ role: 'AI developer Intern', isActive: true });
+    const interns = await User.find({ role: 'AI Developer Intern', isActive: true });
     const internIds = interns.map(intern => intern._id);
 
     // Get tasks data
@@ -60,7 +60,7 @@ export async function GET(request) {
     // Calculate overall analytics
     const analytics = {
       totalCommits: 0, // This would come from GitLab integration
-      activeInterns: interns.filter(intern => {
+      activeAIDeveloperInterns: interns.filter(intern => {
         // Consider intern active if they have attendance in last 7 days
         const recentAttendance = attendanceRecords.some(record => 
           record.userId.toString() === intern._id.toString() &&

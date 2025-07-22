@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function InternOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
+export default function AI Developer InternOnboarding({ onComplete, onBack, userInfo, demoMode = false }) {
   const [colleges, setColleges] = useState([]);
   const [cohorts, setCohorts] = useState([]);
   const [formData, setFormData] = useState({
@@ -77,8 +77,8 @@ export default function InternOnboarding({ onComplete, onBack, userInfo, demoMod
               description: 'Summer internship program for 2025',
               startDate: '2025-05-01',
               endDate: '2025-07-31',
-              maxInterns: 20,
-              currentInterns: 0
+              maxAI Developer Interns: 20,
+              currentAI Developer Interns: 0
             }
           ]);
         } else if (collegeId === 'demo_college_2') {
@@ -89,8 +89,8 @@ export default function InternOnboarding({ onComplete, onBack, userInfo, demoMod
               description: 'Specialized cohort for full-stack development',
               startDate: '2025-01-15',
               endDate: '2025-06-15',
-              maxInterns: 25,
-              currentInterns: 0
+              maxAI Developer Interns: 25,
+              currentAI Developer Interns: 0
             }
           ]);
         }
@@ -227,7 +227,7 @@ export default function InternOnboarding({ onComplete, onBack, userInfo, demoMod
           </button>
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Intern Setup
+            AI Developer Intern Setup
           </h2>
           <p className="text-gray-600">
             Join a college and cohort to start your internship journey
@@ -316,7 +316,7 @@ export default function InternOnboarding({ onComplete, onBack, userInfo, demoMod
                     >
                       <option value="">Choose a cohort...</option>
                       {cohorts.map(cohort => {
-                        const availableSpots = (cohort.maxInterns || 0) - (cohort.currentInterns || 0);
+                        const availableSpots = (cohort.maxAI Developer Interns || 0) - (cohort.currentAI Developer Interns || 0);
                         return (
                           <option 
                             key={cohort._id} 
@@ -347,17 +347,17 @@ export default function InternOnboarding({ onComplete, onBack, userInfo, demoMod
                       {selectedCohort.endDate && (
                         <p><strong>End:</strong> {new Date(selectedCohort.endDate).toLocaleDateString()}</p>
                       )}
-                      <p><strong>Available Spots:</strong> {(selectedCohort.maxInterns || 0) - (selectedCohort.currentInterns || 0)} / {selectedCohort.maxInterns || 0}</p>
+                      <p><strong>Available Spots:</strong> {(selectedCohort.maxAI Developer Interns || 0) - (selectedCohort.currentAI Developer Interns || 0)} / {selectedCohort.maxAI Developer Interns || 0}</p>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Message to Mentor */}
+            {/* Message to Tech Lead */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Message to Mentor (Optional)
+                Message to Tech Lead (Optional)
               </label>
               <textarea
                 name="message"

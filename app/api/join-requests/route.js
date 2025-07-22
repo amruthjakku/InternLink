@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 import { 
   createJoinRequest, 
-  getJoinRequestsByMentor,
-  getJoinRequestsByIntern,
+  getJoinRequestsByTech Lead,
+  getJoinRequestsByAI Developer Intern,
   updateJoinRequest,
   getUserByGitLabId,
   getCollegeById,
@@ -25,7 +25,7 @@ export async function POST(request) {
 
     const user = await getUserByGitLabId(session.user.gitlabId);
     
-    if (!user || user.role !== 'intern') {
+    if (!user || user.role !== 'AI Developer Intern') {
       return NextResponse.json({ error: "Only interns can submit join requests" }, { status: 403 });
     }
 
@@ -67,7 +67,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Create join request error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }
@@ -89,10 +89,10 @@ export async function GET(request) {
 
     let joinRequests;
     
-    if (user.role === 'mentor') {
-      joinRequests = await getJoinRequestsByMentor(user._id.toString());
-    } else if (user.role === 'intern') {
-      joinRequests = await getJoinRequestsByIntern(user._id.toString());
+    if (user.role === 'Tech Lead') {
+      joinRequests = await getJoinRequestsByTech Lead(user._id.toString());
+    } else if (user.role === 'AI Developer Intern') {
+      joinRequests = await getJoinRequestsByAI Developer Intern(user._id.toString());
     } else {
       return NextResponse.json({ error: "Invalid user role" }, { status: 400 });
     }
@@ -102,7 +102,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Get join requests error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }
@@ -118,7 +118,7 @@ export async function PATCH(request) {
 
     const user = await getUserByGitLabId(session.user.gitlabId);
     
-    if (!user || user.role !== 'mentor') {
+    if (!user || user.role !== 'Tech Lead') {
       return NextResponse.json({ error: "Only mentors can update join requests" }, { status: 403 });
     }
 
@@ -148,14 +148,14 @@ export async function PATCH(request) {
     // If approved, increment cohort intern count
     if (status === 'approved') {
       // Get the join request to find the cohort
-      const joinRequests = await getJoinRequestsByMentor(user._id.toString());
+      const joinRequests = await getJoinRequestsByTech Lead(user._id.toString());
       const joinRequest = joinRequests.find(req => req._id.toString() === requestId);
       
       if (joinRequest) {
         const cohort = await getCohortById(joinRequest.cohortId);
         if (cohort) {
           await updateCohort(joinRequest.cohortId, {
-            currentInterns: (cohort.currentInterns || 0) + 1
+            currentAI Developer Interns: (cohort.currentAI Developer Interns || 0) + 1
           });
         }
       }
@@ -169,7 +169,7 @@ export async function PATCH(request) {
   } catch (error) {
     console.error("Update join request error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "AI Developer Internal server error" },
       { status: 500 }
     );
   }

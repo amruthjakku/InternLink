@@ -17,7 +17,7 @@ export async function POST(request) {
 
     // Get all interns without cohort assignments
     const internsWithoutCohorts = await User.find({ 
-      role: 'AI developer Intern',
+      role: 'AI Developer Intern',
       $or: [
         { cohortId: { $exists: false } },
         { cohortId: null }
@@ -77,7 +77,7 @@ export async function POST(request) {
     return NextResponse.json({ 
       message: `Successfully assigned ${assignedCount} interns to cohort ${activeCohort.name}`,
       assignedCount,
-      totalInterns: internsWithoutCohorts.length,
+      totalAIDeveloperInterns: internsWithoutCohorts.length,
       cohort: {
         id: activeCohort._id,
         name: activeCohort.name
@@ -105,19 +105,19 @@ export async function GET(request) {
     await connectToDatabase();
 
     // Get summary of cohort assignments
-    const totalInterns = await User.countDocuments({ role: 'AI developer Intern' });
+    const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern' });
     const internsWithCohorts = await User.countDocuments({ 
-      role: 'AI developer Intern',
+      role: 'AI Developer Intern',
       cohortId: { $exists: true, $ne: null }
     });
-    const internsWithoutCohorts = totalInterns - internsWithCohorts;
+    const internsWithoutCohorts = totalAIDeveloperInterns - internsWithCohorts;
     
     const activeCohorts = await Cohort.find({ isActive: true })
       .select('name memberCount maxMembers');
     
     return NextResponse.json({
       summary: {
-        totalInterns,
+        totalAIDeveloperInterns,
         internsWithCohorts,
         internsWithoutCohorts,
         activeCohorts: activeCohorts.length

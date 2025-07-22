@@ -1,10 +1,10 @@
-# InternLink - Comprehensive Internship Management Platform
+# AI developer InternLink - Comprehensive AI developer Internship Management Platform
 
-InternLink is a modern, full-featured internship management platform designed to streamline the entire internship lifecycle. Built with Next.js and MongoDB, it provides comprehensive tools for interns, mentors, and administrators to track progress, manage tasks, and foster collaboration.
+AI developer InternLink is a modern, full-featured internship management platform designed to streamline the entire internship lifecycle. Built with Next.js and MongoDB, it provides comprehensive tools for interns, mentors, and administrators to track progress, manage tasks, and foster collaboration.
 
 ## 🌟 Key Features
 
-### For Interns
+### For AI developer Interns
 - **Smart Task Management** - Automated task assignment with GitLab integration
 - **Progress Tracking** - Real-time progress monitoring with visual dashboards
 - **Attendance System** - Unified check-in/check-out with location tracking
@@ -12,8 +12,8 @@ InternLink is a modern, full-featured internship management platform designed to
 - **Collaborative Chat** - Real-time communication with mentors and peers
 - **GitLab Integration** - Seamless repository tracking and commit analysis
 
-### For Mentors
-- **Intern Oversight** - Comprehensive view of intern progress and performance
+### For Tech Leads
+- **AI developer Intern Oversight** - Comprehensive view of intern progress and performance
 - **Task Assignment** - Create and assign tasks with templates and verification
 - **Attendance Monitoring** - Track intern attendance patterns and analytics
 - **Performance Reviews** - Detailed performance metrics and reporting
@@ -106,17 +106,17 @@ InternLink is a modern, full-featured internship management platform designed to
 ## 🏗️ Project Structure
 
 ```
-InternLink/
+AI developer InternLink/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
 │   ├── admin/             # Admin dashboard
-│   ├── intern/            # Intern dashboard
-│   ├── mentor/            # Mentor dashboard
+│   ├── intern/            # AI developer Intern dashboard
+│   ├── mentor/            # Tech Lead dashboard
 │   └── auth/              # Authentication pages
 ├── components/            # React components
 │   ├── admin/             # Admin-specific components
-│   ├── intern/            # Intern-specific components
-│   ├── mentor/            # Mentor-specific components
+│   ├── intern/            # AI developer Intern-specific components
+│   ├── mentor/            # Tech Lead-specific components
 │   └── auth/              # Authentication components
 ├── models/                # MongoDB/Mongoose models
 ├── utils/                 # Utility functions
@@ -328,4 +328,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**InternLink** - Empowering the next generation of developers through comprehensive internship management.
+**AI developer InternLink** - Empowering the next generation of developers through comprehensive internship management.

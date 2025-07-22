@@ -9,26 +9,26 @@ export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || session.user.role !== 'super-mentor') {
-      return NextResponse.json({ error: 'Unauthorized - Super mentor access required' }, { status: 401 });
+    if (!session?.user || session.user.role !== 'POC') {
+      return NextResponse.json({ error: 'Unauthorized - POC access required' }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    // Find the super mentor's college
-    const superMentor = await User.findOne({
+    // Find the POC's college
+    const superTech Lead = await User.findOne({
       gitlabUsername: session.user.gitlabUsername,
-      role: 'super-mentor',
+      role: 'POC',
       isActive: true
     }).populate('college');
 
-    if (!superMentor || !superMentor.college) {
+    if (!superTech Lead || !superTech Lead.college) {
       return NextResponse.json({ 
-        error: 'Super mentor not found or not assigned to a college' 
+        error: 'POC not found or not assigned to a college' 
       }, { status: 404 });
     }
 
-    const collegeId = superMentor.college._id;
+    const collegeId = superTech Lead.college._id;
 
     // Fetch all users from this college
     const allUsers = await User.find({
@@ -38,30 +38,30 @@ export async function GET(request) {
 
     // Separate by roles
     const mentors = allUsers.filter(user => 
-      user.role === 'mentor' || user.role === 'super-mentor'
+      user.role === 'Tech Lead' || user.role === 'POC'
     );
     
-    const interns = allUsers.filter(user => user.role === 'intern');
+    const interns = allUsers.filter(user => user.role === 'AI Developer Intern');
 
     // Calculate statistics
     const stats = {
-      totalMentors: mentors.filter(m => m.role === 'Tech Lead').length,
+      totalTech Leads: mentors.filter(m => m.role === 'Tech Lead').length,
       totalPOCs: mentors.filter(m => m.role === 'POC').length,
-      totalInterns: interns.length,
-      assignedInterns: interns.filter(intern => intern.mentorId).length,
-      unassignedInterns: interns.filter(intern => !intern.mentorId).length,
+      totalAIDeveloperInterns: interns.length,
+      assignedAI Developer Interns: interns.filter(intern => intern.mentorId).length,
+      unassignedAI Developer Interns: interns.filter(intern => !intern.mentorId).length,
       totalUsers: allUsers.length
     };
 
     return NextResponse.json({
-      college: superMentor.college,
+      college: superTech Lead.college,
       stats,
       mentors,
       interns,
-      superMentor: {
-        name: superMentor.name,
-        gitlabUsername: superMentor.gitlabUsername,
-        email: superMentor.email
+      superTech Lead: {
+        name: superTech Lead.name,
+        gitlabUsername: superTech Lead.gitlabUsername,
+        email: superTech Lead.email
       }
     });
 

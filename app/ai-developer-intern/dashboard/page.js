@@ -47,13 +47,9 @@ export default function AIDeveloperInternDashboardPage() {
       return;
     }
 
-    // If user needs registration, redirect to onboarding
-    if (session.user.needsRegistration || session.user.role === 'pending') {
-      router.push('/onboarding');
-      return;
-    }
 
-    if (session.user.role !== 'AI developer Intern') {
+
+    if (session.user.role !== 'AI Developer Intern') {
       router.push('/unauthorized');
       return;
     }

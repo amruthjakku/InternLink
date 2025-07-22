@@ -22,7 +22,7 @@ async function testCohortCollegeAPI() {
     for (const cohort of cohorts) {
       console.log(`\n🎯 Cohort: ${cohort.name}`);
       console.log(`   Primary College: ${cohort.collegeId?.name || 'Not assigned'}`);
-      console.log(`   Mentor: ${cohort.mentorId?.name || 'No mentor'}`);
+      console.log(`   Tech Lead: ${cohort.mentorId?.name || 'No mentor'}`);
 
       // Get users assigned to this cohort
       const users = await User.find({ 
@@ -39,7 +39,7 @@ async function testCohortCollegeAPI() {
           if (!acc[collegeName]) {
             acc[collegeName] = { interns: 0, mentors: 0, others: 0 };
           }
-          if (user.role === 'AI developer Intern') acc[collegeName].interns++;
+          if (user.role === 'AI Developer Intern') acc[collegeName].interns++;
           else if (user.role === 'Tech Lead') acc[collegeName].mentors++;
           else acc[collegeName].others++;
         }

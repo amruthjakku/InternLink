@@ -119,7 +119,6 @@ export const authOptions = {
           username: profile.username,
           found: !!existingUser,
           userRole: existingUser?.role,
-          userActive: existingUser?.isActive,
           userId: existingUser?._id?.toString()
         });
         
@@ -133,14 +132,14 @@ export const authOptions = {
               gitlabId: profile.id.toString(),
               name: profile.name,
               email: profile.email,
-              role: 'pending', // They'll need admin approval
+              role: 'AI Developer Intern', // Default role for new users
               profileImage: profile.avatar_url,
-              isActive: true,
+              assignedBy: 'auto-registration',
               lastLoginAt: new Date()
             });
             
             await newUser.save();
-            console.log(`✅ Auto-registered user: ${profile.username} with pending role`);
+            console.log(`✅ Auto-registered user: ${profile.username} with AI Developer Intern role`);
             
             // Use the newly created user
             existingUser = newUser;
@@ -192,18 +191,16 @@ export const authOptions = {
             
             // Always update token with latest user info (including role changes)
             const roleChanged = token.role !== user.role;
-            const activeChanged = token.isActive !== user.isActive;
             const cohortChanged = token.cohortId !== (user.cohortId ? user.cohortId.toString() : null);
             
-            if (roleChanged || activeChanged || cohortChanged || shouldForceRefresh || sessionVersionChanged) {
-              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, activeChanged=${activeChanged}, cohortChanged=${cohortChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
+            if (roleChanged || cohortChanged || shouldForceRefresh || sessionVersionChanged) {
+              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, cohortChanged=${cohortChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
             }
             
             token.role = user.role;
             token.college = user.college;
             token.assignedBy = user.assignedBy;
             token.userId = user._id.toString();
-            token.isActive = user.isActive;
             token.sessionVersion = user.sessionVersion;
             token.lastRefresh = new Date().toISOString();
             
@@ -224,10 +221,7 @@ export const authOptions = {
               }
             }
             
-            // Clear needsRegistration if user now has a proper role
-            if (user.role !== 'pending') {
-              token.needsRegistration = undefined;
-            }
+
           }
         } catch (error) {
           console.error('Error refreshing user data in JWT:', error);
@@ -250,8 +244,7 @@ export const authOptions = {
             found: !!user,
             userRole: user?.role,
             userCollege: user?.college?.name,
-            userCohortId: user?.cohortId,
-            userActive: user?.isActive
+            userCohortId: user?.cohortId
           });
           
           // Store GitLab access token for API calls
@@ -285,7 +278,6 @@ export const authOptions = {
                     webUrl: profile.web_url
                   },
                   connectedAt: new Date(),
-                  isActive: true,
                   isConnected: true
                 },
                 { upsert: true, new: true }
@@ -325,12 +317,11 @@ export const authOptions = {
             
             console.log(`✅ JWT - Successful token creation: ${user.gitlabUsername} (${user.role})`);
           } else {
-            // New user - mark as pending registration
-            token.role = 'pending';
+            // New user - assign default role
+            token.role = 'AI Developer Intern';
             token.gitlabUsername = profile.username;
             token.gitlabId = profile.id.toString();
-            token.needsRegistration = true;
-            console.log(`⚠️ JWT - New user needs registration: ${profile.username}`);
+            console.log(`✅ JWT - New user assigned default role: ${profile.username}`);
           }
         } catch (error) {
           console.error('❌ Error in JWT callback:', error);
@@ -400,12 +391,6 @@ export const authOptions = {
     },
     
     async session({ session, token }) {
-      // CRITICAL: Block access for inactive users
-      if (token.isActive === false) {
-        console.log(`🚫 Blocking session for inactive user: ${token.gitlabUsername}`);
-        return null; // This will end the session
-      }
-      
       // Add custom fields to session
       session.user.role = token.role;
       session.user.gitlabUsername = token.gitlabUsername;
@@ -413,8 +398,7 @@ export const authOptions = {
       session.user.college = token.college;
       session.user.assignedBy = token.assignedBy;
       session.user.id = token.userId;
-      session.user.needsRegistration = token.needsRegistration;
-      session.user.isActive = token.isActive;
+
       
       // Add cohort information
       if (token.cohortId) {

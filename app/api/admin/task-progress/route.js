@@ -25,7 +25,7 @@ export async function GET(request) {
     if (action === 'stats') {
       // Get overall statistics
       const totalTasks = await Task.countDocuments({ isActive: true });
-      const totalInterns = await User.countDocuments({ role: 'intern', isActive: true });
+      const totalAIDeveloperInterns = await User.countDocuments({ role: 'AI Developer Intern', isActive: true });
       const totalProgress = await TaskProgress.countDocuments();
       
       const progressByStatus = await TaskProgress.aggregate([
@@ -53,7 +53,7 @@ export async function GET(request) {
             from: 'users',
             localField: '_id',
             foreignField: '_id',
-            as: 'intern'
+            as: 'AI Developer Intern'
           }
         },
         {
@@ -79,9 +79,9 @@ export async function GET(request) {
         success: true,
         stats: {
           totalTasks,
-          totalInterns,
+          totalAIDeveloperInterns,
           totalProgress,
-          expectedProgress: totalTasks * totalInterns,
+          expectedProgress: totalTasks * totalAIDeveloperInterns,
           progressByStatus,
           topPerformers
         }
@@ -90,9 +90,9 @@ export async function GET(request) {
 
     if (action === 'cohort-progress' && cohortId) {
       // Get progress for a specific cohort
-      const cohortInterns = await User.find({ 
+      const cohortAI Developer Interns = await User.find({ 
         cohortId: cohortId, 
-        role: 'intern', 
+        role: 'AI Developer Intern', 
         isActive: true 
       });
 
@@ -104,7 +104,7 @@ export async function GET(request) {
         isActive: true
       });
 
-      const progressData = await Promise.all(cohortInterns.map(async (intern) => {
+      const progressData = await Promise.all(cohortAI Developer Interns.map(async (intern) => {
         const internProgress = await TaskProgress.find({ internId: intern._id })
           .populate('taskId', 'title points category');
         
@@ -165,27 +165,27 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Task not found' }, { status: 404 });
       }
 
-      let targetInterns = [];
+      let targetAI Developer Interns = [];
       
       if (internIds && internIds.length > 0) {
         // Specific interns
-        targetInterns = await User.find({ 
+        targetAI Developer Interns = await User.find({ 
           _id: { $in: internIds }, 
-          role: 'intern', 
+          role: 'AI Developer Intern', 
           isActive: true 
         });
       } else if (cohortId) {
         // All interns in cohort
-        targetInterns = await User.find({ 
+        targetAI Developer Interns = await User.find({ 
           cohortId: cohortId, 
-          role: 'intern', 
+          role: 'AI Developer Intern', 
           isActive: true 
         });
       } else if (task.assignmentType === 'cohort' && task.cohortId) {
         // Use task's cohort
-        targetInterns = await User.find({ 
+        targetAI Developer Interns = await User.find({ 
           cohortId: task.cohortId, 
-          role: 'intern', 
+          role: 'AI Developer Intern', 
           isActive: true 
         });
       } else {
@@ -195,7 +195,7 @@ export async function POST(request) {
       let created = 0;
       let existing = 0;
 
-      for (const intern of targetInterns) {
+      for (const intern of targetAI Developer Interns) {
         const existingProgress = await TaskProgress.findOne({
           taskId: taskId,
           internId: intern._id
@@ -221,7 +221,7 @@ export async function POST(request) {
         stats: {
           created,
           existing,
-          totalInterns: targetInterns.length
+          totalAIDeveloperInterns: targetAI Developer Interns.length
         }
       });
     }
@@ -240,9 +240,9 @@ export async function POST(request) {
         isActive: true
       });
 
-      const cohortInterns = await User.find({ 
+      const cohortAI Developer Interns = await User.find({ 
         cohortId: cohortId, 
-        role: 'intern', 
+        role: 'AI Developer Intern', 
         isActive: true 
       });
 
@@ -250,7 +250,7 @@ export async function POST(request) {
       let existing = 0;
 
       for (const task of cohortTasks) {
-        for (const intern of cohortInterns) {
+        for (const intern of cohortAI Developer Interns) {
           const existingProgress = await TaskProgress.findOne({
             taskId: task._id,
             internId: intern._id
@@ -278,8 +278,8 @@ export async function POST(request) {
           created,
           existing,
           totalTasks: cohortTasks.length,
-          totalInterns: cohortInterns.length,
-          expectedRecords: cohortTasks.length * cohortInterns.length
+          totalAIDeveloperInterns: cohortAI Developer Interns.length,
+          expectedRecords: cohortTasks.length * cohortAI Developer Interns.length
         }
       });
     }

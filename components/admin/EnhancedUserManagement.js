@@ -555,7 +555,7 @@ export function EnhancedUserManagement() {
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-medium text-yellow-800">No Cohorts Available</h3>
               <p className="mt-1 text-sm text-yellow-700">
-                You need to create at least one cohort to assign interns. Interns without cohort assignments cannot see cohort-based tasks.
+                You need to create at least one cohort to assign interns. AI Developer Interns without cohort assignments cannot see cohort-based tasks.
               </p>
             </div>
             <div className="ml-4">
@@ -571,8 +571,8 @@ export function EnhancedUserManagement() {
         </div>
       )}
 
-      {/* Unassigned Interns Warning */}
-      {cohorts.length > 0 && filteredUsers.filter(u => u.role === 'intern' && !u.cohortId).length > 0 && (
+      {/* Unassigned AI Developer Interns Warning */}
+      {cohorts.length > 0 && filteredUsers.filter(u => u.role === 'AI Developer Intern' && !u.cohortId).length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -581,9 +581,9 @@ export function EnhancedUserManagement() {
               </svg>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-blue-800">Interns Without Cohorts</h3>
+              <h3 className="text-sm font-medium text-blue-800">AI Developer Interns Without Cohorts</h3>
               <p className="mt-1 text-sm text-blue-700">
-                {filteredUsers.filter(u => u.role === 'intern' && !u.cohortId).length} interns are not assigned to any cohort and cannot see cohort-based tasks.
+                {filteredUsers.filter(u => u.role === 'AI Developer Intern' && !u.cohortId).length} interns are not assigned to any cohort and cannot see cohort-based tasks.
               </p>
             </div>
             <div className="ml-4">
@@ -650,9 +650,9 @@ export function EnhancedUserManagement() {
           >
             <option value="all">All Roles</option>
             <option value="admin">Admin</option>
-            <option value="super-mentor">Super Mentor</option>
-            <option value="mentor">Mentor</option>
-            <option value="intern">Intern</option>
+            <option value="POC">POC</option>
+            <option value="Tech Lead">Tech Lead</option>
+            <option value="AI Developer Intern">AI Developer Intern</option>
           </select>
         </div>
 
@@ -843,9 +843,9 @@ export function EnhancedUserManagement() {
                     onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="intern">Intern</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="super-mentor">Super Mentor</option>
+                    <option value="AI Developer Intern">AI Developer Intern</option>
+                    <option value="Tech Lead">Tech Lead</option>
+                    <option value="POC">POC</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
