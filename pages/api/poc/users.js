@@ -30,14 +30,27 @@ export default async function handler(req, res) {
     // Get college identifier
     const collegeId = typeof pocUser.college === 'string' ? pocUser.college : pocUser.college._id || pocUser.college.name;
 
-    // Get all users from the same college
-    const users = await db.collection('users').find({
+    // Get all users from the same college with comprehensive matching
+    const collegeQuery = {
       $or: [
         { college: collegeId },
         { 'college.name': collegeId },
         { 'college._id': collegeId }
       ]
-    }).toArray();
+    };
+
+    // Add additional matching patterns
+    if (typeof collegeId === 'string' && collegeId.includes(' ')) {
+      collegeQuery.$or.push(
+        { college: collegeId.replace(/\s+/g, '') },
+        { college: collegeId.toLowerCase() },
+        { college: collegeId.toUpperCase() }
+      );
+    }
+
+    console.log('Users query for college:', collegeId);
+    const users = await db.collection('users').find(collegeQuery).toArray();
+    console.log(`Found ${users.length} users for college:`, collegeId);
 
     // Format users data
     const formattedUsers = users.map(user => ({

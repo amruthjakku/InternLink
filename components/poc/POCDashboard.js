@@ -97,12 +97,18 @@ const POCDashboard = () => {
   const refreshAllData = useCallback(async () => {
     try {
       setError(null);
+      // Clear college-specific cache
+      if (session?.user?.college) {
+        invalidateCollegeCache(session.user.college);
+      }
       await refreshCurrentTab();
+      // Also refresh overview data
+      await refreshData('overview');
     } catch (error) {
       console.error('Error refreshing data:', error);
       setError('Failed to refresh dashboard data. Please try again.');
     }
-  }, [refreshCurrentTab]);
+  }, [refreshCurrentTab, refreshData, session?.user?.college]);
 
   // Create announcement with cache invalidation
   const createAnnouncement = useCallback(async (announcementData) => {

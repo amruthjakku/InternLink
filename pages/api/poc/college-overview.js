@@ -44,15 +44,28 @@ export default async function handler(req, res) {
       college = pocUser.college;
     }
 
-    // Get all users from the same college
-    const collegeUsers = await db.collection('users').find({
+    // Get all users from the same college with comprehensive matching
+    const collegeQuery = {
       $or: [
         { college: college._id },
         { college: college.name },
         { 'college.name': college.name },
         { 'college._id': college._id }
       ]
-    }).toArray();
+    };
+
+    // Add additional matching patterns if college name contains spaces or special characters
+    if (college.name && college.name.includes(' ')) {
+      collegeQuery.$or.push(
+        { college: college.name.replace(/\s+/g, '') }, // Without spaces
+        { college: college.name.toLowerCase() }, // Lowercase
+        { college: college.name.toUpperCase() } // Uppercase
+      );
+    }
+
+    console.log('College query:', JSON.stringify(collegeQuery, null, 2));
+    const collegeUsers = await db.collection('users').find(collegeQuery).toArray();
+    console.log(`Found ${collegeUsers.length} users for college:`, college.name);
 
     // Separate mentors (Tech Leads) and interns (AI Developer Interns)
     const mentors = collegeUsers.filter(user => 
