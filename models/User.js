@@ -32,11 +32,10 @@ const userSchema = new mongoose.Schema({
   college: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
-    required: function() {
-      return this.role === 'AI Developer Intern' || this.role === 'Tech Lead' || this.role === 'POC';
+    required: function () {
+      return ['AI Developer Intern', 'Tech Lead', 'POC'].includes(this.role);
     }
   },
-  // Add cohortId field to associate users with cohorts
   cohortId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cohort'
@@ -46,14 +45,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  assignedTech Lead: {
+  assignedTechLead: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: function() {
+    required: function () {
       return this.role === 'AI Developer Intern';
     }
   },
-
   profileImage: {
     type: String,
     default: null
@@ -82,7 +80,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  // Dashboard customization preferences
   dashboardPreferences: {
     tabOrder: {
       type: [String],
@@ -93,14 +90,13 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better performance
-// Note: gitlabUsername and gitlabId already have unique indexes from schema definition
+// Indexes
 userSchema.index({ role: 1 });
 userSchema.index({ college: 1 });
-userSchema.index({ assignedTech Lead: 1 });
-userSchema.index({ cohortId: 1 }); // Add index for cohortId
+userSchema.index({ assignedTechLead: 1 });
+userSchema.index({ cohortId: 1 });
 
-// Virtual for college name (populated)
+// Virtuals
 userSchema.virtual('collegeName', {
   ref: 'College',
   localField: 'college',
@@ -108,7 +104,6 @@ userSchema.virtual('collegeName', {
   justOne: true
 });
 
-// Virtual for cohort name (populated)
 userSchema.virtual('cohortName', {
   ref: 'Cohort',
   localField: 'cohortId',
@@ -116,73 +111,55 @@ userSchema.virtual('cohortName', {
   justOne: true
 });
 
-// Ensure virtual fields are serialized
 userSchema.set('toJSON', { virtuals: true });
 
-// Pre-save middleware to update timestamps
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
 // Static methods
-userSchema.statics.findByGitLabUsername = function(username, populateFields = '') {
+userSchema.statics.findByGitLabUsername = function (username, populateFields = '') {
   const query = { gitlabUsername: username.toLowerCase() };
   let mongooseQuery = this.findOne(query);
-  
-  // Handle populate fields
+
   if (populateFields) {
-    // If populateFields is a string, split it by spaces to get individual fields
     if (typeof populateFields === 'string') {
       const fields = populateFields.split(' ');
-      
-      // Check if cohortId is in the fields to populate
       if (fields.includes('cohortId')) {
         try {
-          // Make sure Cohort model is available
           const Cohort = mongoose.models.Cohort || require('../models/Cohort').default;
-          
-          // Remove cohortId from fields and add it as a separate populate
           const otherFields = fields.filter(field => field !== 'cohortId');
-          
-          // Populate other fields if any
           if (otherFields.length > 0) {
             mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
           }
-          
-          // Populate cohortId with name and other relevant fields
           mongooseQuery = mongooseQuery.populate({
             path: 'cohortId',
-            select: 'name startDate endDate maxAI Developer Interns currentAI Developer Interns'
+            select: 'name startDate endDate maxAIDeveloperInterns currentAIDeveloperInterns'
           });
         } catch (error) {
           console.warn('Warning: Could not populate cohortId field:', error.message);
-          
-          // Just populate other fields if any
           const otherFields = fields.filter(field => field !== 'cohortId');
           if (otherFields.length > 0) {
             mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
           }
         }
       } else {
-        // Just populate as requested
         mongooseQuery = mongooseQuery.populate(populateFields);
       }
     } else {
-      // If populateFields is not a string (e.g., an object), just use it
       mongooseQuery = mongooseQuery.populate(populateFields);
     }
   }
-  
+
   return mongooseQuery;
 };
 
-// Find user by GitLab username (alias for backward compatibility)
-userSchema.statics.findAnyByGitLabUsername = function(username, populateFields = '') {
+userSchema.statics.findAnyByGitLabUsername = function (username, populateFields = '') {
   return this.findByGitLabUsername(username, populateFields);
 };
 
-userSchema.statics.findByRole = function(role, collegeId = null) {
+userSchema.statics.findByRole = function (role, collegeId = null) {
   const query = { role };
   if (collegeId) {
     query.college = collegeId;
@@ -190,31 +167,31 @@ userSchema.statics.findByRole = function(role, collegeId = null) {
   return this.find(query).populate('college');
 };
 
-userSchema.statics.getAdmins = function() {
+userSchema.statics.getAdmins = function () {
   return this.find({ role: 'admin' });
 };
 
-userSchema.statics.getTechLeadsByCollege = function(collegeId) {
+userSchema.statics.getTechLeadsByCollege = function (collegeId) {
   return this.find({ role: 'Tech Lead', college: collegeId }).populate('college');
 };
 
-userSchema.statics.getAIDeveloperInternsByTechLead = function(techLeadUsername) {
+userSchema.statics.getAIDeveloperInternsByTechLead = function (techLeadUsername) {
   return this.findOne({ gitlabUsername: techLeadUsername, role: 'Tech Lead' })
     .populate('college')
     .then(techLead => {
       if (!techLead) return [];
-      return this.find({ 
-        role: 'AI Developer Intern', 
-        assignedTech Lead: techLead._id
+      return this.find({
+        role: 'AI Developer Intern',
+        assignedTechLead: techLead._id
       }).populate('college');
     });
 };
 
-userSchema.statics.getPOCsByCollege = function(collegeId) {
+userSchema.statics.getPOCsByCollege = function (collegeId) {
   return this.find({ role: 'POC', college: collegeId }).populate('college');
 };
 
-userSchema.statics.getAIDeveloperInternsByPOC = function(pocUsername) {
+userSchema.statics.getAIDeveloperInternsByPOC = function (pocUsername) {
   return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
     .populate('college')
     .then(poc => {
@@ -223,7 +200,7 @@ userSchema.statics.getAIDeveloperInternsByPOC = function(pocUsername) {
     });
 };
 
-userSchema.statics.getTechLeadsByPOC = function(pocUsername) {
+userSchema.statics.getTechLeadsByPOC = function (pocUsername) {
   return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
     .populate('college')
     .then(poc => {
@@ -233,44 +210,26 @@ userSchema.statics.getTechLeadsByPOC = function(pocUsername) {
 };
 
 // Instance methods
-userSchema.methods.canManageUser = function(targetUser) {
+
+userSchema.methods.canAccessCollege = function (collegeId) {
   if (this.role === 'admin') return true;
-  if (this.role === 'POC') {
-    // POC can manage AI Developer Interns and Tech Leads in their college
-    if (targetUser.role === 'AI Developer Intern' || targetUser.role === 'Tech Lead') {
-      return this.college.toString() === targetUser.college.toString();
-    }
-  }
-  if (this.role === 'Tech Lead' && targetUser.role === 'AI Developer Intern') {
-    return this.college.toString() === targetUser.college.toString();
-  }
-  return false;
+  return ['POC', 'Tech Lead', 'AI Developer Intern'].includes(this.role) &&
+    this.college.toString() === collegeId.toString();
 };
 
-userSchema.methods.canAccessCollege = function(collegeId) {
-  if (this.role === 'admin') return true;
-  if (this.role === 'POC' || this.role === 'Tech Lead' || this.role === 'AI Developer Intern') {
-    return this.college.toString() === collegeId.toString();
-  }
-  return false;
-};
-
-userSchema.methods.updateLastLogin = function() {
+userSchema.methods.updateLastLogin = function () {
   this.lastLoginAt = new Date();
   return this.save();
 };
 
-
-
-userSchema.methods.assignToCohort = function(cohortId, assignedBy = 'system') {
+userSchema.methods.assignToCohort = function (cohortId, assignedBy = 'system') {
   const originalCohortId = this.cohortId;
   this.cohortId = cohortId;
   this.updatedAt = new Date();
-  
+
   return this.save().then(savedUser => {
-    // Update cohort member counts
     const updatePromises = [];
-    
+
     if (originalCohortId) {
       updatePromises.push(
         this.constructor.model('Cohort').findByIdAndUpdate(
@@ -279,7 +238,7 @@ userSchema.methods.assignToCohort = function(cohortId, assignedBy = 'system') {
         )
       );
     }
-    
+
     if (cohortId) {
       updatePromises.push(
         this.constructor.model('Cohort').findByIdAndUpdate(
@@ -288,16 +247,16 @@ userSchema.methods.assignToCohort = function(cohortId, assignedBy = 'system') {
         )
       );
     }
-    
+
     return Promise.all(updatePromises).then(() => savedUser);
   });
 };
 
-userSchema.methods.removeFromCohort = function(removedBy = 'system') {
+userSchema.methods.removeFromCohort = function (removedBy = 'system') {
   const originalCohortId = this.cohortId;
   this.cohortId = null;
   this.updatedAt = new Date();
-  
+
   return this.save().then(savedUser => {
     if (originalCohortId) {
       return this.constructor.model('Cohort').findByIdAndUpdate(
@@ -309,37 +268,30 @@ userSchema.methods.removeFromCohort = function(removedBy = 'system') {
   });
 };
 
-
-
-// Static method for bulk operations with proper error handling
-userSchema.statics.bulkUpdateWithValidation = function(userIds, updateData, updatedBy = 'system') {
+userSchema.statics.bulkUpdateWithValidation = function (userIds, updateData, updatedBy = 'system') {
   const results = {
     successful: [],
     failed: [],
     skipped: []
   };
-  
+
   return Promise.all(userIds.map(userId => {
     return this.findById(userId).then(user => {
       if (!user) {
-        results.failed.push({
-          userId,
-          error: 'User not found'
-        });
+        results.failed.push({ userId, error: 'User not found' });
         return;
       }
-      
-      // Check if update is needed
+
       let needsUpdate = false;
       const changes = {};
-      
+
       Object.keys(updateData).forEach(key => {
         if (user[key] !== updateData[key]) {
           needsUpdate = true;
           changes[key] = updateData[key];
         }
       });
-      
+
       if (!needsUpdate) {
         results.skipped.push({
           userId,
@@ -348,12 +300,11 @@ userSchema.statics.bulkUpdateWithValidation = function(userIds, updateData, upda
         });
         return;
       }
-      
-      // Apply updates
+
       Object.assign(user, changes);
       user.updatedAt = new Date();
-      user.sessionVersion += 1; // Force session refresh
-      
+      user.sessionVersion += 1;
+
       return user.save().then(savedUser => {
         results.successful.push({
           userId,
@@ -362,10 +313,7 @@ userSchema.statics.bulkUpdateWithValidation = function(userIds, updateData, upda
         });
       });
     }).catch(error => {
-      results.failed.push({
-        userId,
-        error: error.message
-      });
+      results.failed.push({ userId, error: error.message });
     });
   })).then(() => results);
 };
