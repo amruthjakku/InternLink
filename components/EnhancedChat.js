@@ -417,8 +417,8 @@ function EnhancedChat({ userRole, selectedRoomId }) {
   return (
     <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="flex h-[600px] bg-white relative">
-        {/* Sidebar - Chat Rooms */}
-        <div className={`${sidebarCollapsed ? 'w-16' : 'w-1/3 md:w-1/3 lg:w-1/4 xl:w-1/3'} border-r border-gray-200 flex flex-col bg-gray-50 min-w-0 transition-all duration-300`}>
+        {/* Left Sidebar */}
+        <div className={`${sidebarCollapsed ? 'w-16' : showRoomInfo ? 'w-80' : 'w-1/3 md:w-1/3 lg:w-1/4 xl:w-1/3'} border-r border-gray-200 flex flex-col bg-gray-50 min-w-0 transition-all duration-300`}>
           {/* Profile Header */}
           <div className="p-4 border-b border-gray-200 bg-white">
             {/* User Profile Section */}
@@ -607,6 +607,48 @@ function EnhancedChat({ userRole, selectedRoomId }) {
               </div>
             )}
           </div>
+
+          {/* Room Info Panel - Inside Left Sidebar */}
+          {showRoomInfo && selectedRoom && !sidebarCollapsed && (
+            <div className="border-t border-gray-200 bg-white">
+              {/* Room Info Header */}
+              <div className="p-3 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900">Room Info</h4>
+                  <button
+                    onClick={() => setShowRoomInfo(false)}
+                    className="p-1 hover:bg-gray-100 rounded-full text-gray-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Simplified Room Details */}
+              <div className="p-3 space-y-3">
+                {/* Room Avatar and Name */}
+                <div className="text-center">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRoomColor(selectedRoom.type)} mx-auto mb-2`}>
+                    <span className="text-lg">{getRoomIcon(selectedRoom.type)}</span>
+                  </div>
+                  <h5 className="font-medium text-gray-900">{selectedRoom.name}</h5>
+                  <p className="text-xs text-gray-500">{selectedRoom.participantCount || 0} members</p>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="space-y-1">
+                  <button className="w-full flex items-center space-x-2 p-2 hover:bg-gray-50 rounded text-sm">
+                    <span>🔇</span>
+                    <span>Mute</span>
+                  </button>
+                  <button className="w-full flex items-center space-x-2 p-2 hover:bg-red-50 text-red-600 rounded text-sm">
+                    <span>🚪</span>
+                    <span>Leave</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Chat Area */}
@@ -1093,83 +1135,6 @@ function EnhancedChat({ userRole, selectedRoomId }) {
             </div>
           )}
         </div>
-
-        {/* Room Info Panel */}
-        {showRoomInfo && selectedRoom && (
-          <div className="w-72 border-l border-gray-200 bg-white flex flex-col">
-            {/* Room Info Header */}
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Room Info</h3>
-                <button
-                  onClick={() => setShowRoomInfo(false)}
-                  className="p-1 hover:bg-gray-100 rounded-full"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Room Details */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Room Avatar and Name */}
-              <div className="text-center">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getRoomColor(selectedRoom.type)} mx-auto mb-2`}>
-                  <span className="text-2xl">{getRoomIcon(selectedRoom.type)}</span>
-                </div>
-                <h4 className="font-semibold text-gray-900">{selectedRoom.name}</h4>
-                <p className="text-sm text-gray-500">{selectedRoom.participantCount || 0} participants</p>
-              </div>
-
-              {/* Participants */}
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Members</h5>
-                <div className="space-y-2">
-                  {[
-                    { name: user.name, role: user.role, isOnline: true, isYou: true },
-                    { name: 'John Doe', role: 'Student', isOnline: true, isYou: false },
-                    { name: 'Jane Smith', role: 'POC', isOnline: false, isYou: false },
-                  ].slice(0, 3).map((participant, index) => {
-                    const profilePic = getProfilePicture(participant);
-                    return (
-                      <div key={index} className="flex items-center space-x-2">
-                        <div className="relative">
-                          {typeof profilePic === 'string' ? (
-                            <img src={profilePic} alt={participant.name} className="w-8 h-8 rounded-full" />
-                          ) : (
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profilePic.color} text-white text-xs`}>
-                              {profilePic.initials}
-                            </div>
-                          )}
-                          {participant.isOnline && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {participant.name} {participant.isYou && '(You)'}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="space-y-2 pt-2 border-t border-gray-200">
-                <button className="w-full flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <span>🔇</span>
-                  <span className="text-sm">Mute notifications</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 p-3 hover:bg-red-50 text-red-600 rounded-lg transition-colors">
-                  <span>🚪</span>
-                  <span className="text-sm">Leave room</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
