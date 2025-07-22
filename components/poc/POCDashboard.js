@@ -18,8 +18,10 @@ import {
   TrashIcon,
   EyeIcon,
   UserIcon,
-  StarIcon
+  StarIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
+import { EnhancedChat } from '../EnhancedChat';
 
 const POCDashboard = () => {
   const { data: session } = useSession();
@@ -3386,6 +3388,19 @@ const AnnouncementsSection = ({
 
 // Chat Rooms Section Component
 const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
+  const [selectedChatRoom, setSelectedChatRoom] = useState(null);
+  const [showChatInterface, setShowChatInterface] = useState(false);
+
+  const handleChatRoomClick = (room) => {
+    setSelectedChatRoom(room);
+    setShowChatInterface(true);
+  };
+
+  const closeChatInterface = () => {
+    setShowChatInterface(false);
+    setSelectedChatRoom(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Chat Room Stats */}
@@ -3447,7 +3462,8 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
           chatRooms.map((room) => (
             <div
               key={room._id}
-              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+              onClick={() => handleChatRoomClick(room)}
+              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-300"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -3474,13 +3490,19 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
                     <span>🏢 {room.college?.name || 'No college'}</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`w-3 h-3 rounded-full ${
-                    room.isActive ? 'bg-green-400' : 'bg-gray-400'
-                  }`}></span>
-                  <span className="text-sm text-gray-500">
-                    {room.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <span className={`w-3 h-3 rounded-full ${
+                      room.isActive ? 'bg-green-400' : 'bg-gray-400'
+                    }`}></span>
+                    <span className="text-sm text-gray-500">
+                      {room.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
+                    <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                    <span>Open Chat</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3493,6 +3515,50 @@ const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
           </div>
         )}
       </div>
+
+      {/* Chat Interface Modal */}
+      {showChatInterface && selectedChatRoom && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-5/6 mx-4 flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  selectedChatRoom.type === 'announcement' ? 'bg-red-100 text-red-600' :
+                  selectedChatRoom.type === 'project' ? 'bg-blue-100 text-blue-600' :
+                  selectedChatRoom.type === 'support' ? 'bg-green-100 text-green-600' :
+                  selectedChatRoom.type === 'social' ? 'bg-purple-100 text-purple-600' :
+                  'bg-gray-100 text-gray-600'
+                }`}>
+                  <span className="text-sm">
+                    {selectedChatRoom.type === 'announcement' ? '📢' :
+                     selectedChatRoom.type === 'project' ? '📁' :
+                     selectedChatRoom.type === 'support' ? '🆘' :
+                     selectedChatRoom.type === 'social' ? '🎉' : '💬'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedChatRoom.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedChatRoom.description} • {selectedChatRoom.participantCount || 0} participants
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeChatInterface}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Chat Interface */}
+            <div className="flex-1 overflow-hidden">
+              <EnhancedChat userRole="POC" selectedRoomId={selectedChatRoom._id} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

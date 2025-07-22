@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthProvider';
 
-export function EnhancedChat({ userRole }) {
+export function EnhancedChat({ userRole, selectedRoomId }) {
   const { user } = useAuth();
   const [chatRooms, setChatRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -21,6 +21,16 @@ export function EnhancedChat({ userRole }) {
       fetchMessages(selectedRoom._id);
     }
   }, [selectedRoom]);
+
+  // Auto-select room if selectedRoomId is provided
+  useEffect(() => {
+    if (selectedRoomId && chatRooms.length > 0) {
+      const room = chatRooms.find(r => r._id === selectedRoomId);
+      if (room) {
+        setSelectedRoom(room);
+      }
+    }
+  }, [selectedRoomId, chatRooms]);
 
   useEffect(() => {
     scrollToBottom();
@@ -42,8 +52,8 @@ export function EnhancedChat({ userRole }) {
         console.log('💬 Loaded chat rooms:', rooms);
         setChatRooms(rooms);
         
-        // Auto-select first room if available
-        if (rooms.length > 0 && !selectedRoom) {
+        // Auto-select first room if available and no specific room is requested
+        if (rooms.length > 0 && !selectedRoom && !selectedRoomId) {
           console.log('🎯 Setting selected room to:', rooms[0]);
           setSelectedRoom(rooms[0]);
         }
