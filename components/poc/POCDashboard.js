@@ -14,7 +14,9 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon
+  EyeIcon,
+  UserIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 
 const POCDashboard = () => {
@@ -1934,6 +1936,7 @@ const PerformanceAnalyticsTab = ({ collegeData, performanceData }) => {
 
 // Communication Tab
 const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) => {
+  const [activeCommTab, setActiveCommTab] = useState('announcements');
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [showAnnouncementDetails, setShowAnnouncementDetails] = useState(false);
@@ -1946,6 +1949,73 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
     targetAudience: 'all',
     expiresAt: ''
   });
+
+  // Chatroom states
+  const [chatRooms, setChatRooms] = useState([]);
+  const [showCreateChatRoom, setShowCreateChatRoom] = useState(false);
+  const [newChatRoom, setNewChatRoom] = useState({
+    name: '',
+    description: '',
+    isPrivate: false,
+    allowedRoles: ['AI Developer Intern', 'Tech Lead', 'POC']
+  });
+
+  // Fetch chatrooms
+  const fetchChatRooms = async () => {
+    try {
+      const response = await fetch('/api/chat-rooms');
+      if (response.ok) {
+        const data = await response.json();
+        setChatRooms(data.chatRooms || []);
+      }
+    } catch (error) {
+      console.error('Error fetching chat rooms:', error);
+    }
+  };
+
+  // Load chatrooms on component mount
+  useEffect(() => {
+    if (activeCommTab === 'chatrooms') {
+      fetchChatRooms();
+    }
+  }, [activeCommTab]);
+
+  const handleCreateChatRoom = async () => {
+    if (!newChatRoom.name.trim()) {
+      alert('Please enter a chat room name');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/chat-rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newChatRoom,
+          college: collegeData?.college?._id,
+          createdBy: 'POC'
+        })
+      });
+
+      if (response.ok) {
+        alert('Chat room created successfully!');
+        setShowCreateChatRoom(false);
+        setNewChatRoom({
+          name: '',
+          description: '',
+          isPrivate: false,
+          allowedRoles: ['AI Developer Intern', 'Tech Lead', 'POC']
+        });
+        fetchChatRooms();
+      } else {
+        const error = await response.json();
+        alert(`Failed to create chat room: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error creating chat room:', error);
+      alert('Failed to create chat room');
+    }
+  };
 
   const handleCreateAnnouncement = async () => {
     if (!newAnnouncement.title.trim() || !newAnnouncement.message.trim()) {
@@ -2003,18 +2073,81 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Communication Center</h3>
-          <p className="text-gray-600">Send announcements and communicate with your college</p>
+          <p className="text-gray-600">Manage announcements and chat rooms for your college</p>
         </div>
-        <button
-          onClick={() => setShowCreateAnnouncement(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span>New Announcement</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          {activeCommTab === 'announcements' && (
+            <button
+              onClick={() => setShowCreateAnnouncement(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              <span>New Announcement</span>
+            </button>
+          )}
+          {activeCommTab === 'chatrooms' && (
+            <button
+              onClick={() => setShowCreateChatRoom(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              <span>Create Chat Room</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Communication Tabs */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveCommTab('announcements')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeCommTab === 'announcements'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📢 Announcements
+            </button>
+            <button
+              onClick={() => setActiveCommTab('chatrooms')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeCommTab === 'chatrooms'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              💬 Chat Rooms
+            </button>
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {activeCommTab === 'announcements' && (
+            <AnnouncementsSection 
+              announcements={announcements}
+              filteredAnnouncements={filteredAnnouncements}
+              filterPriority={filterPriority}
+              setFilterPriority={setFilterPriority}
+              filterAudience={filterAudience}
+              setFilterAudience={setFilterAudience}
+              handleAnnouncementClick={handleAnnouncementClick}
+            />
+          )}
+          {activeCommTab === 'chatrooms' && (
+            <ChatRoomsSection 
+              chatRooms={chatRooms}
+              collegeData={collegeData}
+              fetchChatRooms={fetchChatRooms}
+            />
+          )}
+        </div>
       </div>
 
       {/* Announcement Stats */}
@@ -2323,6 +2456,127 @@ const CommunicationTab = ({ collegeData, announcements, fetchAnnouncements }) =>
           </div>
         </div>
       )}
+
+      {/* Create Chat Room Modal */}
+      {showCreateChatRoom && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Create Chat Room</h3>
+              <button
+                onClick={() => setShowCreateChatRoom(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Room Name *
+                </label>
+                <input
+                  type="text"
+                  value={newChatRoom.name}
+                  onChange={(e) => setNewChatRoom({...newChatRoom, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter chat room name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newChatRoom.description}
+                  onChange={(e) => setNewChatRoom({...newChatRoom, description: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Describe the purpose of this chat room"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Privacy Settings
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="privacy"
+                      checked={!newChatRoom.isPrivate}
+                      onChange={() => setNewChatRoom({...newChatRoom, isPrivate: false})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Public - All college members can join</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="privacy"
+                      checked={newChatRoom.isPrivate}
+                      onChange={() => setNewChatRoom({...newChatRoom, isPrivate: true})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Private - Invitation only</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Allowed Roles
+                </label>
+                <div className="space-y-2">
+                  {['AI Developer Intern', 'Tech Lead', 'POC'].map(role => (
+                    <label key={role} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newChatRoom.allowedRoles.includes(role)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewChatRoom({
+                              ...newChatRoom,
+                              allowedRoles: [...newChatRoom.allowedRoles, role]
+                            });
+                          } else {
+                            setNewChatRoom({
+                              ...newChatRoom,
+                              allowedRoles: newChatRoom.allowedRoles.filter(r => r !== role)
+                            });
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">{role}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowCreateChatRoom(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateChatRoom}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Create Chat Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -2495,6 +2749,241 @@ const CollegeSettingsTab = ({ collegeData, fetchCollegeData }) => {
             <p className="text-sm text-gray-600">Assigned Interns</p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Announcements Section Component
+const AnnouncementsSection = ({ 
+  announcements, 
+  filteredAnnouncements, 
+  filterPriority, 
+  setFilterPriority, 
+  filterAudience, 
+  setFilterAudience, 
+  handleAnnouncementClick 
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* Announcement Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <ChatBubbleLeftRightIcon className="w-8 h-8 text-blue-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Announcements</p>
+              <p className="text-2xl font-bold text-gray-900">{announcements.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-green-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <CheckCircleIcon className="w-8 h-8 text-green-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredAnnouncements.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-red-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="w-8 h-8 text-red-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">High Priority</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {announcements.filter(a => a.priority === 'high').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <ClockIcon className="w-8 h-8 text-yellow-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">This Week</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {announcements.filter(a => {
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return new Date(a.createdAt) >= weekAgo;
+                }).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4">
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">All Priorities</option>
+          <option value="high">High Priority</option>
+          <option value="normal">Normal Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+        <select
+          value={filterAudience}
+          onChange={(e) => setFilterAudience(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">All Audiences</option>
+          <option value="tech-leads">Tech Leads</option>
+          <option value="ai-developer-interns">AI Developer Interns</option>
+          <option value="all-staff">All Staff</option>
+        </select>
+      </div>
+
+      {/* Announcements List */}
+      <div className="space-y-4">
+        {filteredAnnouncements.length > 0 ? (
+          filteredAnnouncements.map((announcement) => (
+            <div
+              key={announcement._id}
+              onClick={() => handleAnnouncementClick(announcement)}
+              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900">{announcement.title}</h4>
+                  <p className="text-gray-600 mt-1 line-clamp-2">{announcement.message}</p>
+                  <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+                    <span>📅 {new Date(announcement.createdAt).toLocaleDateString()}</span>
+                    <span>👥 {announcement.targetAudience}</span>
+                    {announcement.expiresAt && (
+                      <span>⏰ Expires {new Date(announcement.expiresAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  announcement.priority === 'high' 
+                    ? 'bg-red-100 text-red-800'
+                    : announcement.priority === 'normal'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {announcement.priority?.toUpperCase()}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No announcements match your current filters.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Chat Rooms Section Component
+const ChatRoomsSection = ({ chatRooms, collegeData, fetchChatRooms }) => {
+  return (
+    <div className="space-y-6">
+      {/* Chat Room Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-green-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <ChatBubbleLeftRightIcon className="w-8 h-8 text-green-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Chat Rooms</p>
+              <p className="text-2xl font-bold text-gray-900">{chatRooms.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <UserGroupIcon className="w-8 h-8 text-blue-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Public Rooms</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {chatRooms.filter(room => !room.isPrivate).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <EyeIcon className="w-8 h-8 text-purple-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Private Rooms</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {chatRooms.filter(room => room.isPrivate).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-orange-50 p-4 rounded-lg">
+          <div className="flex items-center">
+            <ClockIcon className="w-8 h-8 text-orange-600 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Today</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {chatRooms.filter(room => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return room.lastActivity && new Date(room.lastActivity) >= today;
+                }).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Rooms List */}
+      <div className="space-y-4">
+        {chatRooms.length > 0 ? (
+          chatRooms.map((room) => (
+            <div
+              key={room._id}
+              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <h4 className="font-semibold text-gray-900">{room.name}</h4>
+                    {room.isPrivate && (
+                      <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                        Private
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-600 mt-1">{room.description || 'No description'}</p>
+                  <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+                    <span>📅 Created {new Date(room.createdAt).toLocaleDateString()}</span>
+                    <span>👥 {room.memberCount || 0} members</span>
+                    <span>🎯 {room.allowedRoles?.join(', ') || 'All roles'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`w-3 h-3 rounded-full ${
+                    room.isActive ? 'bg-green-400' : 'bg-gray-400'
+                  }`}></span>
+                  <span className="text-sm text-gray-500">
+                    {room.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p>No chat rooms created yet.</p>
+            <p className="text-sm">Create your first chat room to start communicating with your college!</p>
+          </div>
+        )}
       </div>
     </div>
   );
