@@ -32,7 +32,7 @@ export function detectUserRole(gitlabUsername) {
   ];
   
   // Super-mentor patterns (higher priority than regular mentor)
-  const superTech LeadPatterns = [
+  const superTechLeadPatterns = [
     /^poc/,    // starts with 'poc'
     /^chief/,           // starts with 'chief'
     /^head/,            // starts with 'head'
@@ -48,7 +48,7 @@ export function detectUserRole(gitlabUsername) {
     }
   }
   
-  for (const pattern of superTech LeadPatterns) {
+  for (const pattern of superTechLeadPatterns) {
     if (pattern.test(username)) {
       return 'POC';
     }

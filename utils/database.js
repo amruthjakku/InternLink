@@ -148,7 +148,7 @@ export async function getCollegeById(collegeId) {
   }
 }
 
-export async function getCollegesByTech Lead(mentorId) {
+export async function getCollegesByTechLead(mentorId) {
   try {
     const db = await getDatabase();
     return await db.collection('colleges').find({ 
@@ -166,7 +166,7 @@ export async function createCohort(cohortData) {
     const db = await getDatabase();
     const result = await db.collection('cohorts').insertOne({
       ...cohortData,
-      currentAI Developer Interns: 0,
+      currentAIDeveloperInterns: 0,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -235,7 +235,7 @@ export async function createJoinRequest(requestData) {
   }
 }
 
-export async function getJoinRequestsByTech Lead(mentorId) {
+export async function getJoinRequestsByTechLead(mentorId) {
   try {
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ mentorId }).toArray();
@@ -245,7 +245,7 @@ export async function getJoinRequestsByTech Lead(mentorId) {
   }
 }
 
-export async function getJoinRequestsByAI Developer Intern(internId) {
+export async function getJoinRequestsByAIDeveloperIntern(internId) {
   try {
     const db = await getDatabase();
     return await db.collection('joinRequests').find({ internId }).toArray();
