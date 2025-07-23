@@ -11,13 +11,6 @@ export default function Home() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // If user is authenticated, redirect to appropriate dashboard
-    if (session?.user) {
-      redirectToDashboard();
-    }
-  }, [session, redirectToDashboard]);
-
   const redirectToDashboard = useCallback(() => {
     if (!session?.user) return;
     
@@ -60,6 +53,13 @@ export default function Home() {
         break;
     }
   }, [session, router]);
+
+  useEffect(() => {
+    // If user is authenticated, redirect to appropriate dashboard
+    if (session?.user) {
+      redirectToDashboard();
+    }
+  }, [session, redirectToDashboard]);
 
   const handleGetStarted = async () => {
     if (session) {
