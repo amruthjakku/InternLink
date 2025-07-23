@@ -803,7 +803,7 @@ const AdminDashboardContent = memo(({ adminContext }) => {
   // Reset to default tab configuration
   const resetTabConfiguration = () => {
     saveTabConfiguration(defaultTabs);
-    setActiveTab('overview');
+    switchTab('overview');
   };
 
   // Filter tabs based on search query
@@ -850,7 +850,7 @@ const AdminDashboardContent = memo(({ adminContext }) => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('adminDashboardTabs');
       setTabs(defaultTabs);
-      setActiveTab('task-management'); // Set active tab to task management to highlight the new feature
+      switchTab('task-management'); // Set active tab to task management to highlight the new feature
     }
 
     if (!sessionRefreshed) {
