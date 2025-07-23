@@ -24,372 +24,99 @@ export async function PUT(request, { params }) {
     await connectToDatabase();
 
     const { id } = params;
-    const requestData = await request.json();
-    const { 
-      name, 
-      email, 
-      role, 
-      college, 
-      gitlabUsername, 
-      isActive, 
-      cohortId,
-      forceReactivation = false 
-    } = requestData;
+    const body = await request.json();
 
-    console.log(`🔄 Updating user ${id} with data:`, requestData);
+    const { gitlabUsername, email, role, college, cohortId, isActive } = body;
 
-    // Validate required fields
-    if (!name || !email || !role || !gitlabUsername) {
-      return NextResponse.json({ 
-        error: 'Name, email, role, and GitLab username are required' 
-      }, { status: 400 });
-    }
-
-    // Find the user (include inactive users for reactivation)
     const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    console.log(`📋 Current user state: Active: ${user.isActive}, Role: ${user.role}, Cohort: ${user.cohortId}`);
-
-    // Store original state for logging
-    const originalState = {
-      isActive: user.isActive,
-      role: user.role,
-      cohortId: user.cohortId,
-      college: user.college
-    };
-
-    // Check if GitLab username is already taken by another active user
-    if (gitlabUsername !== user.gitlabUsername) {
-      const existingUser = await User.findOne({ 
-        gitlabUsername: gitlabUsername.toLowerCase(),
-        _id: { $ne: id },
-        isActive: true // Only check active users for conflicts
-      });
-      
-      if (existingUser) {
-        return NextResponse.json({ 
-          error: 'GitLab username is already taken by another active user' 
-        }, { status: 400 });
+    if (gitlabUsername && gitlabUsername !== user.gitlabUsername) {
+      if (await User.findOne({ gitlabUsername: gitlabUsername.toLowerCase(), _id: { $ne: id } })) {
+        return NextResponse.json({ error: 'GitLab username is already taken' }, { status: 409 });
       }
+      user.gitlabUsername = gitlabUsername.toLowerCase();
     }
 
-    // Check if email is already taken by another active user
-    if (email !== user.email) {
-      const existingEmailUser = await User.findOne({ 
-        email: email.toLowerCase(),
-        _id: { $ne: id },
-        isActive: true // Only check active users for conflicts
-      });
-      
-      if (existingEmailUser) {
-        return NextResponse.json({ 
-          error: 'Email is already taken by another active user' 
-        }, { status: 400 });
+    if (email && email !== user.email) {
+      if (await User.findOne({ email: email.toLowerCase(), _id: { $ne: id } })) {
+        return NextResponse.json({ error: 'Email is already taken' }, { status: 409 });
       }
+      user.email = email.toLowerCase();
     }
 
-    // Find college ObjectId if college is provided
-    let collegeId = null;
-    if (college && (role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC')) {
-      const collegeDoc = await College.findOne({ 
-        name: college.trim(),
-        isActive: true 
-      });
-      
+    if (role) user.role = role;
+    if (isActive !== undefined) user.isActive = isActive;
+    if (cohortId) user.cohortId = cohortId;
+
+    if (college) {
+      const collegeDoc = await College.findOne({ name: college.trim() });
       if (!collegeDoc) {
-        return NextResponse.json({ 
-          error: `College "${college}" not found. Please make sure the college exists.` 
-        }, { status: 400 });
+        return NextResponse.json({ error: `College '${college}' not found` }, { status: 400 });
       }
-      
-      collegeId = collegeDoc._id;
+      user.college = collegeDoc._id;
     }
 
-    // Validate college for roles that require it
-    if ((role === 'AI Developer Intern' || role === 'Tech Lead' || role === 'POC') && !college) {
-      return NextResponse.json({ 
-        error: 'College is required for intern, mentor, and super-mentor roles' 
-      }, { status: 400 });
+    user.updatedAt = new Date();
+    if (role !== user.role || isActive !== user.isActive || cohortId !== user.cohortId) {
+      user.lastTokenRefresh = new Date();
     }
 
-    // Validate cohort if provided
-    let validatedCohortId = cohortId;
-    if (cohortId) {
-      const cohort = await Cohort.findById(cohortId);
-      if (!cohort) {
-        return NextResponse.json({ 
-          error: 'Selected cohort not found' 
-        }, { status: 400 });
-      }
-      console.log(`✅ Cohort validated: ${cohort.name}`);
-    } else if (cohortId === null || cohortId === '') {
-      validatedCohortId = null; // Explicitly remove cohort
-    }
-
-    // If changing to mentor role and college is provided, check if college already has a mentor
-    if (role === 'Tech Lead' && collegeId && user.role !== 'Tech Lead') {
-      const existingTechLead = await User.findOne({ 
-        role: 'Tech Lead', 
-        college: collegeId, 
-        isActive: true,
-        _id: { $ne: id } // Exclude current user
-      });
-
-      if (existingTechLead) {
-        return NextResponse.json({ 
-          error: 'This college already has a mentor assigned' 
-        }, { status: 400 });
-      }
-
-      // Update college with mentor username
-      await College.findByIdAndUpdate(collegeId, {
-        mentorUsername: gitlabUsername.toLowerCase(),
-        $addToSet: { techLeads: user._id }
-      });
-    }
-
-    // If changing role FROM Tech Lead, remove from college's tech lead list
-    if (user.role === 'Tech Lead' && role !== 'Tech Lead' && user.college) {
-      await College.findByIdAndUpdate(user.college, {
-        $pull: { techLeads: user._id }
-      });
-
-      // If this was the mentor for the college, clear it
-      const college = await College.findById(user.college);
-      if (college && college.mentorUsername === user.gitlabUsername) {
-        await College.findByIdAndUpdate(user.college, { $unset: { mentorUsername: "" } });
-      }
-    }
-
-    // Prepare update data
-    const updateData = {
-      name,
-      email: email.toLowerCase(),
-      gitlabUsername: gitlabUsername.toLowerCase(),
-      role,
-      updatedAt: new Date()
-    };
-
-    // Handle activation/deactivation
-    if (isActive !== undefined) {
-      updateData.isActive = isActive;
-      
-      // Special handling for reactivation
-      if (isActive && !user.isActive) {
-        console.log(`🔄 Reactivating user: ${user.gitlabUsername}`);
-        updateData.lastTokenRefresh = new Date(); // Force session refresh
-        
-        // Clear any deactivation-related flags
-        updateData.deactivatedAt = null;
-        updateData.deactivationReason = null;
-      } else if (!isActive && user.isActive) {
-        console.log(`🔄 Deactivating user: ${user.gitlabUsername}`);
-        updateData.deactivatedAt = new Date();
-        updateData.lastTokenRefresh = new Date(); // Force session refresh
-      }
-    }
-
-    // Handle college assignment
-    if (collegeId) {
-      updateData.college = collegeId;
-    }
-
-    // Handle cohort assignment/removal
-    if (validatedCohortId !== undefined) {
-      updateData.cohortId = validatedCohortId;
-      console.log(`🎯 Cohort assignment: ${validatedCohortId ? 'Assigning to ' + validatedCohortId : 'Removing cohort'}`);
-    }
-
-    // Add token refresh trigger for significant changes
-    if (updateData.role !== user.role || 
-        updateData.isActive !== user.isActive || 
-        updateData.cohortId !== user.cohortId) {
-      updateData.lastTokenRefresh = new Date();
-      console.log(`🔄 Triggering token refresh for significant changes: ${updateData.gitlabUsername || 'unknown'}`);
-    }
-
-    // Update user with validation
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { 
-        new: true,
-        runValidators: true
-      }
-    ).populate(['college', 'cohortId']);
-
-    // Log the changes
-    const changes = [];
-    if (originalState.isActive !== updatedUser.isActive) {
-      changes.push(`Status: ${originalState.isActive ? 'Active' : 'Inactive'} → ${updatedUser.isActive ? 'Active' : 'Inactive'}`);
-    }
-    if (originalState.role !== updatedUser.role) {
-      changes.push(`Role: ${originalState.role} → ${updatedUser.role}`);
-    }
-    if (String(originalState.cohortId) !== String(updatedUser.cohortId)) {
-      const oldCohort = originalState.cohortId ? 'Assigned' : 'None';
-      const newCohort = updatedUser.cohortId ? updatedUser.cohortId.name || 'Assigned' : 'None';
-      changes.push(`Cohort: ${oldCohort} → ${newCohort}`);
-    }
-
-    console.log(`✅ User updated: ${updatedUser.gitlabUsername} - ${changes.join(', ') || 'Basic info updated'}`);
-
-    return NextResponse.json({
-      ...updatedUser.toObject(),
-      _updateSummary: {
-        changes: changes,
-        timestamp: new Date(),
-        updatedBy: session.user.gitlabUsername
-      }
-    });
+    const updatedUser = await user.save();
+    return NextResponse.json(updatedUser);
 
   } catch (error) {
     console.error('Error updating user:', error);
-    return NextResponse.json({ 
-      error: 'Failed to update user',
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!session || !session.user.role === 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
     const { id } = params;
-    const { searchParams } = new URL(request.url);
-    const hardDelete = searchParams.get('hard') === 'true';
-    const reason = searchParams.get('reason') || 'Admin action';
-
-    // Find the user
     const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
-    // Prevent admin from deleting themselves
-    if (user.gitlabUsername === session.user.gitlabUsername) {
-      return NextResponse.json({ 
-        error: 'Cannot delete your own account' 
-      }, { status: 400 });
+    if (user.id === session.user.id) {
+      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 
-    if (hardDelete) {
-      // Hard delete - completely remove from database
-      console.log(`🗑️ Hard deleting user: ${user.gitlabUsername} (${user.name})`);
-      
-      // Clean up related data
-      console.log(`🧹 Cleaning up related data for user: ${user.gitlabUsername}`);
-
-      const userId = user._id;
-
-      // 1. Delete associated data from other collections
-      await Task.deleteMany({ createdBy: userId });
-      await Attendance.deleteMany({ userId: userId });
-      await TaskProgress.deleteMany({ aiDeveloperInternId: userId });
-      await ActivityTracking.deleteMany({ userId: userId });
-
-      // 2. Unset references in other documents
-      await User.updateMany({ assignedTechLead: userId }, { $unset: { assignedTechLead: \"\" } });
-      await Task.updateMany({ assignedTo: userId }, { $unset: { assignedTo: \"\", assigneeName: \"\" } });
-      await Task.updateMany({ assigneeId: userId }, { $unset: { assigneeId: \"\" } });
-      await Task.updateMany({ \"submissions.aiDeveloperInternId\": userId }, { $pull: { submissions: { aiDeveloperInternId: userId } } });
-      await TaskProgress.updateMany({ reviewedBy: userId }, { $unset: { reviewedBy: \"\" } });
-      if (user.role === 'Tech Lead' && user.college) {
-        await College.updateOne({ _id: user.college }, { $unset: { mentorUsername: \"\" } });
-      }
-
-      // 3. Finally, delete the user
+    const { hard } = request.query;
+    if (hard) {
+      // Hard delete
+      await Promise.all([
+        Task.deleteMany({ createdBy: id }),
+        Attendance.deleteMany({ userId: id }),
+        TaskProgress.deleteMany({ aiDeveloperInternId: id }),
+        ActivityTracking.deleteMany({ userId: id }),
+        User.updateMany({ assignedTechLead: id }, { $unset: { assignedTechLead: '' } }),
+        College.updateOne({ techLeads: id }, { $pull: { techLeads: id } }),
+      ]);
       await User.findByIdAndDelete(id);
-      
-      return NextResponse.json({ 
-        message: 'User permanently deleted',
-        action: 'hard_delete',
-        deletedUser: {
-          id: user._id,
-          gitlabUsername: user.gitlabUsername,
-          name: user.name
-        }
-      });
+      return NextResponse.json({ message: 'User permanently deleted' });
     } else {
-      // Soft delete - set isActive to false
-      console.log(`🔄 Soft deleting user: ${user.gitlabUsername} (${user.name}) - Reason: ${reason}`);
-      
-      const updateData = {
-        isActive: false,
-        deactivatedAt: new Date(),
-        deactivationReason: reason,
-        deactivatedBy: session.user.gitlabUsername,
-        lastTokenRefresh: new Date(), // Force session refresh
-        updatedAt: new Date()
-      };
-
-      // If deactivating a Tech Lead, handle intern reassignment
-      if (user.role === 'Tech Lead' && user.college) {
-        console.log(`Deactivating Tech Lead ${user.gitlabUsername}. Handling intern reassignment for college ${user.college}`);
-        const interns = await User.find({ assignedTechLead: user._id });
-        const otherTechLeads = await User.find({ role: 'Tech Lead', college: user.college, isActive: true, _id: { $ne: user._id } });
-
-        if (otherTechLeads.length > 0) {
-          // Reassign interns to another Tech Lead in the same college
-          const newTechLead = otherTechLeads[0];
-          await User.updateMany({ _id: { $in: interns.map(i => i._id) } }, { assignedTechLead: newTechLead._id });
-          console.log(`Reassigned ${interns.length} interns to ${newTechLead.gitlabUsername}`);
-        } else {
-          // No other Tech Leads, unassign interns
-          await User.updateMany({ _id: { $in: interns.map(i => i._id) } }, { $unset: { assignedTechLead: "" } });
-          console.log(`Unassigned ${interns.length} interns as no other Tech Leads are available.`);
-        }
-
-        // Remove from college's tech lead list and mentor role
-        await College.findByIdAndUpdate(user.college, {
-          $pull: { techLeads: user._id },
-          $unset: { mentorUsername: user.gitlabUsername === (await College.findById(user.college).mentorUsername) ? "" : undefined }
-        });
-      }
-
-      const updatedUser = await User.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      ).populate(['college', 'cohortId']);
-
-      console.log(`✅ User soft deleted: ${updatedUser.gitlabUsername} - Now inactive`);
-
-      return NextResponse.json({ 
-        message: 'User deactivated successfully',
-        action: 'soft_delete',
-        user: {
-          id: updatedUser._id,
-          gitlabUsername: updatedUser.gitlabUsername,
-          name: updatedUser.name,
-          isActive: updatedUser.isActive,
-          deactivatedAt: updatedUser.deactivatedAt,
-          deactivationReason: updatedUser.deactivationReason
-        }
-      });
+      // Soft delete
+      user.isActive = false;
+      user.deactivatedAt = new Date();
+      user.lastTokenRefresh = new Date();
+      await user.save();
+      return NextResponse.json({ message: 'User deactivated' });
     }
 
   } catch (error) {
     console.error('Error deleting user:', error);
-    return NextResponse.json({ 
-      error: 'Failed to delete user',
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
 }
 
-/**
- * PATCH endpoint for reactivating users
- */
 export async function PATCH(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -397,93 +124,36 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
     const { id } = params;
-    const { action, reason } = await request.json();
-
-    if (action !== 'reactivate') {
-      return NextResponse.json({ 
-        error: 'Only reactivate action is supported' 
-      }, { status: 400 });
-    }
-
-    // Find the user (including inactive ones)
     const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
     if (user.isActive) {
-      return NextResponse.json({ 
-        error: 'User is already active' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'User is already active' }, { status: 400 });
     }
 
-    console.log(`🔄 Reactivating user: ${user.gitlabUsername} (${user.name}) - Reason: ${reason || 'Admin action'}`);
-
-    // Check for conflicts with active users
-    const conflicts = await User.find({
-      $or: [
-        { gitlabUsername: user.gitlabUsername },
-        { email: user.email }
-      ],
+    // Check for conflicts before reactivating
+    const conflict = await User.findOne({
+      $or: [{ gitlabUsername: user.gitlabUsername }, { email: user.email }],
       _id: { $ne: id },
-      isActive: true
+      isActive: true,
     });
-
-    if (conflicts.length > 0) {
-      return NextResponse.json({ 
-        error: 'Cannot reactivate: GitLab username or email is already in use by another active user',
-        conflicts: conflicts.map(u => ({
-          id: u._id,
-          gitlabUsername: u.gitlabUsername,
-          email: u.email,
-          name: u.name
-        }))
-      }, { status: 409 });
+    if (conflict) {
+      return NextResponse.json({ error: 'GitLab username or email is already in use by an active user' }, { status: 409 });
     }
 
-    // Reactivate the user
-    const updateData = {
-      isActive: true,
-      reactivatedAt: new Date(),
-      reactivationReason: reason || 'Admin action',
-      reactivatedBy: session.user.gitlabUsername,
-      lastTokenRefresh: new Date(), // Force session refresh
-      updatedAt: new Date(),
-      // Clear deactivation fields
-      deactivatedAt: null,
-      deactivationReason: null,
-      deactivatedBy: null
-    };
+    user.isActive = true;
+    user.reactivatedAt = new Date();
+    user.lastTokenRefresh = new Date();
+    user.deactivatedAt = null;
+    user.deactivationReason = null;
+    await user.save();
 
-    const reactivatedUser = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate(['college', 'cohortId']);
-
-    console.log(`✅ User reactivated: ${reactivatedUser.gitlabUsername} - Now active`);
-
-    return NextResponse.json({ 
-      message: 'User reactivated successfully',
-      action: 'reactivate',
-      user: {
-        id: reactivatedUser._id,
-        gitlabUsername: reactivatedUser.gitlabUsername,
-        name: reactivatedUser.name,
-        isActive: reactivatedUser.isActive,
-        reactivatedAt: reactivatedUser.reactivatedAt,
-        reactivationReason: reactivatedUser.reactivationReason
-      }
-    });
+    return NextResponse.json({ message: 'User reactivated successfully' });
 
   } catch (error) {
     console.error('Error reactivating user:', error);
-    return NextResponse.json({ 
-      error: 'Failed to reactivate user',
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to reactivate user' }, { status: 500 });
   }
 }
