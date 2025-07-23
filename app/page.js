@@ -1,12 +1,6 @@
-'use client';
-
 import Link from 'next/link';
 
 export default function Home() {
-  const handleSignIn = () => {
-    window.location.href = '/static-signin';
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Navigation */}
@@ -21,12 +15,12 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={handleSignIn}
+              <Link
+                href="/api/auth/signin/gitlab"
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign In
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -48,22 +42,22 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={handleSignIn}
+              <Link
+                href="/api/auth/signin/gitlab"
                 className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
               >
                 Get Started
                 <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
-              </button>
+              </Link>
               
-              <button
-                onClick={handleSignIn}
+              <Link
+                href="/api/auth/signin/gitlab"
                 className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
               >
                 Sign In
-              </button>
+              </Link>
             </div>
 
             {/* Access Information */}
