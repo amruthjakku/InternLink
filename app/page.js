@@ -10,11 +10,15 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   const redirectToDashboard = useCallback(() => {
-    if (!session?.user) return;
+    if (!session?.user || hasRedirected) return;
     
     const { role } = session.user;
+    
+    // Mark as redirected to prevent multiple redirects
+    setHasRedirected(true);
     
     // If user needs onboarding (new auto-registered user), redirect to onboarding
     if (session?.user?.needsOnboarding || session?.user?.needsRegistration) {
@@ -52,14 +56,14 @@ export default function Home() {
         router.push('/unauthorized');
         break;
     }
-  }, [session, router]);
+  }, [session?.user, router, hasRedirected]);
 
   useEffect(() => {
-    // If user is authenticated, redirect to appropriate dashboard
-    if (session?.user) {
+    // Only redirect once when session is loaded and user is authenticated
+    if (status === 'authenticated' && session?.user && !hasRedirected) {
       redirectToDashboard();
     }
-  }, [session, redirectToDashboard]);
+  }, [status, session?.user, redirectToDashboard, hasRedirected]);
 
   const handleGetStarted = async () => {
     if (session) {
@@ -73,13 +77,13 @@ export default function Home() {
   };
 
   // Show loading if we're checking session or redirecting
-  if (status === 'loading' || (session && isLoading)) {
+  if (status === 'loading' || (status === 'authenticated' && session?.user && !hasRedirected) || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">
-            {session ? 'Redirecting to your dashboard...' : 'Loading...'}
+            {status === 'authenticated' && session?.user ? 'Redirecting to your dashboard...' : 'Loading...'}
           </p>
         </div>
       </div>

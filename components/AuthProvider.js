@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 
 const AuthContext = createContext();
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Function to refresh user data from database
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     if (!session?.user?.gitlabUsername) return;
     
     // Check if we've refreshed recently
@@ -37,19 +37,21 @@ export function AuthProvider({ children }) {
           setUser(prevUser => ({
             ...prevUser,
             ...data.user,
-            gitlabId: session.user.gitlabId,
-            gitlabUsername: session.user.gitlabUsername,
+            gitlabId: session?.user?.gitlabId,
+            gitlabUsername: session?.user?.gitlabUsername,
           }));
           
           // Update localStorage with fresh data
-          localStorage.setItem(`user_${session.user.gitlabId}`, JSON.stringify(data.user));
+          if (session?.user?.gitlabId) {
+            localStorage.setItem(`user_${session.user.gitlabId}`, JSON.stringify(data.user));
+          }
           setLastRefresh(now);
         }
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);
     }
-  };
+  }, [session?.user?.gitlabUsername, session?.user?.gitlabId, lastRefresh]);
 
   useEffect(() => {
     if (!isClient || status === 'loading') {
@@ -72,8 +74,10 @@ export function AuthProvider({ children }) {
             gitlabUsername: session.user?.gitlabUsername,
           });
           
-          // Refresh user data if needed
-          refreshUserData();
+          // Refresh user data if needed (but only once per session)
+          if (!lastRefresh) {
+            refreshUserData();
+          }
         } catch (error) {
           console.error('Error parsing stored user data:', error);
           localStorage.removeItem(`user_${session.user.gitlabId}`);
@@ -87,16 +91,18 @@ export function AuthProvider({ children }) {
           gitlabUsername: session.user?.gitlabUsername,
           needsOnboarding: true,
         });
+        
+        // Only refresh once for new users
+        if (!lastRefresh) {
+          refreshUserData();
+        }
       }
-      // Always refresh user data from DB after login
-      // This ensures new users get their correct role and info
-      refreshUserData();
     } else {
       setUser(null);
     }
     
     setLoading(false);
-  }, [session, status, isClient]); // Added isClient dependency
+  }, [session, status, isClient, refreshUserData, lastRefresh]);
 
   const login = (userData) => {
     // For demo login (fallback)
