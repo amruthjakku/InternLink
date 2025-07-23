@@ -146,8 +146,22 @@ export async function PUT(request, { params }) {
 
       // Update college with mentor username
       await College.findByIdAndUpdate(collegeId, {
-        mentorUsername: gitlabUsername.toLowerCase()
+        mentorUsername: gitlabUsername.toLowerCase(),
+        $addToSet: { techLeads: user._id }
       });
+    }
+
+    // If changing role FROM Tech Lead, remove from college's tech lead list
+    if (user.role === 'Tech Lead' && role !== 'Tech Lead' && user.college) {
+      await College.findByIdAndUpdate(user.college, {
+        $pull: { techLeads: user._id }
+      });
+
+      // If this was the mentor for the college, clear it
+      const college = await College.findById(user.college);
+      if (college && college.mentorUsername === user.gitlabUsername) {
+        await College.findByIdAndUpdate(user.college, { $unset: { mentorUsername: "" } });
+      }
     }
 
     // Prepare update data
@@ -317,6 +331,30 @@ export async function DELETE(request, { params }) {
         lastTokenRefresh: new Date(), // Force session refresh
         updatedAt: new Date()
       };
+
+      // If deactivating a Tech Lead, handle intern reassignment
+      if (user.role === 'Tech Lead' && user.college) {
+        console.log(`Deactivating Tech Lead ${user.gitlabUsername}. Handling intern reassignment for college ${user.college}`);
+        const interns = await User.find({ assignedTechLead: user._id });
+        const otherTechLeads = await User.find({ role: 'Tech Lead', college: user.college, isActive: true, _id: { $ne: user._id } });
+
+        if (otherTechLeads.length > 0) {
+          // Reassign interns to another Tech Lead in the same college
+          const newTechLead = otherTechLeads[0];
+          await User.updateMany({ _id: { $in: interns.map(i => i._id) } }, { assignedTechLead: newTechLead._id });
+          console.log(`Reassigned ${interns.length} interns to ${newTechLead.gitlabUsername}`);
+        } else {
+          // No other Tech Leads, unassign interns
+          await User.updateMany({ _id: { $in: interns.map(i => i._id) } }, { $unset: { assignedTechLead: "" } });
+          console.log(`Unassigned ${interns.length} interns as no other Tech Leads are available.`);
+        }
+
+        // Remove from college's tech lead list and mentor role
+        await College.findByIdAndUpdate(user.college, {
+          $pull: { techLeads: user._id },
+          $unset: { mentorUsername: user.gitlabUsername === (await College.findById(user.college).mentorUsername) ? "" : undefined }
+        });
+      }
 
       const updatedUser = await User.findByIdAndUpdate(
         id,
