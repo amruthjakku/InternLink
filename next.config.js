@@ -5,6 +5,17 @@ const nextConfig = {
     serverComponentsExternalPackages: ['mongoose']
   },
   
+  // Disable hot reload to prevent auto-refresh
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        poll: false,
+        ignored: /node_modules/,
+      };
+    }
+    return config;
+  },
+  
   // ESLint configuration - ignore warnings during build
   eslint: {
     ignoreDuringBuilds: true,

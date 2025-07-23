@@ -1,8 +1,81 @@
 'use client';
 
+import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const redirectedRef = useRef(false);
+
+  useEffect(() => {
+    // Prevent multiple redirects using ref
+    if (status === 'authenticated' && session?.user && !redirectedRef.current) {
+      redirectedRef.current = true;
+      
+      const { role } = session.user;
+      
+      // Simple redirect logic without complex conditions
+      setTimeout(() => {
+        switch (role) {
+          case 'admin':
+            router.replace('/admin/dashboard');
+            break;
+          case 'POC':
+            router.replace('/poc/dashboard');
+            break;
+          case 'Tech Lead':
+            router.replace('/tech-lead/dashboard');
+            break;
+          case 'AI Developer Intern':
+            router.replace('/ai-developer-intern/dashboard');
+            break;
+          default:
+            router.replace('/unauthorized');
+            break;
+        }
+      }, 100);
+    }
+  }, [status, session?.user, router]);
+
+  const handleGetStarted = async () => {
+    if (session) {
+      // Already handled by useEffect
+      return;
+    } else {
+      setIsLoading(true);
+      await signIn('gitlab');
+    }
+  };
+
+  // Simple loading condition
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, show loading while redirecting
+  if (status === 'authenticated' && session?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Navigation */}
@@ -17,12 +90,30 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                href="/auth/signin"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign In
-              </Link>
+              {session ? (
+                <div className="flex items-center space-x-3">
+                  <Image 
+                    src={session.user.image || session.user.profileImage} 
+                    alt={session.user.name}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Welcome, {session.user.name}!
+                  </span>
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    {session.user.role}
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/signin"
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -44,49 +135,63 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="/auth/signin"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
+              <button
+                onClick={handleGetStarted}
+                disabled={isLoading}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                Get Started
-                <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    {session ? 'Go to Dashboard' : 'Get Started'}
+                    <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </button>
               
-              <Link
-                href="/auth/signin"
-                className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Sign In
-              </Link>
+              {!session && (
+                <Link
+                  href="/auth/signin"
+                  className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
 
             {/* Access Information */}
-            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3 text-left">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    Access Required
-                  </h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <p className="mb-2">
-                      Your GitLab account must be pre-registered to access this platform:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li><strong>AI Developer Interns:</strong> Ask your mentor to add your GitLab username</li>
-                      <li><strong>Tech Leads:</strong> Contact an admin to register your account</li>
-                      <li><strong>Admins:</strong> Contact the system administrator</li>
-                    </ul>
+            {!session && (
+              <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 text-left">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Access Required
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p className="mb-2">
+                        Your GitLab account must be pre-registered to access this platform:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li><strong>AI Developer Interns:</strong> Ask your mentor to add your GitLab username</li>
+                        <li><strong>Tech Leads:</strong> Contact an admin to register your account</li>
+                        <li><strong>Admins:</strong> Contact the system administrator</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -186,26 +291,31 @@ export default function Home() {
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="text-2xl mb-2">👥</div>
-              <h4 className="font-semibold text-gray-900">Role-Based</h4>
-              <p className="text-sm text-gray-600">Different access levels for admins, mentors, and interns</p>
+              <h4 className="font-semibold text-gray-900">Role Hierarchy</h4>
+              <p className="text-sm text-gray-600">Clear permission structure from admin to intern level</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-2xl mb-2">🔗</div>
-              <h4 className="font-semibold text-gray-900">GitLab Integration</h4>
-              <p className="text-sm text-gray-600">Secure OAuth integration with GitLab for authentication</p>
+              <div className="text-2xl mb-2">🦊</div>
+              <h4 className="font-semibold text-gray-900">GitLab OAuth</h4>
+              <p className="text-sm text-gray-600">Secure authentication using GitLab accounts</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600">
-            <p>&copy; 2024 Progress Tracker. All rights reserved.</p>
-            <p className="mt-2 text-sm">
-              Built for AI Developer Internship Program
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold mb-4">📊 Progress Tracker</h3>
+            <p className="text-gray-400 mb-6">
+              Secure internship progress tracking with role-based access control
             </p>
+            <div className="mt-8 pt-8 border-t border-gray-800">
+              <p className="text-gray-400">
+                © 2024 Progress Tracker. All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

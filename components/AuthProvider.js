@@ -18,8 +18,12 @@ export function AuthProvider({ children }) {
     setIsClient(true);
   }, []);
 
-  // Function to refresh user data from database
+  // Function to refresh user data from database - DISABLED TO PREVENT REFRESH
   const refreshUserData = useCallback(async () => {
+    // TEMPORARILY DISABLED TO STOP AUTO-REFRESH
+    console.log('refreshUserData called but disabled to prevent auto-refresh');
+    return;
+    
     if (!session?.user?.gitlabUsername) return;
     
     // Check if we've refreshed recently
@@ -60,11 +64,10 @@ export function AuthProvider({ children }) {
     }
 
     if (session?.user) {
-      // Check if user has completed onboarding
+      // Simplified user setting without refresh calls
       const storedUserData = localStorage.getItem(`user_${session.user.gitlabId}`);
       
       if (storedUserData) {
-        // User has completed onboarding
         try {
           const userData = JSON.parse(storedUserData);
           setUser({
@@ -73,15 +76,14 @@ export function AuthProvider({ children }) {
             gitlabId: session.user?.gitlabId,
             gitlabUsername: session.user?.gitlabUsername,
           });
-          
-          // Refresh user data if needed (but only once per session)
-          if (!lastRefresh) {
-            refreshUserData();
-          }
         } catch (error) {
           console.error('Error parsing stored user data:', error);
           localStorage.removeItem(`user_${session.user.gitlabId}`);
-          setUser(null);
+          setUser({
+            ...(session.user || {}),
+            gitlabId: session.user?.gitlabId,
+            gitlabUsername: session.user?.gitlabUsername,
+          });
         }
       } else {
         // User needs to complete onboarding
@@ -91,18 +93,13 @@ export function AuthProvider({ children }) {
           gitlabUsername: session.user?.gitlabUsername,
           needsOnboarding: true,
         });
-        
-        // Only refresh once for new users
-        if (!lastRefresh) {
-          refreshUserData();
-        }
       }
     } else {
       setUser(null);
     }
     
     setLoading(false);
-  }, [session, status, isClient, refreshUserData, lastRefresh]);
+  }, [session, status, isClient]);
 
   const login = (userData) => {
     // For demo login (fallback)
