@@ -51,7 +51,7 @@ AI developer InternLink is a modern, full-featured internship management platfor
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/internlink.git
+   git clone https://code.swecha.org/amruth_jakku/InternLink.git
    cd internlink
    ```
 
