@@ -9,7 +9,9 @@ export async function middleware(request) {
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') || 
     pathname.includes('.') ||
-    pathname.startsWith('/auth')
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/static-signin') ||
+    pathname.startsWith('/dashboard-redirect')
   ) {
     return NextResponse.next();
   }

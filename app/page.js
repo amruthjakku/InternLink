@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function Home() {
   const handleSignIn = () => {
-    window.location.href = '/auth/signin';
+    window.location.href = '/static-signin';
   };
 
   return (

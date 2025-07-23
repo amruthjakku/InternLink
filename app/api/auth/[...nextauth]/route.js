@@ -229,6 +229,14 @@ export const authOptions = {
       session.error = token.error;
       
       return session;
+    },
+    
+    async redirect({ url, baseUrl }) {
+      // Always redirect to dashboard redirect page after sign in
+      if (url.startsWith(baseUrl)) {
+        return `${baseUrl}/dashboard-redirect`;
+      }
+      return `${baseUrl}/dashboard-redirect`;
     }
   },
   pages: {
