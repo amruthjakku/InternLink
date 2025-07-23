@@ -89,12 +89,6 @@ export const authOptions = {
       clientId: process.env.GITLAB_CLIENT_ID,
       clientSecret: process.env.GITLAB_CLIENT_SECRET,
       profile(profile) {
-        console.log('🔍 GitLab Profile received:', {
-          id: profile.id,
-          username: profile.username,
-          name: profile.name,
-          email: profile.email
-        });
         return {
           id: profile.id.toString(),
           name: profile.name,
@@ -445,20 +439,7 @@ export const authOptions = {
     strategy: 'jwt'
   },
   debug: process.env.NODE_ENV === 'development',
-  events: {
-    async signIn(message) {
-      console.log('🔍 NextAuth signIn event:', message);
-    },
-    async signOut(message) {
-      console.log('🔍 NextAuth signOut event:', message);
-    },
-    async createUser(message) {
-      console.log('🔍 NextAuth createUser event:', message);
-    },
-    async session(message) {
-      console.log('🔍 NextAuth session event:', message);
-    }
-  }
+
 };
 
 const handler = NextAuth(authOptions);
