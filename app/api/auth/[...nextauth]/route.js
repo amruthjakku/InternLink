@@ -123,7 +123,7 @@ export const authOptions = {
         });
         
         if (!existingUser) {
-          // Auto-register new GitLab users as pending
+          // Auto-register new GitLab users with pending status
           console.log(`🔄 Auto-registering new GitLab user: ${profile.username}`);
           
           try {
@@ -135,29 +135,38 @@ export const authOptions = {
               role: 'AI Developer Intern', // Default role for new users
               profileImage: profile.avatar_url,
               assignedBy: 'auto-registration',
-              lastLoginAt: new Date()
+              lastLoginAt: new Date(),
+              // Don't require college and assignedTechLead for auto-registration
+              // These will be set during onboarding
             });
             
-            await newUser.save();
+            await newUser.save(); // Validation will pass due to assignedBy: 'auto-registration'
             console.log(`✅ Auto-registered user: ${profile.username} with AI Developer Intern role`);
             
             // Use the newly created user
             existingUser = newUser;
           } catch (error) {
             console.error(`❌ Failed to auto-register user ${profile.username}:`, error);
-            return false;
+            // If auto-registration fails, still allow sign-in but redirect to onboarding
+            console.log(`🔄 Allowing sign-in for ${profile.username} - will redirect to onboarding`);
+            return '/onboarding';
           }
         }
         
         // Update user's GitLab info and last login
-        existingUser.gitlabId = profile.id.toString();
-        existingUser.name = profile.name || existingUser.name;
-        existingUser.email = profile.email || existingUser.email;
-        existingUser.profileImage = profile.avatar_url || existingUser.profileImage;
-        await existingUser.updateLastLogin();
-        
-        console.log(`✅ Successful login: ${profile.username} (${existingUser.role})`);
-        return true;
+        try {
+          existingUser.gitlabId = profile.id.toString();
+          existingUser.name = profile.name || existingUser.name;
+          existingUser.email = profile.email || existingUser.email;
+          existingUser.profileImage = profile.avatar_url || existingUser.profileImage;
+          await existingUser.updateLastLogin();
+          
+          console.log(`✅ Successful login: ${profile.username} (${existingUser.role})`);
+          return true;
+        } catch (updateError) {
+          console.error(`❌ Failed to update user ${profile.username}:`, updateError);
+          return false;
+        }
         
       } catch (error) {
         console.error('❌ Error during sign in:', error);
@@ -317,10 +326,11 @@ export const authOptions = {
             
             console.log(`✅ JWT - Successful token creation: ${user.gitlabUsername} (${user.role})`);
           } else {
-            // New user - assign default role
+            // New user - assign default values
             token.role = 'AI Developer Intern';
             token.gitlabUsername = profile.username;
             token.gitlabId = profile.id.toString();
+            token.needsOnboarding = true; // Flag to indicate user needs onboarding
             console.log(`✅ JWT - New user assigned default role: ${profile.username}`);
           }
         } catch (error) {
@@ -398,6 +408,7 @@ export const authOptions = {
       session.user.college = token.college;
       session.user.assignedBy = token.assignedBy;
       session.user.id = token.userId;
+      session.user.needsOnboarding = token.needsOnboarding;
 
       
       // Add cohort information

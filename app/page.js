@@ -20,8 +20,8 @@ export default function Home() {
   const redirectToDashboard = () => {
     const { role } = session.user;
     
-    // If user needs registration, redirect to onboarding
-    if (session?.user?.needsRegistration) {
+    // If user needs onboarding (new auto-registered user), redirect to onboarding
+    if (session?.user?.needsOnboarding || session?.user?.needsRegistration) {
       router.push('/onboarding');
       return;
     }
@@ -29,6 +29,12 @@ export default function Home() {
     // If user has pending role, redirect to approval page
     if (role === 'pending') {
       router.push('/pending');
+      return;
+    }
+    
+    // If user doesn't have college assigned (incomplete registration), redirect to onboarding
+    if (role === 'AI Developer Intern' && !session?.user?.college) {
+      router.push('/onboarding');
       return;
     }
     

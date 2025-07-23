@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
     required: function () {
-      return ['AI Developer Intern', 'Tech Lead', 'POC'].includes(this.role);
+      return ['AI Developer Intern', 'Tech Lead', 'POC'].includes(this.role) && this.assignedBy !== 'auto-registration';
     }
   },
   cohortId: {
@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function () {
-      return this.role === 'AI Developer Intern';
+      return this.role === 'AI Developer Intern' && this.assignedBy !== 'auto-registration';
     }
   },
   profileImage: {
