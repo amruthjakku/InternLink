@@ -666,21 +666,43 @@ const AdminDashboardContent = memo(({ adminContext }) => {
     refreshCurrentTab
   } = useAdminData();
 
-  // Use cached stats data
+  // Default stats object with all required properties
+  const defaultStats = {
+    totalUsers: 0,
+    totalColleges: 0,
+    totalTechLeads: 0,
+    totalAIDeveloperInterns: 0,
+    totalAdmins: 0,
+    activeUsers: 0,
+    systemHealth: 100,
+    avgPerformance: 0,
+    tasksCompleted: 0,
+    totalTasks: 0,
+    attendanceRate: 0,
+    newUsersToday: 0
+  };
+
+  // Use cached stats data with proper error handling
   const { 
-    data: stats = {}, 
+    data: statsData, 
     loading: statsLoading, 
     error: statsError,
     refetch: refetchStats 
   } = useCachedDataWithFocus(
     CacheKeys.SYSTEM_STATS(),
-    () => fetch('/api/admin/stats').then(res => res.json()),
+    () => fetch('/api/admin/stats').then(res => {
+      if (!res.ok) throw new Error('Failed to fetch stats');
+      return res.json();
+    }).then(data => data.stats || defaultStats),
     { 
       ttl: CacheTTL.SHORT,
       refreshOnFocus: true,
       staleWhileRevalidate: true
     }
   );
+
+  // Ensure stats is never null/undefined
+  const stats = statsData || defaultStats;
 
   // Simplified tab configuration - reduced from 12 to 7 tabs
   const defaultTabs = [
