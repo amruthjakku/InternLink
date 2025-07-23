@@ -51,7 +51,7 @@ async function refreshGitLabOAuthToken(token) {
       const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
       const { encrypt } = await import('../../../../utils/encryption.js');
       
-      await GitLabIntegration.updateOne(
+      const result = await GitLabIntegration.updateOne(
         { gitlabUserId: parseInt(token.gitlabId) },
         {
           accessToken: encrypt(refreshedTokens.access_token),
@@ -60,8 +60,14 @@ async function refreshGitLabOAuthToken(token) {
           updatedAt: new Date()
         }
       );
+
+      if (result.matchedCount === 0) {
+        console.warn(`Could not find GitLabIntegration record for gitlabId: ${token.gitlabId} to update token.`);
+        // This is not a fatal error for the refresh itself, but indicates a potential data sync issue.
+      }
     } catch (dbError) {
-      console.warn('Failed to update integration record:', dbError);
+      console.error('CRITICAL: Failed to update integration record in database after token refresh.', dbError);
+      throw new Error('Failed to persist refreshed token.'); // Re-throw to signal failure
     }
 
     return refreshedTokens;
@@ -134,6 +140,7 @@ export const authOptions = {
           console.log(`🔄 SignIn Debug - Auto-registering new GitLab user: ${profile.username}`);
           
           try {
+            console.log(`🔄 Attempting to create new user: ${profile.username}`);
             const newUser = new User({
               gitlabUsername: profile.username.toLowerCase(),
               gitlabId: profile.id.toString(),
@@ -143,20 +150,24 @@ export const authOptions = {
               profileImage: profile.avatar_url,
               assignedBy: 'auto-registration',
               lastLoginAt: new Date(),
-              // Don't require college and assignedTechLead for auto-registration
-              // These will be set during onboarding
             });
             
-            await newUser.save(); // Validation will pass due to assignedBy: 'auto-registration'
+            existingUser = await newUser.save();
             console.log(`✅ Auto-registered user: ${profile.username} with AI Developer Intern role`);
             
-            // Use the newly created user
-            existingUser = newUser;
           } catch (error) {
-            console.error(`❌ Failed to auto-register user ${profile.username}:`, error);
-            // If auto-registration fails, still allow sign-in but redirect to onboarding
-            console.log(`🔄 Allowing sign-in for ${profile.username} - will redirect to onboarding`);
-            return '/onboarding';
+            if (error.code === 11000) { // Handle race condition
+              console.warn(`Race condition on user creation for ${profile.username}. User likely created by another process.`);
+              existingUser = await User.findByGitLabUsername(profile.username);
+              if (!existingUser) {
+                console.error(`❌ CRITICAL: Could not find user ${profile.username} after duplicate key error.`);
+                return false; // Critical failure, stop sign in.
+              }
+              console.log(`✅ Successfully found user ${profile.username} after race condition.`);
+            } else {
+              console.error(`❌ Failed to auto-register user ${profile.username}:`, error);
+              return '/auth/error?error=RegistrationFailed'; // Redirect to a generic error page
+            }
           }
         }
         
@@ -210,7 +221,18 @@ export const authOptions = {
             const cohortChanged = token.cohortId !== (user.cohortId ? user.cohortId.toString() : null);
             
             if (roleChanged || cohortChanged || shouldForceRefresh || sessionVersionChanged) {
-              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}: roleChanged=${roleChanged}, cohortChanged=${cohortChanged}, forceRefresh=${shouldForceRefresh}, versionChanged=${sessionVersionChanged}`);
+              console.log(`🔄 JWT Token refresh for ${user.gitlabUsername}:`, {
+                roleChanged,
+                previousRole: token.role,
+                newRole: user.role,
+                cohortChanged,
+                previousCohort: token.cohortId,
+                newCohort: user.cohortId ? user.cohortId.toString() : null,
+                shouldForceRefresh,
+                sessionVersionChanged,
+                previousVersion: token.sessionVersion,
+                newVersion: user.sessionVersion
+              });
             }
             
             token.role = user.role;

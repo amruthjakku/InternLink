@@ -4,6 +4,11 @@ import { authOptions } from '../../../auth/[...nextauth]/route';
 import { connectToDatabase } from '../../../../../utils/database';
 import User from '../../../../../models/User';
 import College from '../../../../../models/College';
+import Cohort from '../../../../../models/Cohort';
+import Task from '../../../../../models/Task';
+import Attendance from '../../../../../models/Attendance';
+import TaskProgress from '../../../../../models/TaskProgress';
+import ActivityTracking from '../../../../../models/ActivityTracking';
 
 
 // Force dynamic rendering for this route
@@ -267,7 +272,28 @@ export async function DELETE(request, { params }) {
       // Hard delete - completely remove from database
       console.log(`🗑️ Hard deleting user: ${user.gitlabUsername} (${user.name})`);
       
-      // TODO: Clean up related data (tasks, attendance, etc.)
+      // Clean up related data
+      console.log(`🧹 Cleaning up related data for user: ${user.gitlabUsername}`);
+
+      const userId = user._id;
+
+      // 1. Delete associated data from other collections
+      await Task.deleteMany({ createdBy: userId });
+      await Attendance.deleteMany({ userId: userId });
+      await TaskProgress.deleteMany({ aiDeveloperInternId: userId });
+      await ActivityTracking.deleteMany({ userId: userId });
+
+      // 2. Unset references in other documents
+      await User.updateMany({ assignedTechLead: userId }, { $unset: { assignedTechLead: \"\" } });
+      await Task.updateMany({ assignedTo: userId }, { $unset: { assignedTo: \"\", assigneeName: \"\" } });
+      await Task.updateMany({ assigneeId: userId }, { $unset: { assigneeId: \"\" } });
+      await Task.updateMany({ \"submissions.aiDeveloperInternId\": userId }, { $pull: { submissions: { aiDeveloperInternId: userId } } });
+      await TaskProgress.updateMany({ reviewedBy: userId }, { $unset: { reviewedBy: \"\" } });
+      if (user.role === 'Tech Lead' && user.college) {
+        await College.updateOne({ _id: user.college }, { $unset: { mentorUsername: \"\" } });
+      }
+
+      // 3. Finally, delete the user
       await User.findByIdAndDelete(id);
       
       return NextResponse.json({ 

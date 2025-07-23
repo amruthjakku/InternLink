@@ -233,9 +233,16 @@ async function updateUserAttendanceStats(db, userId, action) {
       updateData.attendanceStatus = 'checked-in';
     }
 
-    // Skip user stats update to avoid ObjectId conflicts for now
     // TODO: Fix user stats update with proper ObjectId handling
-    console.log('Skipping user stats update to avoid BSON conflicts');
+    const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+    if (user) {
+      await db.collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: updateData }
+      );
+    } else {
+      console.log('Skipping user stats update, user not found');
+    }
     
   } catch (error) {
     console.error('Error updating user attendance stats:', error);
@@ -310,9 +317,16 @@ async function updateAttendanceStreak(db, userId) {
       }
     }
     
-    // Skip streak update to avoid ObjectId conflicts for now
     // TODO: Fix streak update with proper ObjectId handling
-    console.log('Skipping streak update to avoid BSON conflicts');
+    const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+    if (user) {
+      await db.collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { attendanceStreak: currentStreak } }
+      );
+    } else {
+      console.log('Skipping streak update, user not found');
+    }
     
   } catch (error) {
     console.error('Error updating attendance streak:', error);

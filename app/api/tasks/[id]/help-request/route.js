@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../../utils/database';
+import { connectToDatabase } from '../../../../../lib/database';
 import Task from '../../../../../models/Task';
 import User from '../../../../../models/User';
+import Notification from '../../../../../models/Notification';
 import mongoose from 'mongoose';
 
 export async function POST(request, { params }) {
@@ -114,7 +115,29 @@ export async function POST(request, { params }) {
 
     await task.save();
 
-    // TODO: Send notification to mentor/admin
+    // Send notification to assigned mentor/admin
+    const recipients = [];
+    if (task.assignedTo) {
+      recipients.push(task.assignedTo);
+    } else if (task.cohortId) {
+      // Find all mentors/admins for this cohort
+      const cohortMentors = await User.find({ cohortId: task.cohortId, role: { $in: ['Tech Lead', 'POC', 'admin'] } });
+      recipients.push(...cohortMentors.map(m => m._id));
+    }
+
+    if (recipients.length > 0) {
+      const notification = new Notification({
+        recipients,
+        sender: user._id,
+        type: 'help_request',
+        message: `${user.name} requested help for task: ${task.title}`,
+        entity: {
+          type: 'Task',
+          id: task._id
+        }
+      });
+      await notification.save();
+    }
 
     return NextResponse.json({
       success: true,
