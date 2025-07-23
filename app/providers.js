@@ -5,8 +5,7 @@ import { AuthProvider } from '../components/AuthProvider';
 import useSocket from '../hooks/useSocket';
 
 export function SessionProvider({ children }) {
-  // Temporarily disable socket to prevent refresh issues
-  // useSocket();
+  // Socket PERMANENTLY disabled to prevent auto-refresh
   return (
     <NextAuthSessionProvider>
       <AuthProvider>

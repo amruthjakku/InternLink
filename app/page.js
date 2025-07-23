@@ -1,107 +1,12 @@
 'use client';
 
-import { useSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const redirectedRef = useRef(false);
-
-  useEffect(() => {
-    // Only redirect authenticated users, and only once
-    if (status === 'authenticated' && session?.user && !redirectedRef.current) {
-      redirectedRef.current = true;
-      
-      const { role } = session.user;
-      
-      // Delay redirect to prevent refresh loops
-      const timer = setTimeout(() => {
-        switch (role) {
-          case 'admin':
-            router.replace('/admin/dashboard');
-            break;
-          case 'POC':
-            router.replace('/poc/dashboard');
-            break;
-          case 'Tech Lead':
-            router.replace('/tech-lead/dashboard');
-            break;
-          case 'AI Developer Intern':
-            router.replace('/ai-developer-intern/dashboard');
-            break;
-          case 'pending':
-            router.replace('/pending');
-            break;
-          default:
-            if (session.user.needsOnboarding) {
-              router.replace('/onboarding');
-            } else {
-              router.replace('/unauthorized');
-            }
-            break;
-        }
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [status, session?.user, router]);
-
-  const handleGetStarted = async () => {
-    if (session) {
-      // User is already authenticated, let useEffect handle redirect
-      return;
-    } else {
-      setIsLoading(true);
-      try {
-        await signIn('gitlab');
-      } catch (error) {
-        console.error('Sign in error:', error);
-        setIsLoading(false);
-      }
-    }
+  const handleSignIn = () => {
+    window.location.href = '/auth/signin';
   };
 
-  // Show loading while checking session
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while redirecting authenticated users
-  if (status === 'authenticated' && session?.user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting to your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while signing in
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Signing you in...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show home page for unauthenticated users
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Navigation */}
@@ -117,11 +22,10 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={handleGetStarted}
-                disabled={isLoading}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                onClick={handleSignIn}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                Sign In
               </button>
             </div>
           </div>
@@ -145,22 +49,20 @@ export default function Home() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={handleGetStarted}
-                disabled={isLoading}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50"
+                onClick={handleSignIn}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors flex items-center"
               >
-                {isLoading ? 'Signing In...' : 'Get Started'}
+                Get Started
                 <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
               
               <button
-                onClick={handleGetStarted}
-                disabled={isLoading}
-                className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
+                onClick={handleSignIn}
+                className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                Sign In
               </button>
             </div>
 

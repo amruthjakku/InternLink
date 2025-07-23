@@ -5,16 +5,27 @@ const nextConfig = {
     serverComponentsExternalPackages: ['mongoose']
   },
   
-  // Disable hot reload to prevent auto-refresh
-  webpack: (config, { dev }) => {
+  // COMPLETELY disable hot reload and fast refresh
+  webpack: (config, { dev, isServer }) => {
     if (dev) {
       config.watchOptions = {
         poll: false,
-        ignored: /node_modules/,
+        ignored: ['**/*'],
       };
+      
+      if (!isServer) {
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          '@next/react-refresh-utils/runtime': false,
+          '@next/react-dev-overlay/lib/client': false,
+        };
+      }
     }
     return config;
   },
+  
+  // Disable React strict mode and fast refresh
+  reactStrictMode: false,
   
   // ESLint configuration - ignore warnings during build
   eslint: {

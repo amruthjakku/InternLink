@@ -18,40 +18,10 @@ export function AuthProvider({ children }) {
     setIsClient(true);
   }, []);
 
-  // Function to refresh user data from database - CONTROLLED REFRESH
+  // DISABLED TO PREVENT AUTO-REFRESH
   const refreshUserData = useCallback(async () => {
-    if (!session?.user?.gitlabUsername) return;
-    
-    // Check if we've refreshed recently (increased interval to prevent excessive calls)
-    const now = Date.now();
-    if (lastRefresh && (now - lastRefresh) < REFRESH_INTERVAL) {
-      return; // Skip if refreshed within the last 5 minutes
-    }
-    
-    try {
-      const response = await fetch('/api/auth/refresh-session');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user) {
-          // Update user state with fresh data from database
-          setUser(prevUser => ({
-            ...prevUser,
-            ...data.user,
-            gitlabId: session?.user?.gitlabId,
-            gitlabUsername: session?.user?.gitlabUsername,
-          }));
-          
-          // Update localStorage with fresh data
-          if (session?.user?.gitlabId) {
-            localStorage.setItem(`user_${session.user.gitlabId}`, JSON.stringify(data.user));
-          }
-          setLastRefresh(now);
-        }
-      }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-    }
-  }, [session?.user?.gitlabUsername, session?.user?.gitlabId, lastRefresh]);
+    return; // Completely disabled
+  }, []);
 
   useEffect(() => {
     if (!isClient || status === 'loading') {
@@ -60,52 +30,17 @@ export function AuthProvider({ children }) {
     }
 
     if (session?.user) {
-      // Check if user has completed onboarding
-      const storedUserData = localStorage.getItem(`user_${session.user.gitlabId}`);
-      
-      if (storedUserData) {
-        try {
-          const userData = JSON.parse(storedUserData);
-          setUser({
-            ...(session.user || {}),
-            ...(userData || {}),
-            gitlabId: session.user?.gitlabId,
-            gitlabUsername: session.user?.gitlabUsername,
-          });
-          
-          // Only refresh once per session to prevent loops
-          if (!lastRefresh) {
-            setTimeout(() => refreshUserData(), 1000);
-          }
-        } catch (error) {
-          console.error('Error parsing stored user data:', error);
-          localStorage.removeItem(`user_${session.user.gitlabId}`);
-          setUser({
-            ...(session.user || {}),
-            gitlabId: session.user?.gitlabId,
-            gitlabUsername: session.user?.gitlabUsername,
-          });
-        }
-      } else {
-        // User needs to complete onboarding
-        setUser({
-          ...(session.user || {}),
-          gitlabId: session.user?.gitlabId,
-          gitlabUsername: session.user?.gitlabUsername,
-          needsOnboarding: true,
-        });
-        
-        // Only refresh once for new users
-        if (!lastRefresh) {
-          setTimeout(() => refreshUserData(), 1000);
-        }
-      }
+      setUser({
+        ...(session.user || {}),
+        gitlabId: session.user?.gitlabId,
+        gitlabUsername: session.user?.gitlabUsername,
+      });
     } else {
       setUser(null);
     }
     
     setLoading(false);
-  }, [session, status, isClient, refreshUserData, lastRefresh]);
+  }, [session, status, isClient]);
 
   const login = (userData) => {
     // For demo login (fallback)
