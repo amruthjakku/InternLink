@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import CombinedAttendanceSystem from './CombinedAttendanceSystem';
+import { CombinedAttendanceSystem } from './CombinedAttendanceSystem';
 
 const MonitoringAnalytics = () => {
   const [activeSubTab, setActiveSubTab] = useState('attendance');

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Tab } from '@headlessui/react';
-import CohortManagementTab from './CohortManagementTab';
-import CohortAssignmentTab from './CohortAssignmentTab';
-import CohortCollegesTab from './CohortCollegesTab';
+import { CohortManagementTab } from './CohortManagementTab';
+import { CohortAssignmentTab } from './CohortAssignmentTab';
+import { CohortCollegesTab } from './CohortCollegesTab';
 
 const CombinedCohortSystem = () => {
   const tabs = [

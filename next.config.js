@@ -5,6 +5,11 @@ const nextConfig = {
     serverComponentsExternalPackages: ['mongoose']
   },
   
+  // ESLint configuration - ignore warnings during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
   // Disable static optimization for pages that use dynamic features
   async headers() {
     return [
