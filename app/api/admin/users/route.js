@@ -22,8 +22,8 @@ export async function GET(request) {
 
     await connectToDatabase();
 
-    // Build query
-    const query = { isActive: true };
+    // Build query - Show all users, not just active ones for admin dashboard
+    const query = {};
     if (role) {
       query.role = role;
       console.log(`Filtering users by role: ${role}`);
@@ -80,7 +80,7 @@ export async function GET(request) {
         role: user.role,
         college: user.college?.name || 'N/A',
         cohortId: user.cohortId?.toString() || null,
-        status: user.isActive ? 'active' : 'inactive',
+        status: user.isActive !== false ? 'active' : 'inactive',
         performanceScore: performanceScore,
         activityLevel: activityLevel,
         riskLevel: riskLevel,

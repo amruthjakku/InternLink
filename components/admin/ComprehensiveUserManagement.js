@@ -105,7 +105,7 @@ export function ComprehensiveUserManagement() {
       name: '',
       email: '',
       gitlabUsername: '',
-      role: 'AIDeveloperIntern',
+      role: 'AI Developer Intern',
       college: '',
       cohort: '',
       status: 'active',
@@ -138,7 +138,7 @@ export function ComprehensiveUserManagement() {
       
       // Clean up the payload
       const payload = { ...userData };
-      if (payload.role !== 'AIDeveloperIntern') {
+      if (payload.role !== 'AI Developer Intern') {
         delete payload.assignedTechLead;
       }
 
@@ -258,7 +258,7 @@ export function ComprehensiveUserManagement() {
       case 'admin': return 'bg-red-100 text-red-800';
       case 'TechLead': return 'bg-blue-100 text-blue-800';
       case 'POC': return 'bg-purple-100 text-purple-800';
-      case 'AIDeveloperIntern': return 'bg-green-100 text-green-800';
+      case 'AI Developer Intern': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -347,7 +347,7 @@ export function ComprehensiveUserManagement() {
               <option value="admin">Admin</option>
               <option value="TechLead">Tech Lead</option>
               <option value="POC">POC</option>
-              <option value="AIDeveloperIntern">AI Developer Intern</option>
+              <option value="AI Developer Intern">AI Developer Intern</option>
             </select>
           </div>
           <div>
