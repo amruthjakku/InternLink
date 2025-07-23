@@ -642,119 +642,11 @@ const CombinedCollegeManagement = memo(() => {
       )}
     </div>
   );
-};
+});
 
-// Moved to separate component file
+CombinedCollegeManagement.displayName = 'CombinedCollegeManagement';
 
-const CombinedUserManagement = () => {
-  const [activeSubTab, setActiveSubTab] = useState('advanced');
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl">👥</span>
-          </div>
-          User Management Suite
-        </h2>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setActiveSubTab('advanced')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'advanced'
-                ? 'bg-green-100 text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Advanced Management
-          </button>
-          <button
-            onClick={() => setActiveSubTab('enhanced')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'enhanced'
-                ? 'bg-green-100 text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Enhanced Features
-          </button>
-          <button
-            onClick={() => setActiveSubTab('activation')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'activation'
-                ? 'bg-green-100 text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            User Activation
-          </button>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {activeSubTab === 'advanced' && <AdvancedUserManagement />}
-        {activeSubTab === 'enhanced' && <EnhancedUserManagement />}
-        {activeSubTab === 'activation' && <UserActivationManagement />}
-      </div>
-    </div>
-  );
-};
-
-const CombinedCohortSystem = () => {
-  const [activeSubTab, setActiveSubTab] = useState('management');
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl">🎯</span>
-          </div>
-          Cohort Management Hub
-        </h2>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setActiveSubTab('management')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'management'
-                ? 'bg-orange-100 text-orange-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Cohort Management
-          </button>
-          <button
-            onClick={() => setActiveSubTab('assignment')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'assignment'
-                ? 'bg-orange-100 text-orange-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Member Assignment
-          </button>
-          <button
-            onClick={() => setActiveSubTab('colleges')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              activeSubTab === 'colleges'
-                ? 'bg-orange-100 text-orange-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Colleges
-          </button>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {activeSubTab === 'management' && <CohortManagementTab />}
-        {activeSubTab === 'assignment' && <CohortAssignmentTab />}
-        {activeSubTab === 'colleges' && <CohortCollegesTab />}
-      </div>
-    </div>
-  );
-};
+// These components have been moved to separate component files
 
 // Main Admin Dashboard Component with Caching
 const AdminDashboardContent = memo(({ adminContext }) => {
@@ -1385,7 +1277,7 @@ const AdminDashboardContent = memo(({ adminContext }) => {
                 {/* Real-time Activity Stats */}
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
                   <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    📈 Today&apos;s Activity
+                    📈 Today's Activity
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
