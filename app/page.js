@@ -2,8 +2,9 @@
 
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -15,9 +16,11 @@ export default function Home() {
     if (session?.user) {
       redirectToDashboard();
     }
-  }, [session]);
+  }, [session, redirectToDashboard]);
 
-  const redirectToDashboard = () => {
+  const redirectToDashboard = useCallback(() => {
+    if (!session?.user) return;
+    
     const { role } = session.user;
     
     // If user needs onboarding (new auto-registered user), redirect to onboarding
@@ -56,7 +59,7 @@ export default function Home() {
         router.push('/unauthorized');
         break;
     }
-  };
+  }, [session, router]);
 
   const handleGetStarted = async () => {
     if (session) {
@@ -99,9 +102,11 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               {session ? (
                 <div className="flex items-center space-x-3">
-                  <img 
+                  <Image 
                     src={session.user.image || session.user.profileImage} 
                     alt={session.user.name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
                   />
                   <span className="text-sm text-gray-700">
