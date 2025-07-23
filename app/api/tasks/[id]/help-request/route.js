@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import { connectToDatabase } from '../../../../../lib/database';
+import { connectToDatabase } from '../../../../../utils/database';
 import Task from '../../../../../models/Task';
 import User from '../../../../../models/User';
 import Notification from '../../../../../models/Notification';
