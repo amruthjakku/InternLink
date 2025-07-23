@@ -19,9 +19,10 @@ const categorySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
   updatedAt: {
     type: Date,
@@ -32,7 +33,13 @@ const categorySchema = new mongoose.Schema({
 });
 
 // Indexes
-categorySchema.index({ name: 1 });
+categorySchema.index({ name: 1, createdBy: 1 }, { unique: true });
 categorySchema.index({ isActive: 1 });
+
+// Pre-save hook
+categorySchema.pre('save', function (next) {
+  this.updatedAt = new Date();
+  next();
+});
 
 export default mongoose.models.Category || mongoose.model('Category', categorySchema);

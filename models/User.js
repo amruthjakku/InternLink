@@ -80,6 +80,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  deactivatedAt: {
+    type: Date,
+    default: null,
+  },
   dashboardPreferences: {
     tabOrder: {
       type: [String],
@@ -91,10 +99,9 @@ const userSchema = new mongoose.Schema({
 });
 
 // Indexes
-userSchema.index({ role: 1 });
-userSchema.index({ college: 1 });
-userSchema.index({ assignedTechLead: 1 });
-userSchema.index({ cohortId: 1 });
+userSchema.index({ gitlabUsername: 1 }, { unique: true });
+userSchema.index({ email: 1, isActive: 1 }, { unique: true, sparse: true });
+userSchema.index({ role: 1, college: 1 });
 
 // Virtuals
 userSchema.virtual('collegeName', {
@@ -120,39 +127,7 @@ userSchema.pre('save', function (next) {
 
 // Static methods
 userSchema.statics.findByGitLabUsername = function (username, populateFields = '') {
-  const query = { gitlabUsername: username.toLowerCase() };
-  let mongooseQuery = this.findOne(query);
-
-  if (populateFields) {
-    if (typeof populateFields === 'string') {
-      const fields = populateFields.split(' ');
-      if (fields.includes('cohortId')) {
-        try {
-          const Cohort = mongoose.models.Cohort || require('../models/Cohort').default;
-          const otherFields = fields.filter(field => field !== 'cohortId');
-          if (otherFields.length > 0) {
-            mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
-          }
-          mongooseQuery = mongooseQuery.populate({
-            path: 'cohortId',
-            select: 'name startDate endDate maxAIDeveloperInterns currentAIDeveloperInterns'
-          });
-        } catch (error) {
-          console.warn('Warning: Could not populate cohortId field:', error.message);
-          const otherFields = fields.filter(field => field !== 'cohortId');
-          if (otherFields.length > 0) {
-            mongooseQuery = mongooseQuery.populate(otherFields.join(' '));
-          }
-        }
-      } else {
-        mongooseQuery = mongooseQuery.populate(populateFields);
-      }
-    } else {
-      mongooseQuery = mongooseQuery.populate(populateFields);
-    }
-  }
-
-  return mongooseQuery;
+  return this.findOne({ gitlabUsername: username.toLowerCase() }).populate(populateFields);
 };
 
 userSchema.statics.findAnyByGitLabUsername = function (username, populateFields = '') {
@@ -175,38 +150,24 @@ userSchema.statics.getTechLeadsByCollege = function (collegeId) {
   return this.find({ role: 'Tech Lead', college: collegeId }).populate('college');
 };
 
-userSchema.statics.getAIDeveloperInternsByTechLead = function (techLeadUsername) {
-  return this.findOne({ gitlabUsername: techLeadUsername, role: 'Tech Lead' })
-    .populate('college')
-    .then(techLead => {
-      if (!techLead) return [];
-      return this.find({
-        role: 'AI Developer Intern',
-        assignedTechLead: techLead._id
-      }).populate('college');
-    });
+userSchema.statics.getAIDeveloperInternsByTechLead = async function (techLeadId) {
+  return this.find({ role: 'AI Developer Intern', assignedTechLead: techLeadId }).populate('college');
 };
 
 userSchema.statics.getPOCsByCollege = function (collegeId) {
   return this.find({ role: 'POC', college: collegeId }).populate('college');
 };
 
-userSchema.statics.getAIDeveloperInternsByPOC = function (pocUsername) {
-  return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
-    .populate('college')
-    .then(poc => {
-      if (!poc) return [];
-      return this.find({ role: 'AI Developer Intern', college: poc.college }).populate('college');
-    });
+userSchema.statics.getAIDeveloperInternsByPOC = async function (pocId) {
+  const poc = await this.findById(pocId);
+  if (!poc || !poc.college) return [];
+  return this.find({ role: 'AI Developer Intern', college: poc.college }).populate('college');
 };
 
-userSchema.statics.getTechLeadsByPOC = function (pocUsername) {
-  return this.findOne({ gitlabUsername: pocUsername, role: 'POC' })
-    .populate('college')
-    .then(poc => {
-      if (!poc) return [];
-      return this.find({ role: 'Tech Lead', college: poc.college }).populate('college');
-    });
+userSchema.statics.getTechLeadsByPOC = async function (pocId) {
+  const poc = await this.findById(pocId);
+  if (!poc || !poc.college) return [];
+  return this.find({ role: 'Tech Lead', college: poc.college }).populate('college');
 };
 
 // Instance methods
@@ -222,100 +183,65 @@ userSchema.methods.updateLastLogin = function () {
   return this.save();
 };
 
-userSchema.methods.assignToCohort = function (cohortId, assignedBy = 'system') {
+userSchema.methods.assignToCohort = async function (cohortId) {
   const originalCohortId = this.cohortId;
   this.cohortId = cohortId;
-  this.updatedAt = new Date();
+  await this.save();
 
-  return this.save().then(savedUser => {
-    const updatePromises = [];
-
-    if (originalCohortId) {
-      updatePromises.push(
-        this.constructor.model('Cohort').findByIdAndUpdate(
-          originalCohortId,
-          { $inc: { memberCount: -1 }, updatedAt: new Date() }
-        )
-      );
-    }
-
-    if (cohortId) {
-      updatePromises.push(
-        this.constructor.model('Cohort').findByIdAndUpdate(
-          cohortId,
-          { $inc: { memberCount: 1 }, updatedAt: new Date() }
-        )
-      );
-    }
-
-    return Promise.all(updatePromises).then(() => savedUser);
-  });
+  if (originalCohortId) {
+    await this.constructor.model('Cohort').findByIdAndUpdate(originalCohortId, { $inc: { memberCount: -1 } });
+  }
+  if (cohortId) {
+    await this.constructor.model('Cohort').findByIdAndUpdate(cohortId, { $inc: { memberCount: 1 } });
+  }
 };
 
-userSchema.methods.removeFromCohort = function (removedBy = 'system') {
+userSchema.methods.removeFromCohort = async function () {
   const originalCohortId = this.cohortId;
   this.cohortId = null;
-  this.updatedAt = new Date();
+  await this.save();
 
-  return this.save().then(savedUser => {
-    if (originalCohortId) {
-      return this.constructor.model('Cohort').findByIdAndUpdate(
-        originalCohortId,
-        { $inc: { memberCount: -1 }, updatedAt: new Date() }
-      ).then(() => savedUser);
-    }
-    return savedUser;
-  });
+  if (originalCohortId) {
+    await this.constructor.model('Cohort').findByIdAndUpdate(originalCohortId, { $inc: { memberCount: -1 } });
+  }
 };
 
-userSchema.statics.bulkUpdateWithValidation = function (userIds, updateData, updatedBy = 'system') {
-  const results = {
-    successful: [],
-    failed: [],
-    skipped: []
-  };
+userSchema.statics.bulkUpdateWithValidation = async function (userIds, updateData) {
+  const results = { successful: [], failed: [], skipped: [] };
 
-  return Promise.all(userIds.map(userId => {
-    return this.findById(userId).then(user => {
+  for (const userId of userIds) {
+    try {
+      const user = await this.findById(userId);
       if (!user) {
         results.failed.push({ userId, error: 'User not found' });
-        return;
+        continue;
       }
 
       let needsUpdate = false;
       const changes = {};
-
-      Object.keys(updateData).forEach(key => {
+      for (const key in updateData) {
         if (user[key] !== updateData[key]) {
           needsUpdate = true;
           changes[key] = updateData[key];
         }
-      });
+      }
 
       if (!needsUpdate) {
-        results.skipped.push({
-          userId,
-          username: user.gitlabUsername,
-          reason: 'No changes needed'
-        });
-        return;
+        results.skipped.push({ userId, username: user.gitlabUsername, reason: 'No changes needed' });
+        continue;
       }
 
       Object.assign(user, changes);
-      user.updatedAt = new Date();
       user.sessionVersion += 1;
+      const savedUser = await user.save();
+      results.successful.push({ userId, username: savedUser.gitlabUsername, changes });
 
-      return user.save().then(savedUser => {
-        results.successful.push({
-          userId,
-          username: savedUser.gitlabUsername,
-          changes
-        });
-      });
-    }).catch(error => {
+    } catch (error) {
       results.failed.push({ userId, error: error.message });
-    });
-  })).then(() => results);
+    }
+  }
+
+  return results;
 };
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

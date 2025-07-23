@@ -1,145 +1,96 @@
 import mongoose from 'mongoose';
 
 const announcementSchema = new mongoose.Schema({
-  title: { 
-    type: String, 
-    required: true,
-    trim: true,
-    maxlength: 200
-  },
-  message: { 
-    type: String, 
-    required: true,
-    trim: true,
-    maxlength: 2000
-  },
-  priority: { 
-    type: String, 
-    enum: ['low', 'normal', 'high', 'urgent'], 
-    default: 'normal' 
-  },
-  targetAudience: { 
-    type: String, 
-    enum: ['all', 'interns', 'mentors', 'tech-leads', 'pocs'], 
-    default: 'all' 
-  },
-  scope: {
+  title: {
     type: String,
-    enum: ['global', 'college'],
-    default: 'college'
+    required: true,
+    trim: true,
   },
-  college: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  message: {
+    type: String,
+    required: true,
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal',
+  },
+  targetRoles: {
+    type: [String],
+    enum: ['admin', 'POC', 'Tech Lead', 'AI Developer Intern'],
+    default: [], // Empty array targets all roles
+  },
+  targetColleges: [{
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
-    required: function() {
-      return this.scope === 'college';
-    }
-  },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+  }], // Empty array targets all colleges (global)
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
   expiresAt: {
     type: Date,
-    default: null
   },
-  isActive: { 
-    type: Boolean, 
-    default: true 
+  isActive: {
+    type: Boolean,
+    default: true,
   },
   readBy: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    readAt: {
-      type: Date,
-      default: Date.now
-    }
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    readAt: { type: Date, default: Date.now },
   }],
-  tags: [{
-    type: String,
-    trim: true
-  }],
-  attachments: [{
-    name: String,
-    url: String,
-    type: String,
-    size: Number
-  }]
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
-// Indexes for better performance
-announcementSchema.index({ college: 1, isActive: 1, createdAt: -1 });
-announcementSchema.index({ scope: 1, isActive: 1, createdAt: -1 });
-announcementSchema.index({ expiresAt: 1 });
-announcementSchema.index({ targetAudience: 1 });
+// Indexes
+announcementSchema.index({ isActive: 1, expiresAt: 1 });
+announcementSchema.index({ targetColleges: 1 });
+announcementSchema.index({ targetRoles: 1 });
 
-// Virtual for checking if announcement is expired
-announcementSchema.virtual('isExpired').get(function() {
-  return this.expiresAt && new Date() > this.expiresAt;
+// Virtuals
+announcementSchema.virtual('isExpired').get(function () {
+  return this.expiresAt && this.expiresAt < new Date();
 });
 
-// Method to check if user has read the announcement
-announcementSchema.methods.isReadBy = function(userId) {
-  return this.readBy.some(read => read.user.toString() === userId.toString());
-};
-
-// Method to mark as read by user
-announcementSchema.methods.markAsReadBy = function(userId) {
-  if (!this.isReadBy(userId)) {
-    this.readBy.push({
-      user: userId,
-      readAt: new Date()
-    });
+// Methods
+announcementSchema.methods.markAsRead = async function (userId) {
+  if (!this.readBy.some(r => r.user.equals(userId))) {
+    this.readBy.push({ user: userId });
+    return this.save();
   }
 };
 
-// Static method to get announcements for a user
-announcementSchema.statics.getForUser = async function(userId, userRole, userCollege, options = {}) {
-  const { limit = 20, skip = 0, includeRead = true } = options;
-  
+// Statics
+announcementSchema.statics.findForUser = function (user) {
   const query = {
     isActive: true,
-    $or: [
-      { expiresAt: null },
-      { expiresAt: { $gt: new Date() } }
-    ]
+    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
   };
 
-  // Scope filtering
-  if (userRole === 'admin') {
-    // Admins see all announcements
-  } else {
-    query.$or = [
-      { scope: 'global' },
-      { scope: 'college', college: userCollege }
+  if (user.role !== 'admin') {
+    query.$and = [
+      {
+        $or: [
+          { targetColleges: { $size: 0 } }, // Global announcement
+          { targetColleges: user.college ? { $in: [user.college] } : { $size: 0 } } // Or targets user's college
+        ]
+      },
+      {
+        $or: [
+          { targetRoles: { $size: 0 } }, // For all roles
+          { targetRoles: { $in: [user.role] } } // Or for user's specific role
+        ]
+      }
     ];
   }
 
-  // Audience filtering
-  const audienceMap = {
-    'AI Developer Intern': ['all', 'interns'],
-    'Tech Lead': ['all', 'mentors', 'tech-leads'],
-    'POC': ['all', 'mentors', 'pocs'],
-    'admin': ['all', 'interns', 'mentors', 'tech-leads', 'pocs']
-  };
-
-  if (audienceMap[userRole]) {
-    query.targetAudience = { $in: audienceMap[userRole] };
-  }
-
-  const announcements = await this.find(query)
-    .populate('createdBy', 'name email role')
-    .populate('college', 'name')
-    .sort({ priority: -1, createdAt: -1 })
-    .limit(limit)
-    .skip(skip);
-
-  return announcements;
+  return this.find(query)
+    .populate('createdBy', 'name')
+    .sort({ priority: -1, createdAt: -1 });
 };
 
 const Announcement = mongoose.models.Announcement || mongoose.model('Announcement', announcementSchema);

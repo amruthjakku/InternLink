@@ -18,254 +18,67 @@ const cohortSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  techLeadId: {
+  techLead: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
   },
-  collegeId: {
+  college: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'College'
+    ref: 'College',
   },
-  maxAIDeveloperInterns: {
+  maxInterns: {
     type: Number,
-    default: 50
-  },
-  currentAIDeveloperInterns: {
-    type: Number,
-    default: 0
-  },
-  memberCount: {
-    type: Number,
-    default: 0
+    default: 50,
   },
   createdBy: {
-    type: String,
-    required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
-// Indexes for better performance
-cohortSchema.index({ name: 1 });
-cohortSchema.index({ techLeadId: 1 });
-cohortSchema.index({ collegeId: 1 });
-cohortSchema.index({ isActive: 1 });
+// Indexes
+cohortSchema.index({ name: 1, college: 1 }, { unique: true });
+cohortSchema.index({ techLead: 1 });
+cohortSchema.index({ isActive: 1, startDate: -1 });
 
-// Pre-save middleware to update timestamps
-cohortSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+// Virtuals
+cohortSchema.virtual('members', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'cohortId',
 });
 
-// Static methods
-cohortSchema.statics.getActiveCohorts = function() {
-  return this.find({ isActive: true }).sort({ startDate: -1 });
+cohortSchema.virtual('memberCount', {
+  ref: 'User',
+  localField: '_id',
+  foreignField: 'cohortId',
+  count: true,
+});
+
+// Static Methods
+cohortSchema.statics.findActive = function () {
+  return this.find({ isActive: true }).sort({ startDate: -1 }).populate('techLead college');
 };
 
-cohortSchema.statics.getCohortById = function(id) {
-  return this.findById(id);
+cohortSchema.statics.assignUsersToCohort = async function (cohortId, userIds) {
+  const User = this.model('User');
+  await User.updateMany({ _id: { $in: userIds } }, { $set: { cohortId } });
+  return { success: true, message: `${userIds.length} users assigned to cohort.` };
 };
 
-// Instance methods
-cohortSchema.methods.updateAIDeveloperInternCount = async function() {
-  const User = mongoose.models.User;
-  const count = await User.countDocuments({ 
-    cohortId: this._id,
-    role: 'AI Developer Intern',
-    isActive: true
-  });
-  
-  this.currentAIDeveloperInterns = count;
-  return this.save();
-};
-
-cohortSchema.methods.updateMemberCount = async function() {
-  const User = mongoose.models.User;
-  const count = await User.countDocuments({ 
-    cohortId: this._id,
-    isActive: true
-  });
-  
-  this.memberCount = count;
-  this.currentAIDeveloperInterns = await User.countDocuments({ 
-    cohortId: this._id,
-    role: 'AI Developer Intern',
-    isActive: true
-  });
-  
-  return this.save();
-};
-
-cohortSchema.methods.addMember = function(userId) {
-  this.memberCount += 1;
-  this.updatedAt = new Date();
-  return this.save();
-};
-
-cohortSchema.methods.removeMember = function(userId) {
-  this.memberCount = Math.max(0, this.memberCount - 1);
-  this.updatedAt = new Date();
-  return this.save();
-};
-
-// Static methods for bulk operations
-cohortSchema.statics.syncAllMemberCounts = async function() {
-  const cohorts = await this.find({ isActive: true });
-  const results = {
-    updated: 0,
-    errors: []
-  };
-  
-  for (const cohort of cohorts) {
-    try {
-      await cohort.updateMemberCount();
-      results.updated++;
-    } catch (error) {
-      results.errors.push({
-        cohortId: cohort._id,
-        cohortName: cohort.name,
-        error: error.message
-      });
-    }
-  }
-  
-  return results;
-};
-
-cohortSchema.statics.assignUsers = async function(cohortId, userIds, assignedBy = 'system') {
-  const User = mongoose.models.User;
-  const cohort = await this.findById(cohortId);
-  
-  if (!cohort) {
-    throw new Error('Cohort not found');
-  }
-  
-  const results = {
-    successful: [],
-    failed: [],
-    skipped: []
-  };
-  
-  for (const userId of userIds) {
-    try {
-      const user = await User.findById(userId);
-      
-      if (!user) {
-        results.failed.push({
-          userId,
-          error: 'User not found'
-        });
-        continue;
-      }
-      
-      if (!user.isActive) {
-        results.failed.push({
-          userId,
-          username: user.gitlabUsername,
-          error: 'User is not active'
-        });
-        continue;
-      }
-      
-      if (user.cohortId && user.cohortId.toString() === cohortId) {
-        results.skipped.push({
-          userId,
-          username: user.gitlabUsername,
-          reason: 'Already assigned to this cohort'
-        });
-        continue;
-      }
-      
-      // Use the enhanced assignToCohort method
-      await user.assignToCohort(cohortId, assignedBy);
-      
-      results.successful.push({
-        userId,
-        username: user.gitlabUsername
-      });
-      
-    } catch (error) {
-      results.failed.push({
-        userId,
-        error: error.message
-      });
-    }
-  }
-  
-  // Update cohort member count
-  await cohort.updateMemberCount();
-  
-  return results;
-};
-
-cohortSchema.statics.removeUsers = async function(cohortId, userIds, removedBy = 'system') {
-  const User = mongoose.models.User;
-  const cohort = await this.findById(cohortId);
-  
-  if (!cohort) {
-    throw new Error('Cohort not found');
-  }
-  
-  const results = {
-    successful: [],
-    failed: [],
-    skipped: []
-  };
-  
-  for (const userId of userIds) {
-    try {
-      const user = await User.findById(userId);
-      
-      if (!user) {
-        results.failed.push({
-          userId,
-          error: 'User not found'
-        });
-        continue;
-      }
-      
-      if (!user.cohortId || user.cohortId.toString() !== cohortId) {
-        results.skipped.push({
-          userId,
-          username: user.gitlabUsername,
-          reason: 'Not assigned to this cohort'
-        });
-        continue;
-      }
-      
-      // Use the enhanced removeFromCohort method
-      await user.removeFromCohort(removedBy);
-      
-      results.successful.push({
-        userId,
-        username: user.gitlabUsername
-      });
-      
-    } catch (error) {
-      results.failed.push({
-        userId,
-        error: error.message
-      });
-    }
-  }
-  
-  // Update cohort member count
-  await cohort.updateMemberCount();
-  
-  return results;
+cohortSchema.statics.removeUsersFromCohort = async function (cohortId, userIds) {
+  const User = this.model('User');
+  await User.updateMany({ _id: { $in: userIds }, cohortId }, { $unset: { cohortId: '' } });
+  return { success: true, message: `${userIds.length} users removed from cohort.` };
 };
 
 export default mongoose.models.Cohort || mongoose.model('Cohort', cohortSchema);
