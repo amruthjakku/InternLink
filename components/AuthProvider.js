@@ -18,15 +18,11 @@ export function AuthProvider({ children }) {
     setIsClient(true);
   }, []);
 
-  // Function to refresh user data from database - DISABLED TO PREVENT REFRESH
+  // Function to refresh user data from database - CONTROLLED REFRESH
   const refreshUserData = useCallback(async () => {
-    // TEMPORARILY DISABLED TO STOP AUTO-REFRESH
-    console.log('refreshUserData called but disabled to prevent auto-refresh');
-    return;
-    
     if (!session?.user?.gitlabUsername) return;
     
-    // Check if we've refreshed recently
+    // Check if we've refreshed recently (increased interval to prevent excessive calls)
     const now = Date.now();
     if (lastRefresh && (now - lastRefresh) < REFRESH_INTERVAL) {
       return; // Skip if refreshed within the last 5 minutes
@@ -64,7 +60,7 @@ export function AuthProvider({ children }) {
     }
 
     if (session?.user) {
-      // Simplified user setting without refresh calls
+      // Check if user has completed onboarding
       const storedUserData = localStorage.getItem(`user_${session.user.gitlabId}`);
       
       if (storedUserData) {
@@ -76,6 +72,11 @@ export function AuthProvider({ children }) {
             gitlabId: session.user?.gitlabId,
             gitlabUsername: session.user?.gitlabUsername,
           });
+          
+          // Only refresh once per session to prevent loops
+          if (!lastRefresh) {
+            setTimeout(() => refreshUserData(), 1000);
+          }
         } catch (error) {
           console.error('Error parsing stored user data:', error);
           localStorage.removeItem(`user_${session.user.gitlabId}`);
@@ -93,13 +94,18 @@ export function AuthProvider({ children }) {
           gitlabUsername: session.user?.gitlabUsername,
           needsOnboarding: true,
         });
+        
+        // Only refresh once for new users
+        if (!lastRefresh) {
+          setTimeout(() => refreshUserData(), 1000);
+        }
       }
     } else {
       setUser(null);
     }
     
     setLoading(false);
-  }, [session, status, isClient]);
+  }, [session, status, isClient, refreshUserData, lastRefresh]);
 
   const login = (userData) => {
     // For demo login (fallback)
