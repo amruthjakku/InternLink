@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import GitLabProvider from 'next-auth/providers/gitlab';
-import { connectToDatabase } from '../../../../utils/database.js';
+import { connectToDatabase } from '../../../../lib/mongoose.js';
 import User from '../../../../models/User.js';
 import College from '../../../../models/College.js';
 
@@ -106,14 +106,21 @@ export const authOptions = {
           gitlabUsername: profile.username,
           gitlabId: profile.id,
           name: profile.name,
-          email: profile.email
+          email: profile.email,
+          hasUser: !!user,
+          hasAccount: !!account,
+          hasProfile: !!profile
         });
 
         // Connect to database
+        console.log('🔍 SignIn Debug - Connecting to database...');
         await connectToDatabase();
+        console.log('✅ SignIn Debug - Database connected');
         
         // Check if user exists in our system by GitLab username
+        console.log('🔍 SignIn Debug - Looking up user:', profile.username);
         let existingUser = await User.findByGitLabUsername(profile.username);
+        console.log('🔍 SignIn Debug - User lookup result:', !!existingUser);
         
         console.log('🔍 SignIn Debug - Database lookup result:', {
           username: profile.username,
@@ -124,7 +131,7 @@ export const authOptions = {
         
         if (!existingUser) {
           // Auto-register new GitLab users with pending status
-          console.log(`🔄 Auto-registering new GitLab user: ${profile.username}`);
+          console.log(`🔄 SignIn Debug - Auto-registering new GitLab user: ${profile.username}`);
           
           try {
             const newUser = new User({
@@ -219,9 +226,8 @@ export const authOptions = {
               
               // Try to get cohort name if available
               try {
-                const { getDatabase } = await import('../../../../utils/database.js');
-                const db = await getDatabase();
-                const cohort = await db.collection('cohorts').findOne({ _id: user.cohortId });
+                const Cohort = (await import('../../../../models/Cohort.js')).default;
+                const cohort = await Cohort.findById(user.cohortId);
                 if (cohort) {
                   token.cohortName = cohort.name;
                 }
@@ -313,9 +319,8 @@ export const authOptions = {
               
               // Try to get cohort name if available
               try {
-                const { getDatabase } = await import('../../../../utils/database.js');
-                const db = await getDatabase();
-                const cohort = await db.collection('cohorts').findOne({ _id: user.cohortId });
+                const Cohort = (await import('../../../../models/Cohort.js')).default;
+                const cohort = await Cohort.findById(user.cohortId);
                 if (cohort) {
                   token.cohortName = cohort.name;
                 }
