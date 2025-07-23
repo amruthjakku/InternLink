@@ -2,10 +2,21 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useTabData, useDashboardData } from '../../../hooks/useTabData';
-import { cachedFetch, CacheKeys, CacheTTL } from '../../../utils/cache';
+import { useAdminData, useAdminTabData } from '../../../hooks/useAdminData';
+import { useFocusManager, useCachedDataWithFocus } from '../../../hooks/useFocusManager';
+import dashboardCache, { cachedFetch, CacheKeys, CacheTTL } from '../../../utils/cache';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import AdminDashboardWrapper, { TabContent, DataSection, withAdminCache } from '../../../components/admin/AdminDashboardWrapper';
+import { 
+  DashboardSkeleton, 
+  StatsSkeleton, 
+  TableSkeleton, 
+  GridSkeleton, 
+  CardSkeleton, 
+  ListSkeleton 
+} from '../../../components/ui/Skeleton';
 import { SystemMonitoring } from '../../../components/admin/SystemMonitoring';
 import { AdvancedUserManagement } from '../../../components/admin/AdvancedUserManagement';
 import { EnhancedUserManagement } from '../../../components/admin/EnhancedUserManagement';
@@ -32,16 +43,13 @@ import MonitoringAnalytics from '../../../components/admin/MonitoringAnalytics';
 import SystemTools from '../../../components/admin/SystemTools';
 import AnnouncementsManagement from '../../../components/admin/AnnouncementsManagement';
 
-// Enhanced Combined Tab Components
-const CombinedCollegeManagement = () => {
+// Enhanced Combined Tab Components with Caching
+const CombinedCollegeManagement = memo(() => {
   const [activeSubTab, setActiveSubTab] = useState('list');
-  const [colleges, setColleges] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCollege, setEditingCollege] = useState(null);
-  const [mentors, setTechLeads] = useState([]);
   const [newCollege, setNewCollege] = useState({
     name: '',
     description: '',
@@ -50,25 +58,36 @@ const CombinedCollegeManagement = () => {
     superTechLeadUsername: ''
   });
 
-  // Fetch colleges
-  const fetchColleges = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/colleges');
-      if (response.ok) {
-        const data = await response.json();
-        setColleges(data.colleges || []);
-      } else {
-        console.error('Failed to fetch colleges');
-      }
-    } catch (error) {
-      console.error('Error fetching colleges:', error);
-    } finally {
-      setLoading(false);
+  // Use cached data for colleges
+  const { 
+    data: colleges = [], 
+    loading: collegesLoading, 
+    error: collegesError,
+    refetch: refetchColleges 
+  } = useCachedDataWithFocus(
+    CacheKeys.ALL_COLLEGES(),
+    () => fetch('/api/admin/colleges').then(res => res.json()).then(data => data.colleges || []),
+    { 
+      ttl: CacheTTL.LONG,
+      refreshOnFocus: false,
+      staleWhileRevalidate: true
     }
-  };
+  );
 
-  // Add new college
+  // Use cached data for mentors/POCs
+  const { 
+    data: mentors = [], 
+    loading: mentorsLoading 
+  } = useCachedDataWithFocus(
+    'admin:users:pocs',
+    () => fetch('/api/admin/users?role=POC').then(res => res.json()).then(data => data.users || []),
+    { 
+      ttl: CacheTTL.MEDIUM,
+      refreshOnFocus: false
+    }
+  );
+
+  // Add new college with cache invalidation
   const handleAddCollege = async (e) => {
     e.preventDefault();
     try {
@@ -83,7 +102,11 @@ const CombinedCollegeManagement = () => {
       if (response.ok) {
         setShowAddModal(false);
         setNewCollege({ name: '', description: '', location: '', website: '', superTechLeadUsername: '' });
-        fetchColleges(); // Refresh the list
+        
+        // Invalidate related caches and refetch
+        dashboardCache.delete(CacheKeys.ALL_COLLEGES());
+        dashboardCache.invalidatePattern('admin:colleges:.*');
+        refetchColleges();
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to add college');
@@ -94,7 +117,7 @@ const CombinedCollegeManagement = () => {
     }
   };
 
-  // Delete college
+  // Delete college with cache invalidation
   const handleDeleteCollege = async (collegeId) => {
     if (!confirm('Are you sure you want to delete this college?')) return;
     
@@ -104,7 +127,10 @@ const CombinedCollegeManagement = () => {
       });
 
       if (response.ok) {
-        fetchColleges(); // Refresh the list
+        // Invalidate related caches and refetch
+        dashboardCache.delete(CacheKeys.ALL_COLLEGES());
+        dashboardCache.invalidatePattern('admin:colleges:.*');
+        refetchColleges();
       } else {
         alert('Failed to delete college');
       }
@@ -255,9 +281,19 @@ const CombinedCollegeManagement = () => {
             </div>
 
             {/* Colleges Grid */}
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            {collegesLoading ? (
+              <GridSkeleton items={6} columns={3} />
+            ) : collegesError ? (
+              <div className="text-center py-12">
+                <div className="text-red-500 text-5xl mb-4">⚠️</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Colleges</h3>
+                <p className="text-gray-600 mb-4">{collegesError.message}</p>
+                <button
+                  onClick={() => refetchColleges()}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : filteredColleges.length === 0 ? (
               <div className="text-center py-12">
@@ -720,15 +756,39 @@ const CombinedCohortSystem = () => {
   );
 };
 
-export default function AdminDashboard() {
+// Main Admin Dashboard Component with Caching
+const AdminDashboardContent = memo(({ adminContext }) => {
   const { data: session, status, update } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({});
-  const [sessionRefreshed, setSessionRefreshed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sessionRefreshed, setSessionRefreshed] = useState(false);
+
+  // Use admin data hook for centralized state management
+  const {
+    activeTab,
+    switchTab,
+    isTabLoaded,
+    isTabLoading,
+    getTabData,
+    refreshCurrentTab
+  } = useAdminData();
+
+  // Use cached stats data
+  const { 
+    data: stats = {}, 
+    loading: statsLoading, 
+    error: statsError,
+    refetch: refetchStats 
+  } = useCachedDataWithFocus(
+    CacheKeys.SYSTEM_STATS(),
+    () => fetch('/api/admin/stats').then(res => res.json()),
+    { 
+      ttl: CacheTTL.SHORT,
+      refreshOnFocus: true,
+      staleWhileRevalidate: true
+    }
+  );
 
   // Simplified tab configuration - reduced from 12 to 7 tabs
   const defaultTabs = [
@@ -887,39 +947,32 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [session, status, router, sessionRefreshed]);
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
-    try {
-      const response = await fetch('/api/admin/dashboard-stats');
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    }
-  };
-
+  // Authentication and session management
   useEffect(() => {
-    if (!loading) {
-      fetchDashboardData();
-      
-      // Set up auto-refresh every 30 seconds for real-time data
-      const interval = setInterval(() => {
-        fetchDashboardData();
-      }, 30000); // 30 seconds
-      
-      return () => clearInterval(interval);
+    if (status === 'loading') return;
+    
+    if (!session) {
+      router.push('/login');
+      return;
     }
-  }, [loading]);
+    
+    if (session.user.role !== 'admin') {
+      router.push('/dashboard');
+      return;
+    }
 
-  if (loading) {
+    if (!sessionRefreshed) {
+      refreshSession();
+      return;
+    }
+  }, [session, status, router, sessionRefreshed]);
+
+  // Show loading state during authentication
+  if (status === 'loading' || !session) {
     return (
-      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 to-gray-100'} flex items-center justify-center transition-colors duration-300`}>
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Loading Dashboard...</p>
-          <p className={`text-sm mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Setting up your admin experience</p>
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 to-gray-100'} transition-colors duration-300`}>
+        <div className="container mx-auto px-4 py-8">
+          <DashboardSkeleton />
         </div>
       </div>
     );
@@ -1029,7 +1082,7 @@ export default function AdminDashboard() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => switchTab(tab.id)}
                             className={`flex-shrink-0 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 transform ${
                               activeTab === tab.id
                                 ? `bg-gradient-to-r ${tab.color} text-white shadow-lg scale-105`
@@ -1094,7 +1147,21 @@ export default function AdminDashboard() {
                 </div>
             
                 {/* Enhanced Stats Cards with Real Data */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {statsLoading ? (
+                  <StatsSkeleton items={8} />
+                ) : statsError ? (
+                  <div className="text-center py-8">
+                    <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                    <p className="text-gray-600 mb-4">Failed to load system stats</p>
+                    <button
+                      onClick={() => refetchStats()}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <MetricCard
                     title="Total Users"
                     value={stats.totalUsers || 0}
@@ -1159,7 +1226,8 @@ export default function AdminDashboard() {
                     color="emerald"
                     subtitle="Real-time calculated"
                   />
-                </div>
+                  </div>
+                )}
 
                 {/* Real-time Data Synchronization Status */}
                 <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-900' : 'bg-gradient-to-r from-blue-50 to-indigo-50'} rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-blue-200'} p-8`}>
@@ -1251,10 +1319,10 @@ export default function AdminDashboard() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                      { icon: '👤', title: 'Add User', subtitle: 'Create new user account', color: 'from-blue-500 to-cyan-500', action: () => setActiveTab('combined-users') },
-                      { icon: '🏫', title: 'Add College', subtitle: 'Register new institution', color: 'from-purple-500 to-pink-500', action: () => setActiveTab('combined-college') },
-                      { icon: '📦', title: 'Bulk Import', subtitle: 'Import multiple records', color: 'from-green-500 to-emerald-500', action: () => setActiveTab('bulk-operations') },
-                      { icon: '📊', title: 'View Analytics', subtitle: 'Detailed system insights', color: 'from-orange-500 to-red-500', action: () => setActiveTab('advanced-analytics') }
+                      { icon: '👤', title: 'Add User', subtitle: 'Create new user account', color: 'from-blue-500 to-cyan-500', action: () => switchTab('combined-users') },
+                      { icon: '🏫', title: 'Add College', subtitle: 'Register new institution', color: 'from-purple-500 to-pink-500', action: () => switchTab('combined-college') },
+                      { icon: '📦', title: 'Bulk Import', subtitle: 'Import multiple records', color: 'from-green-500 to-emerald-500', action: () => switchTab('bulk-operations') },
+                      { icon: '📊', title: 'View Analytics', subtitle: 'Detailed system insights', color: 'from-orange-500 to-red-500', action: () => switchTab('advanced-analytics') }
                     ].map((action, index) => (
                       <button
                         key={index}
@@ -1346,48 +1414,132 @@ export default function AdminDashboard() {
         )}
 
         {/* College Management Tab */}
-        {activeTab === 'college-management' && <CombinedCollegeManagement />}
+        {activeTab === 'college-management' && (
+          <TabContent 
+            tabName="college-management" 
+            loading={isTabLoading('college-management')}
+            fallback={<GridSkeleton items={6} columns={3} />}
+          >
+            <CombinedCollegeManagement />
+          </TabContent>
+        )}
         
         {/* Attendance & IP System Tab */}
-        {activeTab === 'attendance-ip' && <CombinedAttendanceSystem />}
+        {activeTab === 'attendance-ip' && (
+          <TabContent 
+            tabName="attendance-ip" 
+            loading={isTabLoading('attendance-ip')}
+            fallback={<TableSkeleton rows={8} />}
+          >
+            <CombinedAttendanceSystem />
+          </TabContent>
+        )}
         
         {/* User Management Tab */}
-        {activeTab === 'user-management' && <ComprehensiveUserManagement />}
+        {activeTab === 'user-management' && (
+          <TabContent 
+            tabName="user-management" 
+            loading={isTabLoading('user-management')}
+            fallback={<TableSkeleton rows={10} />}
+          >
+            <ComprehensiveUserManagement />
+          </TabContent>
+        )}
         
         {/* Cohort System Tab */}
         {activeTab === 'cohort-system' && (
-          <div className="space-y-6">
-            <CohortManagementTab />
-            <CohortAssignmentTab />
-            <CohortCollegesTab />
-          </div>
+          <TabContent 
+            tabName="cohort-system" 
+            loading={isTabLoading('cohort-system')}
+            fallback={<GridSkeleton items={6} />}
+          >
+            <div className="space-y-6">
+              <CohortManagementTab />
+              <CohortAssignmentTab />
+              <CohortCollegesTab />
+            </div>
+          </TabContent>
         )}
         
         {/* Announcements Tab */}
-        {activeTab === 'announcements' && <AnnouncementsManagement />}
+        {activeTab === 'announcements' && (
+          <TabContent 
+            tabName="announcements" 
+            loading={isTabLoading('announcements')}
+            fallback={<ListSkeleton items={8} />}
+          >
+            <AnnouncementsManagement />
+          </TabContent>
+        )}
         
         {/* System Monitoring Tab */}
-        {activeTab === 'system-monitoring' && <SystemMonitoring />}
+        {activeTab === 'system-monitoring' && (
+          <TabContent 
+            tabName="system-monitoring" 
+            loading={isTabLoading('system-monitoring')}
+            fallback={<DashboardSkeleton />}
+          >
+            <SystemMonitoring />
+          </TabContent>
+        )}
         
         {/* Analytics Hub Tab */}
-        {activeTab === 'analytics-hub' && <AdvancedAnalytics />}
+        {activeTab === 'analytics-hub' && (
+          <TabContent 
+            tabName="analytics-hub" 
+            loading={isTabLoading('analytics-hub')}
+            fallback={<DashboardSkeleton />}
+          >
+            <AdvancedAnalytics />
+          </TabContent>
+        )}
         
         {/* Task Management Tab - Integrating the new TaskWorkflow here */}
         {activeTab === 'task-management' && (
-          <div className="space-y-6">
-            <TaskWorkflow />
-            <TaskManagementTab />
-          </div>
+          <TabContent 
+            tabName="task-management" 
+            loading={isTabLoading('task-management')}
+            fallback={<GridSkeleton items={8} />}
+          >
+            <div className="space-y-6">
+              <TaskWorkflow />
+              <TaskManagementTab />
+            </div>
+          </TabContent>
         )}
         
         {/* POCs Tab */}
-        {activeTab === 'pocs' && <POCManagement />}
+        {activeTab === 'pocs' && (
+          <TabContent 
+            tabName="pocs" 
+            loading={isTabLoading('pocs')}
+            fallback={<TableSkeleton rows={6} />}
+          >
+            <POCManagement />
+          </TabContent>
+        )}
         
         {/* Data Integrity Tab */}
-        {activeTab === 'data-integrity' && <DataIntegrityChecker />}
+        {activeTab === 'data-integrity' && (
+          <TabContent 
+            tabName="data-integrity" 
+            loading={isTabLoading('data-integrity')}
+            fallback={<TableSkeleton rows={8} />}
+          >
+            <DataIntegrityChecker />
+          </TabContent>
+        )}
         
         {/* Bulk Operations Tab */}
-        {activeTab === 'bulk-operations' && <BulkImportTab />}
+        {activeTab === 'bulk-operations' && (
+          <TabContent 
+            tabName="bulk-operations" 
+            loading={isTabLoading('bulk-operations')}
+            fallback={<GridSkeleton items={4} columns={2} />}
+          >
+            <BulkImportTab />
+          </TabContent>
+        )}
 
         {/* Legacy Debug Tools Tab (keeping for compatibility) */}
         {activeTab === 'debug-tools' && (
@@ -1411,5 +1563,16 @@ export default function AdminDashboard() {
         )}
       </div>
     </div>
+  );
+});
+
+AdminDashboardContent.displayName = 'AdminDashboardContent';
+
+// Main export with AdminDashboardWrapper for caching and focus management
+export default function AdminDashboard() {
+  return (
+    <AdminDashboardWrapper>
+      <AdminDashboardContent />
+    </AdminDashboardWrapper>
   );
 }
