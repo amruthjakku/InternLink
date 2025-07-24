@@ -75,55 +75,138 @@ export const authOptions = {
       clientId: process.env.GITLAB_CLIENT_ID,
       clientSecret: process.env.GITLAB_CLIENT_SECRET,
       profile(profile) {
-        return {
-          id: profile.id.toString(),
-          name: profile.name,
-          email: profile.email,
-          image: profile.avatar_url,
-          username: profile.username.toLowerCase(),
-        };
+        try {
+          console.log('GitLab profile received:', profile);
+          
+          // Validate required fields
+          if (!profile || !profile.id || !profile.username || !profile.name) {
+            console.error('Missing required profile fields:', { profile });
+            throw new Error('Missing required profile fields');
+          }
+
+          return {
+            id: profile.id.toString(),
+            name: profile.name,
+            email: profile.email,
+            image: profile.avatar_url,
+            username: profile.username.toLowerCase(),
+          };
+        } catch (error) {
+          console.error('Error processing GitLab profile:', error);
+          throw error;
+        }
       },
     }
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        console.log('Authentication attempt for:', { gitlabUsername: profile.username, gitlabId: profile.id });
-        await connectToDatabase();
+        // Validate required profile data
+        if (!profile || !profile.username || !profile.id || !profile.name) {
+          console.error('Missing required profile data:', { profile });
+          return false;
+        }
 
-        let existingUser = await User.findOneAndUpdate(
-          { gitlabUsername: profile.username.toLowerCase() },
-          {
-            $set: {
+        console.log('Authentication attempt for:', { 
+          gitlabUsername: profile.username, 
+          gitlabId: profile.id,
+          name: profile.name,
+          email: profile.email 
+        });
+
+        // Connect to database with error handling
+        try {
+          await connectToDatabase();
+        } catch (dbError) {
+          console.error('Database connection failed during signIn:', dbError);
+          return false;
+        }
+
+        // Check if user exists first to handle potential conflicts
+        let existingUser;
+        try {
+          existingUser = await User.findOne({ 
+            $or: [
+              { gitlabUsername: profile.username.toLowerCase() },
+              { gitlabId: profile.id.toString() }
+            ]
+          });
+        } catch (findError) {
+          console.error('Error finding existing user:', findError);
+          return false;
+        }
+
+        // Update or create user
+        try {
+          if (existingUser) {
+            // Update existing user
+            existingUser.gitlabId = profile.id.toString();
+            existingUser.name = profile.name;
+            existingUser.email = profile.email || existingUser.email;
+            existingUser.profileImage = profile.avatar_url;
+            existingUser.lastLoginAt = new Date();
+            existingUser.gitlabUsername = profile.username.toLowerCase();
+            
+            await existingUser.save();
+            console.log(`User updated: ${profile.username}`);
+          } else {
+            // Create new user
+            existingUser = new User({
+              gitlabUsername: profile.username.toLowerCase(),
               gitlabId: profile.id.toString(),
               name: profile.name,
               email: profile.email,
               profileImage: profile.avatar_url,
-              lastLoginAt: new Date(),
-            },
-            $setOnInsert: {
               role: 'AI Developer Intern',
               assignedBy: 'auto-registration',
-            },
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
+              lastLoginAt: new Date(),
+            });
+            
+            await existingUser.save();
+            console.log(`User created: ${profile.username}`);
+          }
+        } catch (saveError) {
+          console.error('Error saving user:', saveError);
+          // If it's a duplicate key error, try to find the existing user
+          if (saveError.code === 11000) {
+            try {
+              existingUser = await User.findOne({ 
+                $or: [
+                  { gitlabUsername: profile.username.toLowerCase() },
+                  { gitlabId: profile.id.toString() }
+                ]
+              });
+              if (existingUser) {
+                console.log(`Found existing user after duplicate error: ${profile.username}`);
+                return true;
+              }
+            } catch (retryError) {
+              console.error('Error retrying user lookup:', retryError);
+            }
+          }
+          return false;
+        }
 
-        console.log(`User ${existingUser.isNew ? 'created' : 'updated'}: ${profile.username}`);
         return true;
         
       } catch (error) {
-        console.error('Error during sign in:', error);
+        console.error('Unexpected error during sign in:', error);
         return false;
       }
     },
     
     async jwt({ token, account, profile, trigger }) {
+      try {
+        // Initial sign-in
+        if (account && profile) {
+          // Validate profile data
+          if (!profile.username || !profile.id) {
+            console.error('Missing required profile data in jwt callback:', { profile });
+            return token;
+          }
 
-      // Initial sign-in
-      if (account && profile) {
-        await connectToDatabase();
-        const user = await User.findOne({ gitlabUsername: profile.username.toLowerCase() }).populate('college cohortId');
+          await connectToDatabase();
+          const user = await User.findOne({ gitlabUsername: profile.username.toLowerCase() }).populate('college cohortId');
 
         if (user) {
           token.userId = user._id.toString();
@@ -144,27 +227,32 @@ export const authOptions = {
         token.gitlabTokenExpires = account.expires_at;
 
         // Upsert GitLab integration data
-        const { encrypt } = await import('../../../../utils/encryption.js');
-        const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
-        await GitLabIntegration.findOneAndUpdate(
-          { userId: token.userId },
-          {
-            gitlabUserId: parseInt(profile.id),
-            gitlabUsername: profile.username,
-            gitlabEmail: profile.email,
-            accessToken: encrypt(account.access_token),
-            refreshToken: account.refresh_token ? encrypt(account.refresh_token) : null,
-            tokenExpiresAt: new Date(account.expires_at * 1000),
-            userProfile: {
-              name: profile.name,
-              email: profile.email,
-              avatarUrl: profile.avatar_url,
-              webUrl: profile.web_url
+        try {
+          const { encrypt } = await import('../../../../utils/encryption.js');
+          const GitLabIntegration = (await import('../../../../models/GitLabIntegration.js')).default;
+          await GitLabIntegration.findOneAndUpdate(
+            { userId: token.userId },
+            {
+              gitlabUserId: parseInt(profile.id),
+              gitlabUsername: profile.username,
+              gitlabEmail: profile.email,
+              accessToken: encrypt(account.access_token),
+              refreshToken: account.refresh_token ? encrypt(account.refresh_token) : null,
+              tokenExpiresAt: new Date(account.expires_at * 1000),
+              userProfile: {
+                name: profile.name,
+                email: profile.email,
+                avatarUrl: profile.avatar_url,
+                webUrl: profile.web_url
+              },
+              isConnected: true,
             },
-            isConnected: true,
-          },
-          { upsert: true, new: true }
-        );
+            { upsert: true, new: true }
+          );
+        } catch (integrationError) {
+          console.error('Error updating GitLab integration:', integrationError);
+          // Continue with authentication even if integration update fails
+        }
 
         return token;
       }
@@ -207,36 +295,56 @@ export const authOptions = {
       }
 
       return token;
+      } catch (error) {
+        console.error('Unexpected error in jwt callback:', error);
+        return token;
+      }
     },
     
     async session({ session, token }) {
-      // Add custom fields to session from token
-      session.user = {
-        ...session.user,
-        id: token.userId,
-        role: token.role,
-        gitlabUsername: token.gitlabUsername,
-        gitlabId: token.gitlabId,
-        college: token.college,
-        assignedBy: token.assignedBy,
-        cohortId: token.cohortId,
-        cohortName: token.cohortName,
-      };
+      try {
+        // Check for token errors first
+        if (token.error) {
+          console.error('Token error in session callback:', token.error);
+          return { ...session, error: token.error };
+        }
 
-      session.gitlabAccessToken = token.gitlabAccessToken;
-      session.gitlabRefreshToken = token.gitlabRefreshToken;
-      session.gitlabTokenExpires = token.gitlabTokenExpires;
-      session.error = token.error;
-      
-      return session;
+        // Add custom fields to session from token
+        session.user = {
+          ...session.user,
+          id: token.userId,
+          role: token.role,
+          gitlabUsername: token.gitlabUsername,
+          gitlabId: token.gitlabId,
+          college: token.college,
+          assignedBy: token.assignedBy,
+          cohortId: token.cohortId,
+          cohortName: token.cohortName,
+        };
+
+        session.gitlabAccessToken = token.gitlabAccessToken;
+        session.gitlabRefreshToken = token.gitlabRefreshToken;
+        session.gitlabTokenExpires = token.gitlabTokenExpires;
+        session.error = token.error;
+        
+        return session;
+      } catch (error) {
+        console.error('Unexpected error in session callback:', error);
+        return { ...session, error: 'SessionError' };
+      }
     },
     
     async redirect({ url, baseUrl }) {
-      // Always redirect to dashboard redirect page after sign in
-      if (url.startsWith(baseUrl)) {
+      try {
+        // Always redirect to dashboard redirect page after sign in
+        if (url.startsWith(baseUrl)) {
+          return `${baseUrl}/dashboard-redirect`;
+        }
+        return `${baseUrl}/dashboard-redirect`;
+      } catch (error) {
+        console.error('Error in redirect callback:', error);
         return `${baseUrl}/dashboard-redirect`;
       }
-      return `${baseUrl}/dashboard-redirect`;
     }
   },
   pages: {
@@ -245,9 +353,26 @@ export const authOptions = {
     signOut: '/'
   },
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   debug: process.env.NODE_ENV === 'development',
+  logger: {
+    error(code, metadata) {
+      console.error('NextAuth Error:', code, metadata);
+    },
+    warn(code) {
+      console.warn('NextAuth Warning:', code);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('NextAuth Debug:', code, metadata);
+      }
+    }
+  },
 
 };
 

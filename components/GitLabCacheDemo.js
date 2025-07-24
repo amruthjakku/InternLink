@@ -43,8 +43,9 @@ export function GitLabCacheDemo() {
     };
 
     updateStats();
-    const interval = setInterval(updateStats, 2000);
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const interval = setInterval(updateStats, 2000);
+    // return () => clearInterval(interval);
   }, [user?.id]);
 
   const handleInvalidateCache = async () => {

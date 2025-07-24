@@ -212,12 +212,11 @@ export function AdvancedSystemAnalytics() {
     setPredictions(generatePredictions());
     setSystemMetrics(generateSystemMetrics());
 
-    // Update real-time data every 30 seconds
-    const interval = setInterval(() => {
-      setRealTimeData(generateRealTimeData());
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const interval = setInterval(() => {
+    //   setRealTimeData(generateRealTimeData());
+    // }, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const getActivityColor = (activity) => {

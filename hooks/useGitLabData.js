@@ -364,24 +364,25 @@ export function useGitLabData(dataType, options = {}) {
     };
   }, [fetchData, updateCacheStats]);
 
-  // Auto-refresh interval
+  // Auto-refresh interval - DISABLED to prevent constant page refreshing
   useEffect(() => {
     if (!autoRefresh || !user?.id) return;
 
-    const intervalId = setInterval(() => {
-      // Only refresh if not currently loading
-      if (!loading) {
-        fetchData();
-      }
-    }, refreshInterval);
-
-    return () => clearInterval(intervalId);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const intervalId = setInterval(() => {
+    //   // Only refresh if not currently loading
+    //   if (!loading) {
+    //     fetchData();
+    //   }
+    // }, refreshInterval);
+    // return () => clearInterval(intervalId);
   }, [autoRefresh, user?.id, loading, refreshInterval, fetchData]);
 
-  // Update cache stats periodically
+  // Update cache stats periodically - DISABLED to prevent constant refreshing
   useEffect(() => {
-    const statsInterval = setInterval(updateCacheStats, 10000); // Every 10 seconds
-    return () => clearInterval(statsInterval);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const statsInterval = setInterval(updateCacheStats, 10000); // Every 10 seconds
+    // return () => clearInterval(statsInterval);
   }, [updateCacheStats]);
 
   return {

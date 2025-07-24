@@ -137,7 +137,7 @@ export const TAB_CACHE_CONFIG = {
   overview: {
     dataKeys: ['stats', 'systemHealth', 'activityLogs'],
     ttl: CACHE_TTL.REAL_TIME,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: true,
     backgroundRefresh: 30000,
   },
@@ -169,7 +169,7 @@ export const TAB_CACHE_CONFIG = {
   'task-management': {
     dataKeys: ['allTasks', 'taskStats', 'taskProgress'],
     ttl: CACHE_TTL.SHORT,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: true,
     backgroundRefresh: 300000,
   },
@@ -177,7 +177,7 @@ export const TAB_CACHE_CONFIG = {
   'attendance-ip': {
     dataKeys: ['attendanceStats', 'recentAttendance', 'attendanceIssues'],
     ttl: CACHE_TTL.MEDIUM,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: true,
     backgroundRefresh: 600000,
   },
@@ -185,7 +185,7 @@ export const TAB_CACHE_CONFIG = {
   announcements: {
     dataKeys: ['allAnnouncements', 'announcementStats'],
     ttl: CACHE_TTL.SHORT,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: true,
     backgroundRefresh: 300000,
   },
@@ -193,7 +193,7 @@ export const TAB_CACHE_CONFIG = {
   'system-monitoring': {
     dataKeys: ['systemLogs', 'databaseStats', 'cacheStats'],
     ttl: CACHE_TTL.REAL_TIME,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: false, // Always fresh for monitoring
     backgroundRefresh: 30000,
   },
@@ -217,7 +217,7 @@ export const TAB_CACHE_CONFIG = {
   'bulk-operations': {
     dataKeys: ['importHistory', 'operationStatus'],
     ttl: CACHE_TTL.SHORT,
-    refreshOnFocus: true,
+    refreshOnFocus: false, // Disabled to prevent auto-refresh
     staleWhileRevalidate: true,
     backgroundRefresh: 300000,
   },

@@ -40,10 +40,9 @@ export function EnhancedUserManagement() {
   useEffect(() => {
     fetchData();
     
-    // Start auto-refresh for sync status
-    const stopAutoRefresh = startAutoRefresh(30000); // Every 30 seconds
-    
-    return stopAutoRefresh;
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const stopAutoRefresh = startAutoRefresh(30000); // Every 30 seconds
+    // return stopAutoRefresh;
   }, [startAutoRefresh]);
 
   const fetchData = async () => {

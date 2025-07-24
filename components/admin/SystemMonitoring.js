@@ -49,10 +49,9 @@ export function SystemMonitoring() {
   useEffect(() => {
     fetchSystemData();
     
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(fetchSystemData, 30000);
-    
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const interval = setInterval(fetchSystemData, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const fetchSystemData = async () => {

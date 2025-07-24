@@ -26,14 +26,14 @@ const CacheMonitor = ({ enabled = process.env.NODE_ENV === 'development' }) => {
     setPerformanceMetrics(performance);
   }, []);
 
-  // Auto-update stats
+  // Auto-update stats - DISABLED to prevent constant refreshing
   useEffect(() => {
     if (!enabled) return;
 
     updateStats();
-    const interval = setInterval(updateStats, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent constant page refreshing
+    // const interval = setInterval(updateStats, 5000); // Update every 5 seconds
+    // return () => clearInterval(interval);
   }, [enabled, updateStats]);
 
   // Clear cache function
